@@ -1,21 +1,26 @@
-import { PluginSettingTab, Setting, Notice } from "obsidian";
+import { PluginSettingTab, Setting, Notice, type App } from "obsidian";
+
+import type { PodcastService } from "./service";
+import type { TextSettingKey, ToggleSettingKey } from "./types";
+import { errorMessage } from "./validation";
 
 export class CaptureSettings extends PluginSettingTab {
-    constructor(app, plugin) { super(app, plugin.plugin); this.plugin = plugin; }
-    display() {
+    private readonly plugin: PodcastService;
+    constructor(app: App, plugin: PodcastService) { super(app, plugin.plugin); this.plugin = plugin; }
+    override display(): void {
         const container = this.containerEl;
         container.empty();
         new Setting(container).setName("记录输出").setHeading();
-        const text = (key, name, description) => new Setting(container).setName(name).setDesc(description).addText(component => {
+        const text = (key: TextSettingKey, name: string, description: string) => new Setting(container).setName(name).setDesc(description).addText(component => {
             component.setValue(this.plugin.config[key]);
-            component.inputEl.addEventListener("change", async () => {
-                try { await this.plugin.saveSettings({ ...this.plugin.config, [key]: component.getValue() }); }
-                catch (error) { new Notice(error.message); }
+            component.inputEl.addEventListener("change", () => {
+                void this.plugin.saveSettings({ ...this.plugin.config, [key]: component.getValue() })
+                    .catch((error: unknown) => { new Notice(errorMessage(error)); });
             });
         });
-        const toggle = (key, name, description) => new Setting(container).setName(name).setDesc(description).addToggle(component => component.setValue(this.plugin.config[key]).onChange(async value => {
+        const toggle = (key: ToggleSettingKey, name: string, description: string) => new Setting(container).setName(name).setDesc(description).addToggle(component => component.setValue(this.plugin.config[key]).onChange(async value => {
             try { await this.plugin.saveSettings({ ...this.plugin.config, [key]: value }); }
-            catch (error) { new Notice(error.message); }
+            catch (error) { new Notice(errorMessage(error)); }
         }));
         text("catalogPath", "记录文件", "库内 Markdown 路径，例如 Podcasts.md。修改路径不会移动旧文件。");
         text("entryHeading", "记录区标题", "新条目插入此标题下，其他正文保留。");

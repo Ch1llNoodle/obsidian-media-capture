@@ -1,12 +1,12 @@
 import { Notice, Plugin } from 'obsidian';
-import { PodcastService } from './service.js';
-import { CaptureModal } from './capture-modal.js';
-import { CaptureSettings } from './settings-ui.js';
+import { PodcastService } from './service';
+import { CaptureModal } from './capture-modal';
+import { CaptureSettings } from './settings-ui';
 
 export default class PodcastCapture extends Plugin {
     service!: PodcastService;
 
-    async onload(): Promise<void> {
+    override async onload(): Promise<void> {
         this.service = new PodcastService(this);
         await this.service.initialize();
         this.addSettingTab(new CaptureSettings(this.app, this.service));
@@ -32,7 +32,7 @@ export default class PodcastCapture extends Plugin {
         this.app.workspace.onLayoutReady(() => this.service.repairOnReady());
     }
 
-    onunload(): void {
+    override onunload(): void {
         this.service?.dispose();
     }
 }

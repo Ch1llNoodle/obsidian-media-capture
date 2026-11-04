@@ -1,6 +1,6 @@
-import { normalizePath } from "obsidian";
+import { normalizePath, type Vault, type TAbstractFile, type TFile } from "obsidian";
 
-async function ensureFolder(vault, path) {
+async function ensureFolder(vault: Vault, path: string): Promise<void> {
     const parts = normalizePath(path).split("/");
     for (let i = 1; i <= parts.length; i++) {
         const part = parts.slice(0, i).join("/");
@@ -12,3 +12,7 @@ async function ensureFolder(vault, path) {
 
 
 export { ensureFolder };
+
+export function isMarkdownFile(file: TAbstractFile | null): file is TFile {
+    return file !== null && "extension" in file && file.extension === "md";
+}

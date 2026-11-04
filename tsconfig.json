@@ -17,12 +17,12 @@
       "ES2021",
       "DOM"
     ],
-    "allowJs": true,
-    "checkJs": false
+    "allowJs": false,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   },
   "include": [
-    "src/**/*.ts",
-    "src/**/*.js",
-    "tests/**/*.cjs"
+    "src/**/*.ts"
   ]
 }

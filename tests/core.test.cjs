@@ -4,18 +4,31 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 const path = require("node:path");
 
+const { buildSync } = require("esbuild");
+const testBundle = buildSync({
+    stdin: {
+        contents: `import { PodcastService } from "./src/service";
+import * as core from "./src/core";
+class TestService extends PodcastService {
+    constructor() { super({loadData: async () => null, saveData: async () => {}}); }
+    onload() { return this.initialize(); }
+}
+module.exports = TestService;
+module.exports._internals = core;`,
+        resolveDir: path.resolve(__dirname, ".."),
+        loader: "ts",
+    },
+    bundle: true, platform: "browser", format: "cjs", target: "es2021",
+    external: ["obsidian"], write: false,
+}).outputFiles[0].text;
+
 function load(request = async () => { throw new Error("offline"); }) {
     const sandbox = { module: { exports: {} }, URL, console, Uint8Array, Date,
         require: name => {
             assert.equal(name, "obsidian");
             return { Plugin: class {}, Modal: class {}, Notice: class {}, PluginSettingTab: class {}, Setting: class {}, requestUrl: request, normalizePath: value => value.replace(/\\/g, "/") };
         } };
-    const read = name => fs.readFileSync(path.join(__dirname, "../src", name), "utf8");
-    const stripImports = text => text.replace(/^import .*? from ["'][^"']+["'];?\s*$/gm, "");
-    const core = read("core.js").replace(/^export \{[^}]+\};?\s*$/gm, "");
-    const storage = stripImports(read("storage.js")).replace(/^export \{[^}]+\};?\s*$/gm, "");
-    const service = stripImports(read("service.js")).replace("export class PodcastService", "class PodcastService");
-    vm.runInNewContext('const { Modal, Notice, requestUrl, normalizePath } = require("obsidian");\n' + core + storage + service + '\nclass TestService extends PodcastService { constructor() { super({loadData: async () => null, saveData: async () => {}}); } onload() { return this.initialize(); } }\nmodule.exports = TestService; module.exports._internals = { DEFAULT_SETTINGS, LEGACY_SETTINGS, validateSettings, recordDate, episodeUrl, validDate, metadata, safeCover, entryLine, updateCatalog, findEntry };', sandbox);
+    vm.runInNewContext(testBundle, sandbox);
     return sandbox.module.exports;
 }
 
@@ -365,4 +378,34 @@ test("配置校验拒绝库外路径与破坏单行记录的模板", () => {
     assert.throws(() => validateSettings({ rowTemplate: "- {{link}}\nextra" }));
     assert.throws(() => validateSettings({ rowTemplate: "- {{link}} {{unknown}}" }));
     assert.throws(() => validateSettings({ dailyProperty: "__proto__" }));
+});
+
+
+test("持久化设置按实际类型校验，忽略未知键并保留默认值", () => {
+    const { validateSettings, DEFAULT_SETTINGS } = load()._internals;
+    assert.equal(validateSettings(null).catalogPath, DEFAULT_SETTINGS.catalogPath);
+    assert.equal(validateSettings({ extra: true }).extra, undefined);
+    assert.throws(() => validateSettings({ downloadCovers: "false" }), /downloadCovers/);
+    assert.throws(() => validateSettings({ catalogPath: 42 }), /catalogPath/);
+    assert.equal(validateSettings({ downloadCovers: false }).downloadCovers, false);
+});
+
+test("异常的第三方 JSON 结构回退到公开元信息", () => {
+    const { metadata, episodeUrl } = load()._internals;
+    const fallback = '<meta property="og:title" content="Fallback episode">';
+    const xyz = fallback + '<script id="__NEXT_DATA__">{"props":{"pageProps":{"episode":{"eid":42}}}}</script>';
+    assert.equal(metadata(xyz, episodeUrl(xyzUrl)).title, "Fallback episode");
+    for (const data of ['null', '{"@graph":42}', '{"@graph":[null,42]}']) {
+        const html = fallback + '<script type="application/ld+json">' + data + '</script>';
+        assert.equal(metadata(html, episodeUrl(appleUrl)).title, "Fallback episode");
+    }
+});
+
+test("非 Error 异常保留原因，封面失败仍保存记录", async () => {
+    const Plugin = load(async () => { throw "network unavailable"; });
+    const fixture = appFixture(base);
+    const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.LEGACY_SETTINGS }; plugin.app = fixture.app;
+    const result = await plugin.capture(item);
+    assert(result.coverError.includes("network unavailable"));
+    assert(fixture.contents.get("追踪/播客.md").includes(item.title));
 });

@@ -11,10 +11,11 @@
   "type": "module",
   "scripts": {
     "dev": "node esbuild.config.mjs",
-    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "build": "tsc --noEmit && node esbuild.config.mjs production",
     "version": "node version-bump.mjs && git add manifest.json versions.json",
     "lint": "eslint .",
-    "test": "node --test tests/core.test.cjs"
+    "test": "node --test tests/core.test.cjs",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "license": "0-BSD",
