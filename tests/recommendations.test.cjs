@@ -56,11 +56,11 @@ test('本地清单区分六类作品与状态，跳过图片、转义摘记与�
     assert.throws(() => api.recommendationUrl('https://movie.douban.com:123/subject/1/', 'movie'));
 });
 
-test('所有状态的本地作品均可选择，无需网络或新增文件', async () => {
+test('只列出想看的本地作品，排除已完成及进行中作品', async () => {
     const api = load(); const f = fixture(api);
-    f.content.set('Recommendations/Movies.md', row + '\n' + row.replaceAll('100', '200').replace('想看', '看过'));
+    f.content.set('Recommendations/Movies.md', row + '\n' + row.replaceAll('100', '200').replace('想看', '看过') + '\n' + row.replaceAll('100', '300').replace('想看', '在看'));
     const items = await f.service.works();
-    assert.equal(items.length, 2); assert.equal(items[1].state, '看过');
+    assert.equal(items.length, 1); assert.equal(items[0].state, '想看');
     await f.service.link(items[0], source, '节目里推荐');
     const saved = f.content.get(items[0].path);
     assert(saved.includes('节目里推荐')); assert(saved.includes('[[Podcasts#^douban-123|'));
@@ -70,11 +70,11 @@ test('所有状态的本地作品均可选择，无需网络或新增文件', as
 
 test('并发关联去重，保留名称日期封面状态及 Quotes', async () => {
     const api = load(); const f = fixture(api);
-    f.content.set('Recommendations/Movies.md', base.replace('#### Watchlist', '#### Watched\n\n' + row.replace('- ', '- 2026-11-03 ').replace('[电影]', '[自己的名称]').replace('想看', '看过')));
+    f.content.set('Recommendations/Movies.md', base.replace('#### Watchlist', '#### Watchlist\n\n' + row.replace('- ', '- 2026-11-03 ').replace('[电影]', '[自己的名称]')));
     const item = (await f.service.works())[0];
     await Promise.all([f.service.link(item, source, '理由'), f.service.link(item, other), f.service.link(item, source)]);
     const saved = f.content.get(item.path);
-    for (const text of ['2026-11-03', '自己的名称', 'cover.jpg', 'douban-state: 看过', '手写摘抄']) assert(saved.includes(text));
+    for (const text of ['2026-11-03', '自己的名称', 'cover.jpg', 'douban-state: 想看', '手写摘抄']) assert(saved.includes(text));
     assert.equal((saved.match(/douban-123\|/g) || []).length, 1);
     assert(saved.includes('apple-456|'));
     assert.equal((saved.match(/\^douban-100/g) || []).length, 1);
@@ -143,4 +143,16 @@ test('真实同步保留作品的播客来源，删除豆瓣收藏后不再重�
     assert(content.includes('[[Podcasts#^douban-123|'));
     assert.equal((content.match(/\^douban-100/g) || []).length, 1);
     assert(content.endsWith('手写摘抄\n'));
+});
+
+test('六类作品仅接受对应想状态，保存前再检查当前状态', async () => {
+    const api = load();
+    for (const [kind, state] of [['book','想读'],['movie','想看'],['teleplay','想看'],['music','想听'],['game','想玩'],['theater','想看']]) {
+        assert(api.isWanted({kind,state}));
+        for (const state of ['读过','看过','听过','玩过','在读','在看','在听','在玩','']) assert(!api.isWanted({kind,state}));
+    }
+    const f = fixture(api); const item = (await f.service.works())[0];
+    f.content.set(item.path, f.content.get(item.path).replace('想看','看过'));
+    await assert.rejects(f.service.link(item, source), /已不在/);
+    assert(!f.content.get(item.path).includes('podcast-sources:start'));
 });

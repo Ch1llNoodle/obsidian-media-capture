@@ -28,7 +28,7 @@ For Apple Podcasts, share an individual episode. A show URL without an `i` episo
 
 Mark a work as wanted on Douban, then import it into a Markdown collection with your own Douban sync tool. Set the six collection paths to your existing books, movies, series, music, games, and theater lists. Defaults are under `Recommendations/`; this plugin reads existing files only.
 
-In a collection's reading view, select **关联播客** beside a work, search for a recorded episode, optionally enter an excerpt, and select **保存关联**. The **关联作品与播客** command also lets you choose a work from local lists. Both selectors support keyword filtering, and works in any state can be linked.
+In the podcast log's reading view, select **添加关联** beside an episode. That episode is fixed as the source. Choose a wanted work from the dropdown, optionally enter an excerpt, and select **保存关联**. Only works marked 想读, 想看, 想听, or 想玩 for their respective media types are offered; in-progress, completed, and unmarked works are excluded. There are no search fields or source-episode selector. The **打开播客关联入口** command opens the podcast log.
 
 Links are appended to the original work row and target the source episode block. Titles, dates, states, and covers stay intact. Multiple episodes share one work row; selecting the same episode again adds no duplicate. Linking works entirely offline: it does not search Douban, fetch subject pages, download work covers, create work notes or wishlist entries, or write daily properties. The work and source are checked again before saving.
 

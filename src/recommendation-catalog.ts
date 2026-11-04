@@ -1,6 +1,11 @@
 import type { RecommendationKind, RecommendationWork } from './types';
 import { recommendationKinds, recommendationUrl } from './recommendations';
 
+export function isWanted(work: Pick<RecommendationWork, 'kind' | 'state'>): boolean {
+    const state = work.kind === 'book' ? '想读' : work.kind === 'music' ? '想听' : work.kind === 'game' ? '想玩' : '想看';
+    return work.state === state;
+}
+
 /** Read the primary Markdown work link, excluding artwork and escaped quotation links. */
 export function catalogWorks(text: string, path: string, preferred: RecommendationKind): RecommendationWork[] {
     const result = new Map<string, RecommendationWork>();

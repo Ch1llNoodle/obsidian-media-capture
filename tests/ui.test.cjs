@@ -4,7 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { buildSync } = require('esbuild');
 
-test('编译后的插件从本地作品关联播客，搜索筛选与作品行入口可用', async () => {
+test('播客条目固定来源，只有待看作品下拉框，没有搜索或播客选择', async () => {
     const bundle = buildSync({ entryPoints: [path.join(__dirname, '../src/main.ts')], bundle: true,
         external: ['obsidian'], platform: 'browser', format: 'cjs', target: 'es2021', minify: true, write: false }).outputFiles[0].text;
     const all = node => [node, ...node.children.flatMap(all)];
@@ -19,7 +19,7 @@ test('编译后的插件从本地作品关联播客，搜索筛选与作品行�
             createDiv(options) { return this.createEl('div', options); },
             addEventListener(name, fn) { this[name] = fn; },
             querySelectorAll() { return all(this).filter(n => ['input', 'select', 'button'].includes(n.tag)); },
-            remove() {},
+            remove() { this.removed = true; },
         };
         return node;
     }
@@ -27,7 +27,7 @@ test('编译后的插件从本地作品关联播客，搜索筛选与作品行�
     const events = new Map();
     const modals = [];
     const files = new Map([['Podcasts.md', { path: 'Podcasts.md', extension: 'md' }]]);
-    const content = new Map([['Podcasts.md', '- [节目 · 单集](<https://www.douban.com/podcast_episode/123>) ^douban-123'], ['Recommendations/Movies.md', '- [电影](<https://movie.douban.com/subject/100/>) <!-- douban-state: 想看 --> ^douban-100']]);
+    const content = new Map([['Podcasts.md', '- [节目 · 单集](<https://www.douban.com/podcast_episode/123>) ^douban-123\n- [另一个节目 · 单集](<https://podcasts.apple.com/us/podcast/id12?i=456>) ^apple-456'], ['Recommendations/Movies.md', '- [电影](<https://movie.douban.com/subject/100/>) <!-- douban-state: 想看 --> ^douban-100\n- [已完成](<https://movie.douban.com/subject/200/>) <!-- douban-state: 看过 --> ^douban-200\n- [正在看](<https://movie.douban.com/subject/300/>) <!-- douban-state: 在看 --> ^douban-300']]);
     files.set('Recommendations/Movies.md', { path: 'Recommendations/Movies.md', extension: 'md' });
     const app = { vault: {
         getAbstractFileByPath: p => files.get(p) ?? null,
@@ -71,12 +71,12 @@ test('编译后的插件从本地作品关联播客，搜索筛选与作品行�
     events.get('podcast-capture:recommend')({ path: 'Podcasts.md', blockId: 'douban-123' });
     await new Promise(resolve => setImmediate(resolve));
     const modal = modals[0];
-    assert.equal(modal.sourceInput.value, 'douban-123');
+    assert.equal(modal.source.blockId, 'douban-123');
+    assert.equal(all(modal.contentEl).filter(node => node.tag === 'select').length, 1);
+    assert.equal(all(modal.contentEl).filter(node => node.type === 'search').length, 0);
+    assert(!('sourceInput' in modal));
+    assert.equal(modal.workInput.children.filter(node => node.value !== '').length, 1);
     modal.workInput.value = '0';
-    modal.sourceSearch.value = '节目';
-    modal.sourceSearch.input();
-    assert(modal.sourceInput.children.some(option => option.value === 'douban-123'));
-    modal.sourceInput.value = 'douban-123';
     modal.reasonInput.value = '这期节目推荐';
     await modal.save();
     const saved = content.get('Recommendations/Movies.md');
@@ -86,17 +86,24 @@ test('编译后的插件从本地作品关联播客，搜索筛选与作品行�
     // Reading-mode rows receive an inline action which is removed on unload.
     const row = element('li');
     row.querySelector = () => null;
-    const anchor = { href: 'https://movie.douban.com/subject/100/', closest: () => row };
+    const anchor = { href: 'https://podcasts.apple.com/us/podcast/id12?i=456', closest: () => row };
     const container = element(); container.querySelectorAll = () => [anchor];
     let component;
-    plugin.processor(container, { sourcePath: 'Recommendations/Movies.md', addChild: child => { component = child; child.onload(); } });
+    plugin.processor(container, { sourcePath: 'Podcasts.md', addChild: child => { component = child; child.onload(); } });
     await new Promise(resolve => setImmediate(resolve));
-    assert.equal(row.children[0].text, '关联播客');
+    assert.equal(row.children[0].text, '添加关联');
     row.children[0].click();
     await new Promise(resolve => setImmediate(resolve));
-    assert.equal(modals[1].workInput.value, '0');
+    assert.equal(modals[1].source.blockId, 'apple-456');
+    modals[1].workInput.value = '0';
+    await modals[1].save();
+    assert(content.get('Recommendations/Movies.md').includes('[[Podcasts#^apple-456|另一个节目 · 单集]]'));
+    let unexpectedChild = false;
+    plugin.processor(container, { sourcePath: 'Recommendations/Movies.md', addChild: () => { unexpectedChild = true; } });
+    assert.equal(unexpectedChild, false);
     assert.equal(files.size, 2);
     component.onunload();
+    assert.equal(row.children[0].removed, true);
     plugin.onunload();
     assert.equal(plugin.service.unloaded, true);
 });
