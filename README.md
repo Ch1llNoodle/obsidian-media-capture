@@ -6,6 +6,8 @@ Podcast Capture saves episode links from Douban, Xiaoyuzhou, and Apple Podcasts 
 
 #### Installation
 
+For iPhone and desktop testing, install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Obsidian's community plugins, then add `Ch1llNoodle/obsidian-podcast-capture` as a beta plugin. Choose a published release or prerelease and enable Podcast Capture. BRAT installs and updates the release files inside Obsidian.
+
 Obsidian 1.5.0 or later is required. Place `main.js`, `manifest.json`, and `styles.css` in `<Vault>/.obsidian/plugins/podcast-capture/`, then enable **Podcast Capture** under **Settings → Community plugins**. Build these files from source using the development commands below.
 
 When updating, replace those three files and reload the plugin. Keep the existing `data.json`, which stores personal settings and the latest cover repair report.
@@ -69,6 +71,8 @@ npm run lint
 The production build bundles runtime code into `main.js`. Tests bundle TypeScript modules with esbuild and execute them against mocked Obsidian APIs. An optional tracker compatibility test uses the script path provided by `PODCAST_TRACKER_TEST_PATH`; it is skipped when that variable is absent.
 
 Release files are `main.js`, `manifest.json`, and `styles.css`. Generated bundles, dependencies, and personal `data.json` are excluded from source control. Dependency security checks use `npm audit` separately from compilation and functional tests.
+
+Pushing a tag that matches the manifest and package versions runs the release workflow. After build, test, and lint checks pass, it uploads the runtime files and publishes a GitHub prerelease for BRAT. This workflow does not submit the plugin to the community catalog.
 
 #### Network access and mobile support
 
