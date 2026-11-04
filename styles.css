@@ -5,6 +5,27 @@
 .podcast-capture-message { color: var(--text-muted); min-height: 1.5em; }
 .podcast-capture-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 
-.podcast-recommend-button { margin-inline-start: 8px; min-height: 32px; white-space: nowrap; }
+.podcast-recommend-button {
+    margin-inline-start: 8px;
+    min-height: 32px;
+    white-space: nowrap;
+    background: transparent;
+    box-shadow: none;
+    border: 0;
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+}
+.podcast-recommend-button:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
 .podcast-recommend-results { display: grid; gap: 6px; max-height: 240px; overflow-y: auto; }
 .podcast-recommend-results button { text-align: start; height: auto; white-space: normal; }
+
+.podcast-episode-row > .podcast-linked-works {
+    display: block;
+    margin-block: 0.25em 0;
+    padding-inline-start: 1.6em;
+}
+.podcast-episode-row > .podcast-linked-works > li {
+    display: list-item;
+    margin-block: 0.15em;
+}
+.podcast-episode-row > .podcast-linked-works > li > p { margin-block: 0; }

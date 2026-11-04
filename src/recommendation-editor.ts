@@ -1,4 +1,4 @@
-import { editorInfoField } from 'obsidian';
+import { editorInfoField, editorLivePreviewField } from 'obsidian';
 import { Decoration, type DecorationSet, EditorView, ViewPlugin, type ViewUpdate, WidgetType } from '@codemirror/view';
 import type { Range } from '@codemirror/state';
 import type { RecommendationService } from './recommendation-service';
@@ -29,12 +29,19 @@ export function recommendationEditor(service: RecommendationService): ViewPlugin
         if (path !== service.podcast.config.catalogPath) return Decoration.none;
         const ranges: Range<Decoration>[] = [];
         const seen = new Set<number>();
+        const livePreview = view.state.field(editorLivePreviewField, false) === true;
         for (const visible of view.visibleRanges) {
             for (let position = visible.from; position <= visible.to;) {
                 const line = view.state.doc.lineAt(position);
                 if (!seen.has(line.from)) {
                     seen.add(line.from);
                     const source = episodeSource(line.text, path);
+                    if (livePreview && (source || /^ {2}- .*<!-- podcast-work -->\s*$/.test(line.text))) {
+                        const metadata = /\s*<!--\s*(?:(?:podcast-state|podcast-date|douban-state):[^>]*|podcast-work)\s*-->|\s+\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+)\s*$/g;
+                        for (const match of line.text.matchAll(metadata)) {
+                            ranges.push(Decoration.replace({}).range(line.from + match.index, line.from + match.index + match[0].length));
+                        }
+                    }
                     if (source) ranges.push(Decoration.widget({ widget: new EpisodeAction(service, source), side: 1 }).range(line.to));
                 }
                 position = line.to + 1;
@@ -46,5 +53,8 @@ export function recommendationEditor(service: RecommendationService): ViewPlugin
         decorations: DecorationSet;
         constructor(view: EditorView) { this.decorations = decorations(view); }
         update(update: ViewUpdate): void { this.decorations = decorations(update.view); }
-    }, { decorations: value => value.decorations });
+    }, {
+        decorations: value => value.decorations,
+        provide: plugin => EditorView.atomicRanges.of(view => view.plugin(plugin)?.decorations ?? Decoration.none),
+    });
 }

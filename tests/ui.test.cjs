@@ -23,6 +23,8 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
         };
         return node;
     }
+    const editorInfo = Symbol('editorInfo');
+    const livePreviewInfo = Symbol('livePreview');
     const commands = [];
     const events = new Map();
     const modals = [];
@@ -62,11 +64,11 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
         require: name => {
             if (name === '@codemirror/view') return {
                 WidgetType: class {}, ViewPlugin: { fromClass: cls => ({ cls }) },
-                Decoration: { none: [], set: ranges => ranges, widget: spec => ({ range: from => ({ from, widget: spec.widget }) }) },
+                Decoration: { none: [], set: ranges => ranges, replace: () => ({ range: (from, to) => ({ from, to, hidden: true }) }), widget: spec => ({ range: from => ({ from, widget: spec.widget }) }) },
             };
             if (name === '@codemirror/state') return {};
             assert.equal(name, 'obsidian');
-            return { editorInfoField: Symbol('editorInfo'), Plugin, Modal, MarkdownRenderChild, Notice: class {}, PluginSettingTab: class {},
+            return { editorInfoField: editorInfo, editorLivePreviewField: livePreviewInfo, Plugin, Modal, MarkdownRenderChild, Notice: class {}, PluginSettingTab: class {},
                 Setting: class {}, normalizePath: p => p, requestUrl: async () => { throw new Error('Unexpected request'); } };
         } };
     vm.runInNewContext(bundle, sandbox);
@@ -115,7 +117,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     // The same row action is present in CodeMirror without requiring Live Preview.
     const text = content.get('Podcasts.md');
     const view = { dom: { ownerDocument: { createElement: element } }, visibleRanges: [{ from: 0, to: text.length }], state: {
-        field: () => ({ file: { path: 'Podcasts.md' } }),
+        field: field => field === editorInfo ? { file: { path: 'Podcasts.md' } } : true,
         doc: { lineAt(position) {
             const from = text.lastIndexOf('\n', position - 1) + 1;
             const end = text.indexOf('\n', position); const to = end < 0 ? text.length : end;
@@ -123,8 +125,9 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
         } },
     } };
     const editor = new plugin.editorExtension.cls(view);
-    assert.equal(editor.decorations.length, 2);
-    const widget = editor.decorations[0].widget;
+    assert.equal(editor.decorations.filter(range => range.widget).length, 2);
+    assert(editor.decorations.filter(range => range.hidden).length >= 3);
+    const widget = editor.decorations.find(range => range.widget).widget;
     const editorButton = widget.toDOM(view);
     assert.equal(editorButton.textContent, '添加关联');
     editorButton.onclick({ preventDefault() {} });
@@ -132,6 +135,10 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     assert.equal(modals.at(-1).source.blockId, 'douban-123');
     widget.destroy(editorButton);
     assert.equal(editorButton.onclick, null);
+    view.state.field = field => field === editorInfo ? { file: { path: 'Podcasts.md' } } : false;
+    editor.update({ view });
+    assert.equal(editor.decorations.filter(range => range.hidden).length, 0);
+    assert.equal(editor.decorations.filter(range => range.widget).length, 2);
     view.state.field = () => ({ file: { path: 'Other.md' } });
     editor.update({ view });
     assert.equal(editor.decorations.length, 0);
