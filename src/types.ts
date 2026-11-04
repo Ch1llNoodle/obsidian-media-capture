@@ -16,6 +16,11 @@ export interface RecommendationItem {
     cover: string;
 }
 
+export interface RecommendationWork extends RecommendationItem {
+    path: string;
+    state: string;
+}
+
 export interface CaptureSettingsData {
     catalogPath: string;
     entryHeading: string;

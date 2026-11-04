@@ -2,9 +2,6 @@ import type { RecommendationItem, RecommendationKind, RecommendationSource } fro
 import { markdownText, vaultPath } from './core';
 
 export const recommendationKinds: readonly RecommendationKind[] = ['book', 'movie', 'teleplay', 'music', 'game', 'theater'];
-export const recommendationLabels: Record<RecommendationKind, string> = {
-    book: 'Books', movie: 'Movies', teleplay: 'Series', music: 'Music', game: 'Games', theater: 'Theater',
-};
 export const recommendationNames: Record<RecommendationKind, string> = {
     book: '书籍', movie: '电影', teleplay: '电视剧', music: '音乐', game: '游戏', theater: '舞台剧',
 };
@@ -31,12 +28,7 @@ export function recommendationUrl(input: string, preferred: RecommendationKind):
             if (theater) return { id: theater, kind: 'theater', url: `https://www.douban.com/location/drama/${theater}/` };
         } catch { /* Try the next URL from the shared text. */ }
     }
-    throw new Error('请粘贴豆瓣作品详情链接，不能使用搜索页或短链接。');
-}
-
-export function recommendationSearchUrl(query: string): string {
-    if (!query.trim()) throw new Error('请填写作品名称。');
-    return `https://www.douban.com/search?q=${encodeURIComponent(query.trim())}`;
+    throw new Error('作品清单中的豆瓣链接无效。');
 }
 
 function sourceLink(source: RecommendationSource): string {
@@ -76,7 +68,7 @@ export function recommendationIndex(text: string, item: Pick<RecommendationItem,
     }));
 }
 
-export function updateRecommendations(text: string, item: RecommendationItem, source: RecommendationSource, reason = ''): { text: string; created: boolean } {
+export function linkWorkSource(text: string, item: RecommendationItem, source: RecommendationSource, reason = ''): string {
     const title = item.title.replace(/\s+/g, " ").trim();
     if (!title) throw new Error('请填写作品名称。');
     const identity = recommendationUrl(item.url, item.kind);
@@ -85,24 +77,9 @@ export function updateRecommendations(text: string, item: RecommendationItem, so
     if (index >= 0) {
         const previous = lines[index] ?? '';
         let next = attachSource(previous, source, reason);
-        if (item.cover && !/!\[(?:cover)?\|24\]\(</.test(next)) {
-            next = next.replace(/^(-\s+(?:\d{4}-\d{2}-\d{2}\s+)?)/, (prefix: string) => `${prefix}![|24](<${item.cover}>) `);
-        }
-        if (!next.includes("<!-- podcast-recommendation -->")) next = next.replace("<!-- podcast-sources:start -->", "<!-- podcast-recommendation --> <!-- podcast-sources:start -->");
         if (!/\^douban-\d+\s*$/.test(next)) next += ` ^douban-${identity.id}`;
         lines[index] = next;
-        return { text: lines.join('\n'), created: false };
+        return lines.join('\n');
     }
-    const watching = ['movie', 'teleplay', 'theater'].includes(identity.kind);
-    const heading = watching ? 'Watchlist' : 'Wishlist';
-    const state = identity.kind === 'book' ? '想读' : identity.kind === 'music' ? '想听' : identity.kind === 'game' ? '想玩' : '想看';
-    const cover = item.cover ? `![|24](<${item.cover}>) ` : '';
-    const row = attachSource(`- ${cover}[${markdownText(title)}](<${identity.url}>) <!-- podcast-recommendation --> <!-- douban-state: ${state} --> <!-- douban-type: ${identity.kind} --> ^douban-${identity.id}`, source, reason);
-    const headingIndex = lines.findIndex(line => line.trim() === `#### ${heading}`);
-    if (headingIndex >= 0) lines.splice(headingIndex + 1, 0, '', row);
-    else {
-        const boundary = lines.findIndex(line => line.trim() === '<!-- douban:end -->' || line.trim() === '#### Quotes');
-        lines.splice(boundary < 0 ? lines.length : boundary, 0, `#### ${heading}`, '', row, '');
-    }
-    return { text: lines.join('\n'), created: true };
+    throw new Error('作品已移除，请同步清单后重新选择。');
 }

@@ -24,17 +24,23 @@ Apple Podcasts 使用单集分享链接；缺少 `i` 单集参数的节目主页
 
 **打开播客记录**打开配置的记录文件。**补全缺失封面**重新获取缺失图片，并报告失败阶段；已取得图片地址时，报告提供原图链接。
 
-#### 关联播客推荐的作品
+#### 关联作品与播客
 
-运行**添加播客推荐作品**，或在播客记录页的阅读视图中选择单集旁的 **＋ 推荐**。选择来源播客和作品类型，输入名称搜索或粘贴豆瓣详情链接，确认名称后加入清单；推荐理由可以留空。作品解析支持 Open Graph、JSON-LD、itemreviewed 与页面标题，封面支持多种页面标记。书籍、影视和音乐的作品页请求失败时会尝试公开移动页；安全验证页与缺失元信息分别报错，不作为作品标题保存。两个页面都受限时仍无法自动解析。
+先在豆瓣标记想读、想看等状态，通过自己的豆瓣同步工具将作品导入 Markdown 清单。在设置中把书籍、电影、电视剧、音乐、游戏和舞台剧路径指向已有清单；默认路径位于 `Recommendations/`，插件只读取已存在的文件。
 
-公开搜索被拦截时，选择**打开豆瓣搜索**，在浏览器中找到作品，再复制详情链接并手动填写名称。
+在作品清单的阅读视图中选择作品旁的**关联播客**，搜索并选择已记录的来源播客，可填写摘记，再选择**保存关联**。也可运行**关联作品与播客**，先从本地清单选择作品。作品和播客都支持输入关键词筛选；所有作品状态均可关联。
 
-书籍、电影、电视剧、音乐、游戏和舞台剧分别使用可配置的集中清单，默认位于 `Recommendations/`，首次添加作品时才创建文件。新条目进入 Wishlist 或 Watchlist；已有作品只合并来源链接，保留状态、日期、封面和手写名称，同一期播客不重复关联。不创建单独作品文件，不修改豆瓣账号中的收藏，也不为推荐新增日记属性。
+关联只在作品原行追加来源单集的块链接和摘记，保留名称、日期、状态及封面。同一来源重复保存不会重复追加，多个来源保存在同一作品行。关联过程完全在本地进行，不搜索豆瓣、不请求作品详情、不下载作品封面，也不创建作品文件、待看条目或日记属性。保存前重新检查作品及来源是否仍存在。
 
-来源链接定位到播客记录中的单集块。可选工作区事件 `podcast-capture:recommend` 接收 `{ path, blockId }`，打开窗口并选中该单集；插件实例的 `supportsRecommendations` 表示支持该接口，日记视图可以据此提供入口。
+作品清单使用单行 Markdown 列表，例如：
 
-自定义收藏同步脚本需要保留 `podcast-sources:start` / `podcast-sources:end` 之间的来源信息，并保留带 `podcast-recommendation` 标记的未同步推荐。平台收藏中出现同一作品时，把来源合并到同步行，不另建重复条目。
+```markdown
+- [作品名称](<https://movie.douban.com/subject/123/>) <!-- douban-state: 想看 --> <!-- douban-type: movie --> ^douban-123
+```
+
+`douban-type` 可使用 `book`、`movie`、`teleplay`、`music`、`game`、`theater`，缺省时采用该清单配置的类型。可选工作区事件 `podcast-capture:recommend` 接收 `{ path, blockId }`，打开窗口并选中该来源播客；`supportsRecommendations` 表示接口可用。
+
+自定义同步脚本需要在同一作品的新行中保留 `podcast-sources:start` / `podcast-sources:end` 之间的来源信息。豆瓣收藏同步由外部工具负责。
 
 #### 设置
 
@@ -49,12 +55,12 @@ Apple Podcasts 使用单集分享链接；缺少 `i` 单集参数的节目主页
 | 日记联动 | 关闭 | 向现有日记写入已听过单集的链接 |
 | 日记目录 | `Daily` | 读取该目录及子目录中以 `YYYY-MM-DD` 命名的笔记 |
 | 日记属性 | `podcasts` | 以列表保存单集链接，保留其他属性 |
-| 书籍清单 | `Recommendations/Books.md` | 推荐的书籍 |
-| 电影清单 | `Recommendations/Movies.md` | 推荐的电影 |
-| 电视剧清单 | `Recommendations/Series.md` | 推荐的剧集 |
-| 音乐清单 | `Recommendations/Music.md` | 推荐的音乐 |
-| 游戏清单 | `Recommendations/Games.md` | 推荐的游戏 |
-| 舞台剧清单 | `Recommendations/Theater.md` | 推荐的舞台剧 |
+| 书籍清单 | `Recommendations/Books.md` | 已有作品清单 |
+| 电影清单 | `Recommendations/Movies.md` | 已有作品清单 |
+| 电视剧清单 | `Recommendations/Series.md` | 已有作品清单 |
+| 音乐清单 | `Recommendations/Music.md` | 已有作品清单 |
+| 游戏清单 | `Recommendations/Games.md` | 已有作品清单 |
+| 舞台剧清单 | `Recommendations/Theater.md` | 已有作品清单 |
 
 日记联动仅在找到唯一一篇对应日期的日记时写入链接，不自动创建日记。修改路径不会迁移原有记录、封面或日记。
 
@@ -104,7 +110,7 @@ npm run lint
 
 #### 网络访问与移动端
 
-豆瓣和小宇宙的元信息请求发送至单集公开页面。Apple Podcasts 优先使用 `itunes.apple.com` 的公开 iTunes Lookup API，按分享链接中的单集编号和地区精确匹配，再回退单集网页，不使用 Apple 登录态或令牌。节目目录每次最多查询 200 集，较早单集可能需要网页回退或手动填写名称。封面仅从 `doubanio.com`、`xyzcdn.net`、`mzstatic.com` 及其子域通过 HTTPS 下载。即使手动填写名称，保存时也可能请求缺失封面；关闭本地封面下载后，不再发起图片下载请求。手动补图和可选的启动补图也会按需请求单集页面。推荐作品搜索将输入的关键词发送至 `www.douban.com/search`，详情解析请求所选豆瓣作品页，不附带平台登录凭据或来源播客正文。推荐封面沿用设置中的封面目录和下载开关。
+豆瓣和小宇宙的元信息请求发送至单集公开页面。Apple Podcasts 优先使用 `itunes.apple.com` 的公开 iTunes Lookup API，按分享链接中的单集编号和地区精确匹配，再回退单集网页，不使用 Apple 登录态或令牌。节目目录每次最多查询 200 集，较早单集可能需要网页回退或手动填写名称。封面仅从 `doubanio.com`、`xyzcdn.net`、`mzstatic.com` 及其子域通过 HTTPS 下载。即使手动填写名称，保存时也可能请求缺失封面；关闭本地封面下载后，不再发起图片下载请求。手动补图和可选的启动补图也会按需请求单集页面。作品与播客的关联仅访问已配置的本地清单，不发起网络请求。
 
 运行代码使用 Obsidian API 和标准 Web API，不依赖 Node.js 或 Electron。manifest 允许 Android、iOS 加载，尚未完成真机兼容性验证。插件不读取平台登录凭据或播放历史，不包含遥测。平台或网络错误会显示在添加窗口或补图报告中。
 

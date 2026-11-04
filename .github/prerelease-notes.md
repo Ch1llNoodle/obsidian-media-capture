@@ -4,13 +4,9 @@ Capture Douban, Xiaoyuzhou, and Apple Podcasts episodes in a configurable Markdo
 
 This prerelease is available for testing with BRAT. Android and iOS loading is enabled; real-device compatibility remains unverified. The interface uses Chinese.
 
-#### Douban metadata parsing
+#### Link existing works to episodes
 
-Add standard request headers, public mobile-page fallback for books, screen works and music, and title/poster extraction from JSON-LD, itemreviewed, document titles and image markers. Report verification pages and HTTP failures explicitly. Platform verification is not bypassed.
-
-#### Episode recommendations
-
-Add books, films, series, music, games, and stage productions mentioned in an episode to configurable wishlists. Source block links and optional reasons are kept inline; existing states and custom titles are preserved. Public Douban search can fall back to a browser search and manual URL entry.
+Start from a work already imported into a local collection. Select 关联播客 beside its row, search recorded episodes, optionally add an excerpt, and save the association. Linking is offline and preserves the title, date, state, and cover. Subject-page parsing and local wishlist creation have been removed.
 
 #### Apple Podcasts metadata fix
 
@@ -31,3 +27,5 @@ The release contains `main.js`, `manifest.json`, and `styles.css`. Personal sett
 在 Obsidian 社区插件中安装并启用 BRAT，添加仓库 `Ch1llNoodle/obsidian-podcast-capture`，选择本版本或最新版本，然后启用 Podcast Capture。iPhone 无须通过“文件”App 复制插件文件。
 
 Apple 单集优先通过公开目录获取名称和封面，不依赖 Apple 登录。旧播放器标题可通过“补全缺失封面”一并修正，日期、块链接、摘抄和手写名称保留。
+
+作品同步到本地后，选择作品旁的“关联播客”，搜索来源单集并填写可选摘记。关联在本地完成，不再解析豆瓣作品链接或创建待看条目。

@@ -24,17 +24,23 @@ For Apple Podcasts, share an individual episode. A show URL without an `i` episo
 
 **打开播客记录** opens the configured log. **补全缺失封面** retries missing covers and reports the failure stage; when an image URL is available, the report links to the original image.
 
-#### Recommendations from episodes
+#### Link works to podcast episodes
 
-Run **添加播客推荐作品** (add a recommendation), or select **＋ 推荐** beside an episode in the reading view of the podcast log. Select the source episode and the work type, search by name or paste a Douban subject URL, then confirm the title and add it to the list. A short recommendation reason is optional. Subject parsing accepts Open Graph, JSON-LD, itemreviewed, and document titles, with poster-image fallbacks. For books, screen works, and music, a failed desktop request also tries the public mobile page. Verification pages are reported separately from missing metadata; they are not treated as work titles. If both pages are restricted, automatic parsing remains unavailable.
+Mark a work as wanted on Douban, then import it into a Markdown collection with your own Douban sync tool. Set the six collection paths to your existing books, movies, series, music, games, and theater lists. Defaults are under `Recommendations/`; this plugin reads existing files only.
 
-If public search is blocked, **打开豆瓣搜索** opens Douban in the browser; copy the subject URL back and enter the title manually.
+In a collection's reading view, select **关联播客** beside a work, search for a recorded episode, optionally enter an excerpt, and select **保存关联**. The **关联作品与播客** command also lets you choose a work from local lists. Both selectors support keyword filtering, and works in any state can be linked.
 
-Books, films, series, music, games, and theater have separate configurable lists under `Recommendations/` by default. Files are created only when adding a work. New entries go to Wishlist or Watchlist. Adding a work that already exists merges the source links while preserving its state, date, cover, and custom title. The same source is added once. The plugin does not create per-work notes, change your Douban account, or add daily note properties for recommendations.
+Links are appended to the original work row and target the source episode block. Titles, dates, states, and covers stay intact. Multiple episodes share one work row; selecting the same episode again adds no duplicate. Linking works entirely offline: it does not search Douban, fetch subject pages, download work covers, create work notes or wishlist entries, or write daily properties. The work and source are checked again before saving.
 
-Source links target the episode block in the podcast log. The optional workspace event `podcast-capture:recommend`, with `{ path, blockId }`, opens the dialog with that episode selected; `supportsRecommendations` on the plugin instance indicates support. This allows a daily view to provide its own button.
+Collections use single-line Markdown list entries, for example:
 
-Custom collection sync scripts must preserve the `podcast-sources:start` / `podcast-sources:end` span and retain unsynced rows marked `podcast-recommendation`. When the same subject appears in a platform collection, merge the source span into the synchronized row instead of duplicating it.
+```markdown
+- [Work title](<https://movie.douban.com/subject/123/>) <!-- douban-state: 想看 --> <!-- douban-type: movie --> ^douban-123
+```
+
+`douban-type` accepts `book`, `movie`, `teleplay`, `music`, `game`, and `theater`; without it, the configured collection type is used. The optional `podcast-capture:recommend` workspace event accepts `{ path, blockId }` to preselect a source episode; `supportsRecommendations` indicates support.
+
+Custom sync tools must preserve the span between `podcast-sources:start` and `podcast-sources:end` when rewriting a matching work. Douban collection synchronization is handled by external tools.
 
 #### Settings
 
@@ -49,12 +55,12 @@ Custom collection sync scripts must preserve the `podcast-sources:start` / `podc
 | Daily integration | Disabled | Writes links for listened episodes to an existing daily note |
 | Daily folder | `Daily` | Searches this folder and its subfolders for notes named `YYYY-MM-DD` |
 | Daily property | `podcasts` | Stores episode links as a list and preserves other properties |
-| Book list | `Recommendations/Books.md` | Recommended books |
-| Movie list | `Recommendations/Movies.md` | Recommended films |
-| Series list | `Recommendations/Series.md` | Recommended series |
-| Music list | `Recommendations/Music.md` | Recommended music |
-| Game list | `Recommendations/Games.md` | Recommended games |
-| Theater list | `Recommendations/Theater.md` | Recommended stage productions |
+| Book list | `Recommendations/Books.md` | Existing collection |
+| Movie list | `Recommendations/Movies.md` | Existing collection |
+| Series list | `Recommendations/Series.md` | Existing collection |
+| Music list | `Recommendations/Music.md` | Existing collection |
+| Game list | `Recommendations/Games.md` | Existing collection |
+| Theater list | `Recommendations/Theater.md` | Existing collection |
 
 Daily integration writes a link only when exactly one matching note exists. It does not create daily notes. Changing paths does not relocate records, covers, or daily notes.
 
@@ -104,7 +110,7 @@ Deployment copies only main.js, manifest.json, and the optional styles.css. It p
 
 #### Network access and mobile support
 
-Douban and Xiaoyuzhou metadata requests go to the selected episode's public page. Apple Podcasts first uses the public iTunes Lookup API at `itunes.apple.com`, matching the exact episode ID and storefront from the shared link, then falls back to the episode webpage. No Apple login or token is used. Catalog results are limited to 200 episodes per show; an older episode may need the webpage fallback or a manually entered title. Cover downloads are restricted to HTTPS hosts under `doubanio.com`, `xyzcdn.net`, and `mzstatic.com`. Saving may fetch a missing cover even when the title was entered manually; disabling cover downloads prevents those image requests. Manual repair and optional startup repair also fetch episode pages when needed. Recommendation search sends the entered query to `www.douban.com/search`; subject parsing requests the selected Douban detail page. No platform credentials or source-episode text are sent with those requests. Recommendation covers use the configured cover folder and download switch.
+Douban and Xiaoyuzhou metadata requests go to the selected episode's public page. Apple Podcasts first uses the public iTunes Lookup API at `itunes.apple.com`, matching the exact episode ID and storefront from the shared link, then falls back to the episode webpage. No Apple login or token is used. Catalog results are limited to 200 episodes per show; an older episode may need the webpage fallback or a manually entered title. Cover downloads are restricted to HTTPS hosts under `doubanio.com`, `xyzcdn.net`, and `mzstatic.com`. Saving may fetch a missing cover even when the title was entered manually; disabling cover downloads prevents those image requests. Manual repair and optional startup repair also fetch episode pages when needed. Linking works and episodes reads configured local lists only and makes no network requests.
 
 Runtime code uses Obsidian APIs and standard Web APIs, with no Node.js or Electron dependency. Android and iOS loading is enabled in the manifest; real-device compatibility remains unverified. The plugin does not read platform credentials or playback history and does not include telemetry. Platform or network failures appear in the dialog or cover repair report.
 

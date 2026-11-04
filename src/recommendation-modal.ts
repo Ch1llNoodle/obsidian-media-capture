@@ -1,118 +1,104 @@
 import { Modal, Notice } from 'obsidian';
-import type { RecommendationItem, RecommendationKind, RecommendationSource } from './types';
+import type { RecommendationSource, RecommendationWork } from './types';
 import type { RecommendationService } from './recommendation-service';
-import { fetchRecommendation, searchRecommendations } from './recommendation-metadata';
-import { recommendationKinds, recommendationNames, recommendationSearchUrl, recommendationUrl } from './recommendations';
+import { recommendationNames } from './recommendations';
 import { errorMessage } from './validation';
 
 export class RecommendationModal extends Modal {
     private sources: RecommendationSource[] = [];
+    private works: RecommendationWork[] = [];
     private busy = false;
-    private item: RecommendationItem | null = null;
+    private closed = false;
     private sourceInput!: HTMLSelectElement;
-    private kindInput!: HTMLSelectElement;
-    private queryInput!: HTMLInputElement;
-    private titleInput!: HTMLInputElement;
+    private workInput!: HTMLSelectElement;
+    private workSearch!: HTMLInputElement;
+    private sourceSearch!: HTMLInputElement;
     private reasonInput!: HTMLInputElement;
-    private results!: HTMLDivElement;
     private message!: HTMLParagraphElement;
 
-    constructor(private readonly service: RecommendationService, private readonly selected?: Pick<RecommendationSource, 'path' | 'blockId'>) {
+    constructor(private readonly service: RecommendationService,
+        private readonly selected?: Pick<RecommendationSource, 'path' | 'blockId'>,
+        private readonly selectedWork?: Pick<RecommendationWork, 'path' | 'url'>) {
         super(service.podcast.app);
     }
 
     override onOpen(): void {
+        this.closed = false;
         this.contentEl.addClass('podcast-capture');
-        this.contentEl.createEl('h2', { text: '添加推荐作品' });
+        this.contentEl.createEl('h2', { text: '关联作品与播客' });
         const field = (name: string) => {
             const label = this.contentEl.createEl('label', { cls: 'podcast-capture-field' });
             label.createSpan({ text: name });
             return label;
         };
-        this.sourceInput = field('来自哪期播客').createEl('select');
-        this.kindInput = field('作品类型').createEl('select');
-        for (const kind of recommendationKinds) this.kindInput.createEl('option', { value: kind, text: recommendationNames[kind] });
-        this.kindInput.value = 'movie';
-        this.queryInput = field('作品名称或豆瓣详情链接').createEl('input', { type: 'text' });
-        this.queryInput.addEventListener('input', () => { this.item = null; this.titleInput.value = ''; this.results.empty(); });
-        this.kindInput.addEventListener('change', () => { this.item = null; this.results.empty(); });
-        const actions = this.contentEl.createDiv({ cls: 'podcast-capture-actions' });
-        const search = actions.createEl('button', { text: '搜索或解析' });
-        search.addEventListener('click', () => { void this.run(() => this.search()); });
-        const external = actions.createEl('button', { text: '打开豆瓣搜索' });
-        external.addEventListener('click', () => {
-            try { window.open(recommendationSearchUrl(this.queryInput.value), '_blank', 'noopener'); }
-            catch (error) { this.message.setText(errorMessage(error)); }
-        });
-        this.results = this.contentEl.createDiv({ cls: 'podcast-recommend-results' });
-        this.titleInput = field('作品名称（可手动填写）').createEl('input', { type: 'text' });
-        this.reasonInput = field('推荐理由（可留空）').createEl('input', { type: 'text' });
+        this.workSearch = field('搜索本地作品').createEl('input', { type: 'search' });
+        this.workInput = field('作品').createEl('select');
+        this.sourceSearch = field('搜索已记录的播客').createEl('input', { type: 'search' });
+        this.sourceInput = field('来源播客').createEl('select');
+        this.workSearch.addEventListener('input', () => this.filterWorks());
+        this.sourceSearch.addEventListener('input', () => this.filterSources());
+        this.reasonInput = field('摘记（可留空）').createEl('input', { type: 'text' });
         this.message = this.contentEl.createEl('p', { attr: { role: 'status', 'aria-live': 'polite' } });
         const footer = this.contentEl.createDiv({ cls: 'podcast-capture-actions' });
         footer.createEl('button', { text: '取消' }).addEventListener('click', () => this.close());
-        footer.createEl('button', { text: '加入清单', cls: 'mod-cta' }).addEventListener('click', () => { void this.run(() => this.save()); });
+        footer.createEl('button', { text: '保存关联', cls: 'mod-cta' }).addEventListener('click', () => { void this.run(() => this.save()); });
         void this.run(async () => {
-            this.sources = await this.service.sources();
-            for (const source of this.sources) this.sourceInput.createEl('option', { value: source.blockId, text: source.title });
+            [this.works, this.sources] = await Promise.all([this.service.works(), this.service.sources()]);
+            if (this.closed) return;
+            this.filterWorks();
+            this.filterSources();
+            const index = this.works.findIndex(work => work.path === this.selectedWork?.path && work.url === this.selectedWork.url);
+            if (index >= 0) this.workInput.value = String(index);
             if (this.selected?.path === this.service.podcast.config.catalogPath) this.sourceInput.value = this.selected.blockId;
-            if (!this.sources.length) this.message.setText('请先添加一期播客，再关联推荐作品。');
+            this.message.setText(!this.works.length ? '本地清单中还没有作品，请先从豆瓣同步或导入。'
+                : !this.sources.length ? '请先记录来源播客。' : '');
         });
     }
 
-    private kind(): RecommendationKind {
-        return recommendationKinds.find(kind => kind === this.kindInput.value) ?? 'movie';
+    private filterWorks(): void {
+        const previous = this.workInput.value;
+        const query = this.workSearch.value.trim().toLocaleLowerCase();
+        this.workInput.empty();
+        this.workInput.createEl('option', { value: '', text: '选择作品' });
+        this.works.forEach((work, index) => {
+            const label = recommendationNames[work.kind] + ' · ' + work.title + (work.state ? ' · ' + work.state : '');
+            if (label.toLocaleLowerCase().includes(query)) this.workInput.createEl('option', { value: String(index), text: label });
+        });
+        this.workInput.value = previous;
     }
 
-    private async search(): Promise<void> {
-        this.results.empty();
-        if (/https?:\/\//i.test(this.queryInput.value)) {
-            await this.loadItem(this.queryInput.value);
-            return;
+    private filterSources(): void {
+        const previous = this.sourceInput.value;
+        const query = this.sourceSearch.value.trim().toLocaleLowerCase();
+        this.sourceInput.empty();
+        this.sourceInput.createEl('option', { value: '', text: '选择播客' });
+        for (const source of this.sources) {
+            if (source.title.toLocaleLowerCase().includes(query)) this.sourceInput.createEl('option', { value: source.blockId, text: source.title });
         }
-        const items = await searchRecommendations(this.queryInput.value, this.kind());
-        for (const item of items) {
-            const button = this.results.createEl('button', { text: item.title });
-            button.addEventListener('click', () => { void this.run(async () => {
-                this.queryInput.value = item.url;
-                this.titleInput.value = item.title;
-                await this.loadItem(item.url);
-            }); });
-        }
-        this.message.setText('选择作品，确认名称后加入清单。');
-    }
-
-    private async loadItem(url: string): Promise<void> {
-        this.item = await fetchRecommendation(url, this.kind());
-        this.queryInput.value = this.item.url;
-        this.titleInput.value = this.item.title;
-        this.kindInput.value = this.item.kind;
-        this.message.setText(this.item.cover ? '已取得名称和封面。' : '已取得名称，暂未找到封面。');
+        this.sourceInput.value = previous;
     }
 
     private async save(): Promise<void> {
+        const item = this.workInput.value === '' ? undefined : this.works[Number(this.workInput.value)];
         const source = this.sources.find(source => source.blockId === this.sourceInput.value);
+        if (!item) throw new Error('请选择本地作品。');
         if (!source) throw new Error('请选择来源播客。');
-        const identity = recommendationUrl(this.queryInput.value, this.kind());
-        const title = this.titleInput.value.trim();
-        if (!title) throw new Error('请先解析作品，或手动填写名称。');
-        const item: RecommendationItem = { ...identity, title, cover: this.item?.url === identity.url ? this.item.cover : '' };
-        const result = await this.service.add(item, source, this.reasonInput.value);
-        new Notice(`${result.created ? '已加入清单' : '已关联播客来源'}${result.coverError ? `（封面未下载：${result.coverError}）` : ''}`);
+        await this.service.link(item, source, this.reasonInput.value);
+        if (this.closed) return;
+        new Notice('已关联来源播客');
         this.close();
     }
 
     private async run(action: () => Promise<void>): Promise<void> {
-        if (this.busy) return;
+        if (this.busy || this.closed) return;
         this.busy = true;
-        this.message.setText('处理中…');
-        this.contentEl.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>('input, select, button').forEach(node => { node.disabled = true; });
+        this.message.setText('处理中。');
+        const controls = Array.from(this.contentEl.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>('input, select, button'));
+        controls.forEach(node => { node.disabled = true; });
         try { await action(); }
-        catch (error) { this.message.setText(errorMessage(error)); }
-        finally {
-            this.busy = false;
-            this.contentEl.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>('input, select, button').forEach(node => { node.disabled = false; });
-        }
+        catch (error) { if (!this.closed) this.message.setText(errorMessage(error)); }
+        finally { this.busy = false; if (!this.closed) controls.forEach(node => { node.disabled = false; }); }
     }
 
-    override onClose(): void { this.contentEl.empty(); }
+    override onClose(): void { this.closed = true; this.contentEl.empty(); }
 }
