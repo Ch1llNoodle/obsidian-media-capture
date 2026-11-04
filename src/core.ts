@@ -5,7 +5,7 @@ import { isApplePlayerTitle } from "./apple";
 export { decode, plain, safeCover, coverUrl } from "./metadata-helpers";
 export { metadata } from "./metadata";
 
-const DEFAULT_SETTINGS: Readonly<CaptureSettingsData> = Object.freeze({ catalogPath: "Podcasts.md", entryHeading: "Entries", imageFolder: "image/podcasts", rowTemplate: "- {{date}} {{cover}} {{link}}", downloadCovers: true, repairOnStartup: false, dailyIntegration: false, dailyFolder: "Daily", dailyProperty: "podcasts" });
+const DEFAULT_SETTINGS: Readonly<CaptureSettingsData> = Object.freeze({ catalogPath: "Podcasts.md", entryHeading: "Entries", imageFolder: "image/podcasts", rowTemplate: "- {{date}} {{cover}} {{link}}", downloadCovers: true, repairOnStartup: false, dailyIntegration: false, dailyFolder: "Daily", dailyProperty: "podcasts", bookPath: "Recommendations/Books.md", moviePath: "Recommendations/Movies.md", teleplayPath: "Recommendations/Series.md", musicPath: "Recommendations/Music.md", gamePath: "Recommendations/Games.md", theaterPath: "Recommendations/Theater.md" });
 // Only used to migrate installations created before settings were available.
 const LEGACY_SETTINGS: Readonly<CaptureSettingsData> = Object.freeze({ ...DEFAULT_SETTINGS, catalogPath: "追踪/播客.md", imageFolder: "追踪/image", repairOnStartup: true, dailyIntegration: true, dailyFolder: "daily", dailyProperty: "播客" });
 const STATES: readonly ListeningState[] = ["听过", "在听", "想听"];
@@ -25,7 +25,7 @@ function vaultPath(value: unknown, extension = ""): string {
 function validateSettings(settings: unknown): CaptureSettingsData {
     const supplied = record(settings);
     const result = { ...DEFAULT_SETTINGS };
-    for (const key of ["catalogPath", "imageFolder", "dailyFolder", "entryHeading", "dailyProperty", "rowTemplate"] as const) {
+    for (const key of ["catalogPath", "imageFolder", "dailyFolder", "entryHeading", "dailyProperty", "rowTemplate", "bookPath", "moviePath", "teleplayPath", "musicPath", "gamePath", "theaterPath"] as const) {
         const value = supplied[key];
         if (value !== undefined) {
             if (typeof value !== "string") throw new Error(`设置 ${key} 必须是文本。`);
@@ -41,6 +41,10 @@ function validateSettings(settings: unknown): CaptureSettingsData {
     }
     result.catalogPath = vaultPath(result.catalogPath, ".md");
     result.imageFolder = vaultPath(result.imageFolder);
+    for (const key of ["bookPath", "moviePath", "teleplayPath", "musicPath", "gamePath", "theaterPath"] as const) {
+        result[key] = vaultPath(result[key], ".md");
+        if (result[key] === result.catalogPath) throw new Error("作品清单不能使用播客记录文件。");
+    }
     result.dailyFolder = vaultPath(result.dailyFolder);
     result.entryHeading = String(result.entryHeading).trim();
     result.dailyProperty = String(result.dailyProperty).trim();

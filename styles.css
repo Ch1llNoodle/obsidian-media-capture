@@ -4,3 +4,7 @@
 .podcast-capture-field input, .podcast-capture-field select { width: 100%; }
 .podcast-capture-message { color: var(--text-muted); min-height: 1.5em; }
 .podcast-capture-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+.podcast-recommend-button { margin-inline-start: 8px; min-height: 32px; white-space: nowrap; }
+.podcast-recommend-results { display: grid; gap: 6px; max-height: 240px; overflow-y: auto; }
+.podcast-recommend-results button { text-align: start; height: auto; white-space: normal; }

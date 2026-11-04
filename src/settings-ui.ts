@@ -3,6 +3,7 @@ import { PluginSettingTab, Setting, Notice, type App } from "obsidian";
 import type { PodcastService } from "./service";
 import type { TextSettingKey, ToggleSettingKey } from "./types";
 import { errorMessage } from "./validation";
+import { recommendationKinds, recommendationNames } from "./recommendations";
 
 export class CaptureSettings extends PluginSettingTab {
     private readonly plugin: PodcastService;
@@ -32,6 +33,8 @@ export class CaptureSettings extends PluginSettingTab {
         toggle("dailyIntegration", "写入日记属性", "默认关闭。开启后，已听过条目可写入对应日期的现有日记，无需 Dataview。");
         text("dailyFolder", "日记目录", "此目录及子目录中的日记文件名使用 YYYY-MM-DD。");
         text("dailyProperty", "日记属性", "保存单集链接的列表属性名称。");
+        new Setting(container).setName("推荐作品清单").setHeading();
+        for (const kind of recommendationKinds) text(`${kind}Path`, recommendationNames[kind], "库内 Markdown 路径。只在加入作品时创建文件，修改路径不迁移已有清单。");
     }
 }
 

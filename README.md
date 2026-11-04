@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md) · English
 
-Podcast Capture saves episode links from Douban, Xiaoyuzhou, and Apple Podcasts to a Markdown log in Obsidian. Each episode occupies one line with a title, an optional local cover, and a listening date. Daily note integration is optional. The interface currently uses Chinese.
+Podcast Capture saves episode links from Douban, Xiaoyuzhou, and Apple Podcasts to a Markdown log in Obsidian. Each episode occupies one line with a title, an optional local cover, and a listening date. Daily note integration is optional. Works mentioned in an episode can be linked to centralized wishlists. The interface currently uses Chinese.
 
 #### Installation
 
@@ -24,6 +24,16 @@ For Apple Podcasts, share an individual episode. A show URL without an `i` episo
 
 **打开播客记录** opens the configured log. **补全缺失封面** retries missing covers and reports the failure stage; when an image URL is available, the report links to the original image.
 
+#### Recommendations from episodes
+
+Run **添加播客推荐作品** (add a recommendation), or select **＋ 推荐** beside an episode in the reading view of the podcast log. Select the source episode and the work type, search by name or paste a Douban subject URL, then confirm the title and add it to the list. A short recommendation reason is optional. If public search is blocked, **打开豆瓣搜索** opens Douban in the browser; copy the subject URL back and enter the title manually.
+
+Books, films, series, music, games, and theater have separate configurable lists under `Recommendations/` by default. Files are created only when adding a work. New entries go to Wishlist or Watchlist. Adding a work that already exists merges the source links while preserving its state, date, cover, and custom title. The same source is added once. The plugin does not create per-work notes, change your Douban account, or add daily note properties for recommendations.
+
+Source links target the episode block in the podcast log. The optional workspace event `podcast-capture:recommend`, with `{ path, blockId }`, opens the dialog with that episode selected; `supportsRecommendations` on the plugin instance indicates support. This allows a daily view to provide its own button.
+
+Custom collection sync scripts must preserve the `podcast-sources:start` / `podcast-sources:end` span and retain unsynced rows marked `podcast-recommendation`. When the same subject appears in a platform collection, merge the source span into the synchronized row instead of duplicating it.
+
 #### Settings
 
 | Setting | Default | Behavior |
@@ -37,6 +47,12 @@ For Apple Podcasts, share an individual episode. A show URL without an `i` episo
 | Daily integration | Disabled | Writes links for listened episodes to an existing daily note |
 | Daily folder | `Daily` | Searches this folder and its subfolders for notes named `YYYY-MM-DD` |
 | Daily property | `podcasts` | Stores episode links as a list and preserves other properties |
+| Book list | `Recommendations/Books.md` | Recommended books |
+| Movie list | `Recommendations/Movies.md` | Recommended films |
+| Series list | `Recommendations/Series.md` | Recommended series |
+| Music list | `Recommendations/Music.md` | Recommended music |
+| Game list | `Recommendations/Games.md` | Recommended games |
+| Theater list | `Recommendations/Theater.md` | Recommended stage productions |
 
 Daily integration writes a link only when exactly one matching note exists. It does not create daily notes. Changing paths does not relocate records, covers, or daily notes.
 
@@ -70,7 +86,7 @@ npm test
 npm run lint
 ```
 
-The production build bundles runtime code into `release/podcast-capture/main.js` and stages the manifest and stylesheet alongside it. Tests bundle TypeScript modules with esbuild and execute them against mocked Obsidian APIs. An optional tracker compatibility test uses the script path provided by `PODCAST_TRACKER_TEST_PATH`; it is skipped when that variable is absent.
+The production build bundles runtime code into `release/podcast-capture/main.js` and stages the manifest and stylesheet alongside it. Tests bundle TypeScript modules with esbuild and execute them against mocked Obsidian APIs. An optional tracker compatibility test uses the script path provided by `PODCAST_TRACKER_TEST_PATH`; it is skipped when that variable is absent. `PODCAST_DOUBAN_SYNC_TEST_PATH` enables an additional integration test against a custom Douban sync view.
 
 Release files are `main.js`, `manifest.json`, and `styles.css`. Generated bundles, dependencies, and personal `data.json` are excluded from source control. Dependency security checks use `npm audit` separately from compilation and functional tests.
 
@@ -86,7 +102,7 @@ Deployment copies only main.js, manifest.json, and the optional styles.css. It p
 
 #### Network access and mobile support
 
-Douban and Xiaoyuzhou metadata requests go to the selected episode's public page. Apple Podcasts first uses the public iTunes Lookup API at `itunes.apple.com`, matching the exact episode ID and storefront from the shared link, then falls back to the episode webpage. No Apple login or token is used. Catalog results are limited to 200 episodes per show; an older episode may need the webpage fallback or a manually entered title. Cover downloads are restricted to HTTPS hosts under `doubanio.com`, `xyzcdn.net`, and `mzstatic.com`. Saving may fetch a missing cover even when the title was entered manually; disabling cover downloads prevents those image requests. Manual repair and optional startup repair also fetch episode pages when needed.
+Douban and Xiaoyuzhou metadata requests go to the selected episode's public page. Apple Podcasts first uses the public iTunes Lookup API at `itunes.apple.com`, matching the exact episode ID and storefront from the shared link, then falls back to the episode webpage. No Apple login or token is used. Catalog results are limited to 200 episodes per show; an older episode may need the webpage fallback or a manually entered title. Cover downloads are restricted to HTTPS hosts under `doubanio.com`, `xyzcdn.net`, and `mzstatic.com`. Saving may fetch a missing cover even when the title was entered manually; disabling cover downloads prevents those image requests. Manual repair and optional startup repair also fetch episode pages when needed. Recommendation search sends the entered query to `www.douban.com/search`; subject parsing requests the selected Douban detail page. No platform credentials or source-episode text are sent with those requests. Recommendation covers use the configured cover folder and download switch.
 
 Runtime code uses Obsidian APIs and standard Web APIs, with no Node.js or Electron dependency. Android and iOS loading is enabled in the manifest; real-device compatibility remains unverified. The plugin does not read platform credentials or playback history and does not include telemetry. Platform or network failures appear in the dialog or cover repair report.
 

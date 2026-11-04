@@ -1,5 +1,20 @@
 export type Provider = 'douban' | 'xiaoyuzhou' | 'apple';
 export type ListeningState = '听过' | '在听' | '想听';
+export type RecommendationKind = 'book' | 'movie' | 'teleplay' | 'music' | 'game' | 'theater';
+
+export interface RecommendationSource {
+    path: string;
+    blockId: string;
+    title: string;
+}
+
+export interface RecommendationItem {
+    id: string;
+    url: string;
+    kind: RecommendationKind;
+    title: string;
+    cover: string;
+}
 
 export interface CaptureSettingsData {
     catalogPath: string;
@@ -11,6 +26,12 @@ export interface CaptureSettingsData {
     dailyIntegration: boolean;
     dailyFolder: string;
     dailyProperty: string;
+    bookPath: string;
+    moviePath: string;
+    teleplayPath: string;
+    musicPath: string;
+    gamePath: string;
+    theaterPath: string;
 }
 
 export type TextSettingKey = { [K in keyof CaptureSettingsData]: CaptureSettingsData[K] extends string ? K : never }[keyof CaptureSettingsData];

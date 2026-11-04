@@ -1,0 +1,94 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const vm = require('node:vm');
+const { buildSync } = require('esbuild');
+
+test('编译后的插件注册推荐入口，原生表单可选择播客并保存作品', async () => {
+    const bundle = buildSync({ entryPoints: [path.join(__dirname, '../src/main.ts')], bundle: true,
+        external: ['obsidian'], platform: 'browser', format: 'cjs', target: 'es2021', minify: true, write: false }).outputFiles[0].text;
+    const all = node => [node, ...node.children.flatMap(all)];
+    function element(tag = 'div', options = {}) {
+        const node = { tag, children: [], value: options.value ?? '', classList: { add() {} }, ...options,
+            addClass() {}, setText(value) { this.text = value; }, empty() { this.children = []; },
+            createEl(tag, options = {}) {
+                const child = element(tag, options); this.children.push(child);
+                if (this.tag === 'select' && !this.value) this.value = child.value;
+                return child;
+            }, createSpan(options) { return this.createEl('span', options); },
+            createDiv(options) { return this.createEl('div', options); },
+            addEventListener(name, fn) { this[name] = fn; },
+            querySelectorAll() { return all(this).filter(n => ['input', 'select', 'button'].includes(n.tag)); },
+            remove() {},
+        };
+        return node;
+    }
+    const commands = [];
+    const events = new Map();
+    const modals = [];
+    const files = new Map([['Podcasts.md', { path: 'Podcasts.md', extension: 'md' }]]);
+    const content = new Map([['Podcasts.md', '- [节目 · 单集](<https://www.douban.com/podcast_episode/123>) ^douban-123']]);
+    const app = { vault: {
+        getAbstractFileByPath: p => files.get(p) ?? null,
+        read: async file => content.get(file.path),
+        createFolder: async p => { files.set(p, { path: p }); },
+        create: async (p, text) => { const file = { path: p, extension: 'md' }; files.set(p, file); content.set(p, text); return file; },
+        process: async (file, fn) => { content.set(file.path, fn(content.get(file.path))); },
+    }, workspace: {
+        onLayoutReady: fn => fn(),
+        on: (name, fn) => { events.set(name, fn); return { name }; },
+    } };
+    class Plugin {
+        constructor() { this.app = app; }
+        async loadData() { return { settings: { downloadCovers: false } }; }
+        async saveData() {}
+        addSettingTab() {}
+        addCommand(command) { commands.push(command); }
+        registerEvent() {}
+        registerMarkdownPostProcessor(callback) { this.processor = callback; }
+    }
+    class Modal {
+        constructor() { this.contentEl = element(); }
+        open() { modals.push(this); this.onOpen(); }
+        close() { this.onClose(); }
+    }
+    class MarkdownRenderChild {
+        constructor(container) { this.containerEl = container; }
+        registerDomEvent(node, name, fn) { node[name] = fn; }
+    }
+    const sandbox = { module: { exports: {} }, URL, URLSearchParams, Uint8Array, Date, console,
+        require: name => {
+            assert.equal(name, 'obsidian');
+            return { Plugin, Modal, MarkdownRenderChild, Notice: class {}, PluginSettingTab: class {},
+                Setting: class {}, normalizePath: p => p, requestUrl: async () => { throw new Error('Unexpected request'); } };
+        } };
+    vm.runInNewContext(bundle, sandbox);
+    const plugin = new sandbox.module.exports.default();
+    await plugin.onload();
+    assert.equal(commands.length, 4);
+    assert.equal(plugin.supportsRecommendations, true);
+    events.get('podcast-capture:recommend')({ path: 'Podcasts.md', blockId: 'douban-123' });
+    await new Promise(resolve => setImmediate(resolve));
+    const modal = modals[0];
+    assert.equal(modal.sourceInput.value, 'douban-123');
+    modal.queryInput.value = 'https://movie.douban.com/subject/100/';
+    modal.titleInput.value = '电影';
+    modal.reasonInput.value = '这期节目推荐';
+    await modal.save();
+    const saved = content.get('Recommendations/Movies.md');
+    assert(saved.includes('[[Podcasts#^douban-123|节目 · 单集]]'));
+    assert(saved.includes('这期节目推荐'));
+    assert(saved.includes('douban-state: 想看'));
+    // Reading-mode rows receive an inline action which is removed on unload.
+    const row = element('li');
+    row.querySelector = () => null;
+    const anchor = { href: 'https://www.douban.com/podcast_episode/123', closest: () => row };
+    const container = element(); container.querySelectorAll = () => [anchor];
+    let component;
+    plugin.processor(container, { sourcePath: 'Podcasts.md', addChild: child => { component = child; child.onload(); } });
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(row.children[0].text, '＋ 推荐');
+    component.onunload();
+    plugin.onunload();
+    assert.equal(plugin.service.unloaded, true);
+});

@@ -1,10 +1,11 @@
-import { Modal, Notice, requestUrl, type App, type Plugin, type TFile, type RequestUrlResponse, type RequestUrlParam } from "obsidian";
+import { Modal, Notice, requestUrl, type App, type Plugin, type TFile } from "obsidian";
 import { DEFAULT_SETTINGS, LEGACY_SETTINGS, isListeningState, validateSettings, recordDate, episodeUrl, validDate, metadata, coverUrl, updateCatalog, findEntry, entryIdentity, stateOf, blockId } from "./core";
 import { ensureFolder, isMarkdownFile } from "./storage";
 
 import type { CaptureSettingsData, CaptureItem, CaptureResult, CoverFailure, CoverRepairResult, EpisodeMetadata, SavedDataPatch, CaptureUpdatedEvent } from "./types";
 import { record, errorMessage } from "./validation";
 import { fetchAppleLookup, isApplePlayerTitle } from "./apple";
+import { cacheCover } from "./covers";
 
 export class PodcastService {
     readonly plugin: Plugin;
@@ -151,23 +152,7 @@ export class PodcastService {
                 }
                 if (!url) throw new Error("页面未提供可识别的封面");
                 coverSource = url;
-                let response: RequestUrlResponse;
-                const options: RequestUrlParam = { url, throw: false };
-                if (new URL(url).hostname.endsWith(".doubanio.com")) options.headers = { Referer: "https://www.douban.com/" };
-                try { response = await requestUrl(options); }
-                catch (error) { throw new Error(`下载封面失败：${errorMessage(error)}`); }
-                if (response.status !== 200) throw new Error(`下载封面失败：图片服务器返回 HTTP ${response.status}`);
-                const bytes = new Uint8Array(response.arrayBuffer);
-                const extension = bytes[0] === 0xff && bytes[1] === 0xd8 ? "jpg"
-                    : bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 ? "png"
-                    : String.fromCharCode(...bytes.slice(0, 4)) === "RIFF" && String.fromCharCode(...bytes.slice(8, 12)) === "WEBP" ? "webp"
-                    : /^GIF8[79]a$/.test(String.fromCharCode(...bytes.slice(0, 6))) ? "gif"
-                    : String.fromCharCode(...bytes.slice(4, 8)) === "ftyp" && /^(avif|avis)$/.test(String.fromCharCode(...bytes.slice(8, 12))) ? "avif" : "";
-                if (!extension) throw new Error(`图片服务器返回了无法识别的图片格式（${bytes.length} 字节）`);
-                if (bytes.length > 10 * 1024 * 1024) throw new Error("封面超过 10 MB，未保存");
-                await ensureFolder(this.app.vault, this.config.imageFolder);
-                cover = `${this.config.imageFolder}/podcast-${savedBlock}.${extension}`;
-                if (!this.app.vault.getAbstractFileByPath(cover)) await this.app.vault.createBinary(cover, response.arrayBuffer);
+                cover = await cacheCover(this.app, url, this.config.imageFolder, `podcast-${savedBlock}`);
             } catch (error) { cover = ""; coverError = errorMessage(error); }
         }
         await this.app.vault.process(file, current => updateCatalog(current, item, cover, this.config).text);
