@@ -40,6 +40,6 @@ Reading-mode episode rows allow flex wrapping, and linked-work lists occupy a fu
 
 阅读视图中的播客父项允许 flex 换行，关联作品列表独占完整一行，兼容封面与标题横向排列的清单样式。
 
-Live Preview also hides Douban state/type comments and block IDs in the six configured media lists. This changes display only; synchronization metadata and link targets stay in the files.
+Media-list presentation is independent of Podcast Capture. Editor decorations are limited to the podcast log; collection comments and block IDs can be styled through Obsidian CSS snippets.
 
-六类作品清单的实时预览同时隐藏豆瓣状态、类型、来源管理注释及块标识；原始数据保留，同步与内部链接继续使用。
+播客插件的编辑器装饰仅作用于播客记录，不再接管书影音清单的注释和块标识显示；清单样式由 Obsidian CSS 片段独立管理。
