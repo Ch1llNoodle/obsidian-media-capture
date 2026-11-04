@@ -139,6 +139,19 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     editor.update({ view });
     assert.equal(editor.decorations.filter(range => range.hidden).length, 0);
     assert.equal(editor.decorations.filter(range => range.widget).length, 2);
+    const bookText = '- [书名](<https://book.douban.com/subject/36728477/>) <!-- douban-state: 在读 --> <!-- douban-type: book --> ^douban-36728477';
+    view.visibleRanges = [{ from: 0, to: bookText.length }];
+    view.state.doc = { lineAt: () => ({ from: 0, to: bookText.length, text: bookText }) };
+    view.state.field = field => field === editorInfo ? { file: { path: 'Recommendations/Books.md' } } : true;
+    editor.update({ view });
+    assert.equal(editor.decorations.filter(range => range.widget).length, 0);
+    assert.equal(editor.decorations.filter(range => range.hidden).length, 3);
+    const visible = [...editor.decorations.filter(range => range.hidden)].sort((a,b) => b.from-a.from)
+        .reduce((text, range) => text.slice(0,range.from) + text.slice(range.to), bookText);
+    assert.equal(visible, '- [书名](<https://book.douban.com/subject/36728477/>)');
+    view.state.field = field => field === editorInfo ? { file: { path: 'Recommendations/Books.md' } } : false;
+    editor.update({ view });
+    assert.equal(editor.decorations.length, 0);
     view.state.field = () => ({ file: { path: 'Other.md' } });
     editor.update({ view });
     assert.equal(editor.decorations.length, 0);

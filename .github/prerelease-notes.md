@@ -39,3 +39,7 @@ Live Preview hides internal metadata and episode block IDs. Work markers are inl
 Reading-mode episode rows allow flex wrapping, and linked-work lists occupy a full row. This also supports collection layouts that use a horizontal flex row for episode covers and titles.
 
 阅读视图中的播客父项允许 flex 换行，关联作品列表独占完整一行，兼容封面与标题横向排列的清单样式。
+
+Live Preview also hides Douban state/type comments and block IDs in the six configured media lists. This changes display only; synchronization metadata and link targets stay in the files.
+
+六类作品清单的实时预览同时隐藏豆瓣状态、类型、来源管理注释及块标识；原始数据保留，同步与内部链接继续使用。

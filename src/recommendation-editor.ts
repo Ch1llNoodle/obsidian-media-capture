@@ -4,7 +4,8 @@ import type { Range } from '@codemirror/state';
 import type { RecommendationService } from './recommendation-service';
 import type { RecommendationSource } from './types';
 import { RecommendationModal } from './recommendation-modal';
-import { episodeSource } from './recommendations';
+import { episodeSource, recommendationKinds } from './recommendations';
+import { catalogWorks } from './recommendation-catalog';
 
 class EpisodeAction extends WidgetType {
     constructor(private readonly service: RecommendationService, private readonly source: RecommendationSource) { super(); }
@@ -26,7 +27,10 @@ class EpisodeAction extends WidgetType {
 export function recommendationEditor(service: RecommendationService): ViewPlugin<{ decorations: DecorationSet }> {
     const decorations = (view: EditorView): DecorationSet => {
         const path = view.state.field(editorInfoField, false)?.file?.path;
-        if (path !== service.podcast.config.catalogPath) return Decoration.none;
+        if (!path) return Decoration.none;
+        const podcastCatalog = path === service.podcast.config.catalogPath;
+        const workKind = recommendationKinds.find(kind => service.podcast.config[`${kind}Path`] === path);
+        if (!podcastCatalog && !workKind) return Decoration.none;
         const ranges: Range<Decoration>[] = [];
         const seen = new Set<number>();
         const livePreview = view.state.field(editorLivePreviewField, false) === true;
@@ -35,9 +39,10 @@ export function recommendationEditor(service: RecommendationService): ViewPlugin
                 const line = view.state.doc.lineAt(position);
                 if (!seen.has(line.from)) {
                     seen.add(line.from);
-                    const source = episodeSource(line.text, path);
-                    if (livePreview && (source || /^ {2}- .*<!-- podcast-work -->\s*$/.test(line.text))) {
-                        const metadata = /\s*<!--\s*(?:(?:podcast-state|podcast-date|douban-state):[^>]*|podcast-work)\s*-->|\s+\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+)\s*$/g;
+                    const source = podcastCatalog ? episodeSource(line.text, path) : null;
+                    const work = livePreview && workKind !== undefined && catalogWorks(line.text, path, workKind).length > 0;
+                    if (livePreview && (source || work || (podcastCatalog && /^ {2}- .*<!-- podcast-work -->\s*$/.test(line.text)))) {
+                        const metadata = /\s*<!--\s*(?:(?:podcast-state|podcast-date|douban-state|douban-type):[^>]*|podcast-work|podcast-recommendation|podcast-sources:(?:start|end))\s*-->|\s+\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+)\s*$/g;
                         for (const match of line.text.matchAll(metadata)) {
                             ranges.push(Decoration.replace({}).range(line.from + match.index, line.from + match.index + match[0].length));
                         }
