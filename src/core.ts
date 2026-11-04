@@ -1,6 +1,7 @@
 import type { CaptureItem, CaptureSettingsData, CatalogUpdate, EntryIdentity, Episode, ListeningState } from "./types";
 import { record } from "./validation";
 import { decode } from "./metadata-helpers";
+import { isApplePlayerTitle } from "./apple";
 export { decode, plain, safeCover, coverUrl } from "./metadata-helpers";
 export { metadata } from "./metadata";
 
@@ -139,6 +140,11 @@ function updateCatalog(source: string, item: CaptureItem, cover: string, setting
     const oldState = stateOf(existing);
     if (existing && oldState === "听过") {
         let updated = existing.replace(/<!--\s*douban-state:/, "<!-- podcast-state:");
+        const identity = entryIdentity(existing);
+        if (identity?.provider === "apple" && isApplePlayerTitle(identity.title) && !isApplePlayerTitle(item.title)) {
+            updated = updated.replace(/(?<!!)\[((?:\\.|[^\]])+)\]\(<(https:\/\/[^>]+)>\)/,
+                (_match: string, _label: string, url: string) => `[${markdownText(item.title)}](<${url}>)`);
+        }
         if (cover && !/!\[(?:cover)?\|24\]\(</.test(updated)) {
             updated = updated.replace(/^(-\s+(?:\d{4}-\d{2}-\d{2}\s+)?)/, `$1![|24](<${cover}>) `);
         }

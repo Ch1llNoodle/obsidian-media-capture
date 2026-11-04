@@ -1,6 +1,6 @@
 {
   "name": "podcast-capture",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Capture podcast episode links in a configurable Markdown log.",
   "author": "Ch1llNoodle",
   "repository": {

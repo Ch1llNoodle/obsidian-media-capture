@@ -1,6 +1,7 @@
 import type { Episode, EpisodeMetadata } from "./types";
 import { coverUrl, decode, plain } from "./metadata-helpers";
 import { parseJson, record, isRecord, isUnknownArray } from "./validation";
+import { isApplePlayerTitle } from "./apple";
 
 export function metadata(html: string, episode: Pick<Episode, "provider"> & Partial<Pick<Episode, "id">> = { provider: "douban" }): EpisodeMetadata {
     const metas = new Map<string, string>();
@@ -60,7 +61,7 @@ export function metadata(html: string, episode: Pick<Episode, "provider"> & Part
             if (name) { show = name; break; }
         }
     }
-    if (!title || /^(豆瓣|小宇宙|Apple Podcasts|Apple 播客)$/.test(title) || /登录|安全验证|异常请求|验证码|访问.*受限|豆瓣.*出错|Access Denied|not found/i.test(title)) {
+    if (!title || isApplePlayerTitle(title) || /^(豆瓣|小宇宙)$/.test(title) || /登录|安全验证|异常请求|验证码|访问.*受限|豆瓣.*出错|Access Denied|not found/i.test(title)) {
         throw new Error("平台暂未返回单集信息，请稍后重试，或直接填写名称后保存。");
     }
     return { title: show && !title.startsWith(show + " · ") ? `${show} · ${title}` : title, cover: coverUrl(cover) };

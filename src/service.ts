@@ -4,6 +4,7 @@ import { ensureFolder, isMarkdownFile } from "./storage";
 
 import type { CaptureSettingsData, CaptureItem, CaptureResult, CoverFailure, CoverRepairResult, EpisodeMetadata, SavedDataPatch, CaptureUpdatedEvent } from "./types";
 import { record, errorMessage } from "./validation";
+import { fetchAppleLookup, isApplePlayerTitle } from "./apple";
 
 export class PodcastService {
     readonly plugin: Plugin;
@@ -45,9 +46,23 @@ export class PodcastService {
     }
     async fetchMetadata(url: string): Promise<EpisodeMetadata> {
         const episode = episodeUrl(url);
-        const response = await requestUrl({ url: episode.url, headers: { Referer: new URL(episode.url).origin + "/" }, throw: false });
-        if (response.status !== 200) throw new Error(`平台返回 ${response.status}，可稍后重试或手动填写名称。`);
-        return metadata(response.text, episode);
+        let lookup: EpisodeMetadata | undefined;
+        let lookupError = "";
+        if (episode.provider === "apple") {
+            try {
+                lookup = await fetchAppleLookup(episode, requestUrl);
+                if (lookup.cover) return lookup;
+            } catch (error) { lookupError = errorMessage(error); }
+        }
+        try {
+            const response = await requestUrl({ url: episode.url, headers: { Referer: new URL(episode.url).origin + "/" }, throw: false });
+            if (response.status !== 200) throw new Error(`平台返回 ${response.status}，可稍后重试或手动填写名称。`);
+            const page = metadata(response.text, episode);
+            return lookup ? { title: lookup.title, cover: page.cover } : page;
+        } catch (error) {
+            if (lookup) return lookup;
+            throw new Error([lookupError, errorMessage(error)].filter(Boolean).join("；"));
+        }
     }
     async ensureCatalog(): Promise<TFile> {
         const path = this.config.catalogPath;
@@ -127,7 +142,11 @@ export class PodcastService {
             try {
                 let url = coverUrl(item.cover);
                 if (!url) {
-                    try { url = (await this.fetchMetadata(item.url)).cover; }
+                    try {
+                        const info = await this.fetchMetadata(item.url);
+                        url = info.cover;
+                        if (episode.provider === "apple" && isApplePlayerTitle(item.title)) item = { ...item, title: info.title };
+                    }
                     catch (error) { throw new Error(`获取单集页面失败：${errorMessage(error)}`); }
                 }
                 if (!url) throw new Error("页面未提供可识别的封面");

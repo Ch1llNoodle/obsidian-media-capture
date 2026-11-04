@@ -23,7 +23,7 @@ module.exports._internals = core;`,
 }).outputFiles[0].text;
 
 function load(request = async () => { throw new Error("offline"); }) {
-    const sandbox = { module: { exports: {} }, URL, console, Uint8Array, Date,
+    const sandbox = { module: { exports: {} }, URL, URLSearchParams, console, Uint8Array, Date,
         require: name => {
             assert.equal(name, "obsidian");
             return { Plugin: class {}, Modal: class {}, Notice: class {}, PluginSettingTab: class {}, Setting: class {}, requestUrl: request, normalizePath: value => value.replace(/\\/g, "/") };
@@ -197,14 +197,14 @@ test("跨平台在听转为听过仍保留原始标识，防止历史日记断�
     assert(updated.includes("podcast-state: 听过"));
 });
 
-test("三平台自动获取均请求归一化的公开链接，无需账号信息", async () => {
+test("三平台自动获取使用公开网页或目录，无需账号信息", async () => {
     const calls = [];
-    const Plugin = load(async options => { calls.push(options); return { status: 200, text: '<meta property="og:title" content="单集名称">' }; });
+    const Plugin = load(async options => { calls.push(options); return { status: 200, text: options.url.startsWith("https://itunes.apple.com/") ? JSON.stringify(appleLookup()) : '<meta property="og:title" content="单集名称">' }; });
     const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.LEGACY_SETTINGS };
     for (const url of [item.url, xyzUrl, appleUrl]) await plugin.fetchMetadata(url);
     assert.equal(calls.length, 3);
-    assert(calls[2].url.endsWith("?i=1000785771591"));
-    assert(calls.every(call => !call.headers.Cookie && !call.headers.Authorization));
+    assert.equal(new URL(calls[2].url).searchParams.get("id"), "1000785771591");
+    assert(calls.every(call => !call.headers?.Cookie && !call.headers?.Authorization));
 });
 
 test("追踪视图识别三平台记录，旧豆瓣链接和跨日手写选择继续有效", { skip: !process.env.PODCAST_TRACKER_TEST_PATH }, async () => {
@@ -408,4 +408,99 @@ test("非 Error 异常保留原因，封面失败仍保存记录", async () => {
     const result = await plugin.capture(item);
     assert(result.coverError.includes("network unavailable"));
     assert(fixture.contents.get("追踪/播客.md").includes(item.title));
+});
+
+
+function appleLookup(episodeOverrides = {}) {
+    return { results: [{ kind: "podcast-episode", trackId: 1000785771591, collectionId: 1581271335,
+        trackName: "E46 我们从未看见彼此", collectionName: "无人知晓",
+        artworkUrl600: "https://is1-ssl.mzstatic.com/image/episode.jpg", ...episodeOverrides }] };
+}
+
+test("Apple 公开目录直接解析单集名称和封面，不请求登录页面", async () => {
+    const calls = [];
+    const Plugin = load(async options => {
+        calls.push(options);
+        return { status: 200, text: JSON.stringify(appleLookup()) };
+    });
+    const result = await new Plugin().fetchMetadata(appleUrl);
+    assert.equal(result.title, "无人知晓 · E46 我们从未看见彼此");
+    assert(result.cover.endsWith("episode.jpg"));
+    assert.equal(calls.length, 1);
+    const url = new URL(calls[0].url);
+    assert.equal(url.hostname, "itunes.apple.com");
+    assert.equal(url.searchParams.get("entity"), "podcastEpisode");
+    assert.equal(url.searchParams.get("country"), "cn");
+    assert(!calls[0].headers);
+});
+
+test("Apple 单集查询为空时按节目查询，严格匹配编号并复用节目封面", async () => {
+    const calls = [];
+    const Plugin = load(async options => {
+        calls.push(options.url);
+        if (calls.length === 1) return { status: 200, text: '{"results":[]}' };
+        return { status: 200, text: JSON.stringify({ results: [
+            { kind: "podcast", collectionId: 1581271335, trackName: "节目", artworkUrl600: "https://is1-ssl.mzstatic.com/show.jpg" },
+            { trackId: 99, collectionId: 1581271335, trackName: "另一单集" },
+            ...appleLookup({ artworkUrl600: "" }).results
+        ] }) };
+    });
+    const result = await new Plugin().fetchMetadata(appleUrl);
+    assert(result.title.includes("E46"));
+    assert(result.cover.endsWith("show.jpg"));
+    assert.equal(new URL(calls[1]).searchParams.get("id"), "1581271335");
+});
+
+test("Apple 目录异常时回退网页，播放器壳页与不匹配记录均不作为单集", async () => {
+    const Plugin = load(async options => ({ status: 200,
+        text: options.url.startsWith("https://itunes.apple.com/")
+            ? JSON.stringify(appleLookup({ trackId: 99 }))
+            : '<meta property="og:title" content="Apple 播客网页播放器">' }));
+    await assert.rejects(new Plugin().fetchMetadata(appleUrl), /未返回匹配的单集/);
+    const fallback = load(async options => {
+        if (options.url.startsWith("https://itunes.apple.com/")) throw new Error("lookup unavailable");
+        return { status: 200, text: '<meta property="og:title" content="单集 - 节目 - Apple Podcasts"><meta property="og:image" content="https://is1-ssl.mzstatic.com/page.jpg">' };
+    });
+    const result = await new fallback().fetchMetadata(appleUrl);
+    assert.equal(result.title, "节目 · 单集");
+    assert(result.cover.endsWith("page.jpg"));
+    const { metadata, episodeUrl } = Plugin._internals;
+    for (const title of ["Apple 播客网页播放器", "Apple 播客（CN）- 网页播放器", "Apple Podcasts - Web Player"]) {
+        assert.throws(() => metadata('<title>' + title + '</title>', episodeUrl(appleUrl)));
+    }
+});
+
+test("Apple 有效目录名称在网页壳页下仍可保存，非法封面被拒绝", async () => {
+    const Plugin = load(async options => ({ status: 200,
+        text: options.url.startsWith("https://itunes.apple.com/")
+            ? JSON.stringify(appleLookup({ artworkUrl600: "https://evil.test/cover.jpg" }))
+            : '<title>Apple 播客网页播放器</title>' }));
+    const result = await new Plugin().fetchMetadata(appleUrl);
+    assert.equal(result.title, "无人知晓 · E46 我们从未看见彼此");
+    assert.equal(result.cover, "");
+});
+
+test("补全 Apple 错误播放器标题时保留日期、块标识、手写摘抄和自定义名称", async () => {
+    const Plugin = load(async options => {
+        if (options.url.startsWith("https://itunes.apple.com/")) return { status: 200, text: JSON.stringify(appleLookup()) };
+        return { status: 200, arrayBuffer: Uint8Array.from([255, 216, 255, 217]).buffer };
+    });
+    const { episodeUrl, entryLine } = Plugin._internals;
+    const apple = { ...item, ...episodeUrl(appleUrl), title: "Apple 播客网页播放器" };
+    const row = entryLine(apple, "");
+    const fixture = appFixture(base.replace("#### Entries", "#### Entries\n\n" + row));
+    const service = new Plugin(); service.app = fixture.app; service.settings = { ...Plugin._internals.LEGACY_SETTINGS };
+    await service.repairCovers(true);
+    const updated = fixture.contents.get("追踪/播客.md");
+    assert(!updated.includes("Apple 播客网页播放器"));
+    assert(updated.includes("无人知晓 · E46 我们从未看见彼此"));
+    assert(updated.includes("2026-11-03"));
+    assert(updated.includes("^apple-1000785771591"));
+    assert(updated.endsWith("手写摘抄与 [[已有笔记]]\n"));
+    const own = { ...apple, title: "我的手写名称" };
+    const ownRow = entryLine(own, "");
+    const ownFixture = appFixture(base.replace("#### Entries", "#### Entries\n\n" + ownRow));
+    service.app = ownFixture.app;
+    await service.repairCovers(true);
+    assert(ownFixture.contents.get("追踪/播客.md").includes("我的手写名称"));
 });
