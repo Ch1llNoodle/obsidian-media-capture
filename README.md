@@ -94,7 +94,7 @@ Pushing a tag that matches the manifest and package versions runs the release wo
 
 #### Local development and deployment
 
-Keep the source repository in an independent workspace. The `release/podcast-capture/` directory contains generated installation files; the vault installation remains under `.obsidian/plugins/podcast-capture/`.
+Keep the source repository separate from the installed plugin directory. If the source is inside a vault, ignore that directory in the outer vault Git repository while keeping the installed plugin and its settings in the vault backup. The `release/podcast-capture/` directory contains generated installation files; the vault installation remains under `.obsidian/plugins/podcast-capture/`.
 
 Copy `.deploy.example.json` to `.deploy.local.json` and set `vaultPath` to the absolute path of an existing vault. Run `npm run deploy` to build and copy the runtime files, then reload Podcast Capture in Obsidian. `npm run deploy -- --vault /absolute/path/to/vault` overrides the local configuration; `PODCAST_CAPTURE_VAULT` is also supported. Resolution order is command argument, environment variable, then local configuration.
 

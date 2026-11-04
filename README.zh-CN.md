@@ -94,7 +94,7 @@ npm run lint
 
 #### 本地开发与部署
 
-源码仓库放在独立工作区，`release/podcast-capture/` 保存生成的安装文件，笔记库安装位置仍为 `.obsidian/plugins/podcast-capture/`。
+源码仓库与安装目录分开管理；源码位于笔记库内时，在外层 Git 仓库忽略源码目录，运行文件和个人配置继续随笔记库备份。`release/podcast-capture/` 保存生成的安装文件，笔记库安装位置仍为 `.obsidian/plugins/podcast-capture/`。
 
 将 `.deploy.example.json` 复制为 `.deploy.local.json`，把 `vaultPath` 设置为已有笔记库的绝对路径。执行 `npm run deploy` 完成构建和运行文件复制，然后在 Obsidian 中重新加载插件。`npm run deploy -- --vault /absolute/path/to/vault` 可覆盖本机配置，也支持环境变量 `PODCAST_CAPTURE_VAULT`；取值优先级为命令参数、环境变量、本机配置。
 

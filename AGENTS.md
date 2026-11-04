@@ -270,7 +270,7 @@ this.registerInterval(
 
 ## Local deployment
 
-- Keep source control in an independent workspace outside the vault.
+- Keep the source Git repository separate from the installed plugin directory. If source resides inside a vault, exclude its directory from the outer vault repository.
 - `npm run build` stages runtime files in `release/podcast-capture/`; `npm run deploy` builds and copies them into a locally configured vault.
 - `.deploy.local.json` is personal configuration and must remain ignored. Never commit an absolute personal vault path.
 - Deployment uses a fixed runtime-file allowlist. Never overwrite or delete the installed `data.json`, and never deploy the source repository or node_modules.
