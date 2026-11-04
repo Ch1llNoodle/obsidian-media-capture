@@ -4,6 +4,10 @@ Capture Douban, Xiaoyuzhou, and Apple Podcasts episodes in a configurable Markdo
 
 This prerelease is available for testing with BRAT. Android and iOS loading is enabled; real-device compatibility remains unverified. The interface uses Chinese.
 
+#### Douban metadata parsing
+
+Add standard request headers, public mobile-page fallback for books, screen works and music, and title/poster extraction from JSON-LD, itemreviewed, document titles and image markers. Report verification pages and HTTP failures explicitly. Platform verification is not bypassed.
+
 #### Episode recommendations
 
 Add books, films, series, music, games, and stage productions mentioned in an episode to configurable wishlists. Source block links and optional reasons are kept inline; existing states and custom titles are preserved. Public Douban search can fall back to a browser search and manual URL entry.

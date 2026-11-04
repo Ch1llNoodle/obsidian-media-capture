@@ -26,7 +26,9 @@ For Apple Podcasts, share an individual episode. A show URL without an `i` episo
 
 #### Recommendations from episodes
 
-Run **添加播客推荐作品** (add a recommendation), or select **＋ 推荐** beside an episode in the reading view of the podcast log. Select the source episode and the work type, search by name or paste a Douban subject URL, then confirm the title and add it to the list. A short recommendation reason is optional. If public search is blocked, **打开豆瓣搜索** opens Douban in the browser; copy the subject URL back and enter the title manually.
+Run **添加播客推荐作品** (add a recommendation), or select **＋ 推荐** beside an episode in the reading view of the podcast log. Select the source episode and the work type, search by name or paste a Douban subject URL, then confirm the title and add it to the list. A short recommendation reason is optional. Subject parsing accepts Open Graph, JSON-LD, itemreviewed, and document titles, with poster-image fallbacks. For books, screen works, and music, a failed desktop request also tries the public mobile page. Verification pages are reported separately from missing metadata; they are not treated as work titles. If both pages are restricted, automatic parsing remains unavailable.
+
+If public search is blocked, **打开豆瓣搜索** opens Douban in the browser; copy the subject URL back and enter the title manually.
 
 Books, films, series, music, games, and theater have separate configurable lists under `Recommendations/` by default. Files are created only when adding a work. New entries go to Wishlist or Watchlist. Adding a work that already exists merges the source links while preserving its state, date, cover, and custom title. The same source is added once. The plugin does not create per-work notes, change your Douban account, or add daily note properties for recommendations.
 
