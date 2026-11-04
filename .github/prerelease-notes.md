@@ -35,3 +35,7 @@ Apple 单集优先通过公开目录获取名称和封面，不依赖 Apple 登�
 Live Preview hides internal metadata and episode block IDs. Work markers are inline comments; reading-mode linked works use a scoped block layout. The association action uses a lightweight text-button style.
 
 实时预览隐藏内部注释和块标识；作品管理标记改为行内注释，不再占据单独空行。阅读视图对子列表单独设置换行与缩进，按钮改为轻量文字样式。
+
+Reading-mode episode rows allow flex wrapping, and linked-work lists occupy a full row. This also supports collection layouts that use a horizontal flex row for episode covers and titles.
+
+阅读视图中的播客父项允许 flex 换行，关联作品列表独占完整一行，兼容封面与标题横向排列的清单样式。

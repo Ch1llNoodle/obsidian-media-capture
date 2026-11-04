@@ -19,8 +19,11 @@
 .podcast-recommend-results { display: grid; gap: 6px; max-height: 240px; overflow-y: auto; }
 .podcast-recommend-results button { text-align: start; height: auto; white-space: normal; }
 
+.podcast-episode-row { flex-wrap: wrap; }
 .podcast-episode-row > .podcast-linked-works {
     display: block;
+    flex: 0 0 100%;
+    box-sizing: border-box;
     margin-block: 0.25em 0;
     padding-inline-start: 1.6em;
 }
