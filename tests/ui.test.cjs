@@ -6,11 +6,11 @@ const { buildSync } = require('esbuild');
 
 test('播客条目固定来源，只有待看作品下拉框，没有搜索或播客选择', async () => {
     const bundle = buildSync({ entryPoints: [path.join(__dirname, '../src/main.ts')], bundle: true,
-        external: ['obsidian'], platform: 'browser', format: 'cjs', target: 'es2021', minify: true, write: false }).outputFiles[0].text;
+        external: ['obsidian', '@codemirror/state', '@codemirror/view'], platform: 'browser', format: 'cjs', target: 'es2021', minify: true, write: false }).outputFiles[0].text;
     const all = node => [node, ...node.children.flatMap(all)];
     function element(tag = 'div', options = {}) {
         const node = { tag, children: [], value: options.value ?? '', classList: { add() {} }, ...options,
-            addClass() {}, setText(value) { this.text = value; }, empty() { this.children = []; },
+            setAttribute(key, value) { this[key] = value; }, addClass() {}, setText(value) { this.text = value; }, empty() { this.children = []; },
             createEl(tag, options = {}) {
                 const child = element(tag, options); this.children.push(child);
                 if (this.tag === 'select' && !this.value) this.value = child.value;
@@ -46,6 +46,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
         addSettingTab() {}
         addCommand(command) { commands.push(command); }
         registerEvent() {}
+        registerEditorExtension(extension) { this.editorExtension = extension; }
         registerMarkdownPostProcessor(callback) { this.processor = callback; }
     }
     class Modal {
@@ -59,8 +60,13 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     }
     const sandbox = { module: { exports: {} }, URL, URLSearchParams, Uint8Array, Date, console,
         require: name => {
+            if (name === '@codemirror/view') return {
+                WidgetType: class {}, ViewPlugin: { fromClass: cls => ({ cls }) },
+                Decoration: { none: [], set: ranges => ranges, widget: spec => ({ range: from => ({ from, widget: spec.widget }) }) },
+            };
+            if (name === '@codemirror/state') return {};
             assert.equal(name, 'obsidian');
-            return { Plugin, Modal, MarkdownRenderChild, Notice: class {}, PluginSettingTab: class {},
+            return { editorInfoField: Symbol('editorInfo'), Plugin, Modal, MarkdownRenderChild, Notice: class {}, PluginSettingTab: class {},
                 Setting: class {}, normalizePath: p => p, requestUrl: async () => { throw new Error('Unexpected request'); } };
         } };
     vm.runInNewContext(bundle, sandbox);
@@ -83,6 +89,8 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     assert(saved.includes('[[Podcasts#^douban-123|节目 · 单集]]'));
     assert(saved.includes('这期节目推荐'));
     assert(saved.includes('douban-state: 想看'));
+    assert(content.get('Podcasts.md').includes('[[Recommendations/Movies#^douban-100|电影]]'));
+    assert(content.get('Podcasts.md').includes('这期节目推荐'));
     // Reading-mode rows receive an inline action which is removed on unload.
     const row = element('li');
     row.querySelector = () => null;
@@ -104,6 +112,29 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     assert.equal(files.size, 2);
     component.onunload();
     assert.equal(row.children[0].removed, true);
+    // The same row action is present in CodeMirror without requiring Live Preview.
+    const text = content.get('Podcasts.md');
+    const view = { dom: { ownerDocument: { createElement: element } }, visibleRanges: [{ from: 0, to: text.length }], state: {
+        field: () => ({ file: { path: 'Podcasts.md' } }),
+        doc: { lineAt(position) {
+            const from = text.lastIndexOf('\n', position - 1) + 1;
+            const end = text.indexOf('\n', position); const to = end < 0 ? text.length : end;
+            return { from, to, text: text.slice(from, to) };
+        } },
+    } };
+    const editor = new plugin.editorExtension.cls(view);
+    assert.equal(editor.decorations.length, 2);
+    const widget = editor.decorations[0].widget;
+    const editorButton = widget.toDOM(view);
+    assert.equal(editorButton.textContent, '添加关联');
+    editorButton.onclick({ preventDefault() {} });
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(modals.at(-1).source.blockId, 'douban-123');
+    widget.destroy(editorButton);
+    assert.equal(editorButton.onclick, null);
+    view.state.field = () => ({ file: { path: 'Other.md' } });
+    editor.update({ view });
+    assert.equal(editor.decorations.length, 0);
     plugin.onunload();
     assert.equal(plugin.service.unloaded, true);
 });

@@ -156,3 +156,37 @@ test('六类作品仅接受对应想状态，保存前再检查当前状态', as
     await assert.rejects(f.service.link(item, source), /已不在/);
     assert(!f.content.get(item.path).includes('podcast-sources:start'));
 });
+
+test('播客行显示作品链接与摘记，重复保存不增加条目，原状态封面日期保留', async () => {
+    const api = load(); const f = fixture(api); const item = (await f.service.works())[0];
+    const original = f.content.get('Podcasts.md').replace('- [节目', '- 2026-11-04 ![|24](<episode.jpg>) [节目');
+    f.content.set('Podcasts.md', original);
+    await f.service.link(item, source, '值得看'); await f.service.link(item, source, '值得看');
+    const text = f.content.get('Podcasts.md');
+    assert(text.includes('[[Recommendations/Movies#^douban-100|电影]]（值得看）'));
+    assert.equal((text.match(/Movies#\^douban-100/g) || []).length, 1);
+    assert(text.includes('2026-11-04 ![|24](<episode.jpg>)'));
+    assert(api.episodeSource(text.split('\n')[0], 'Podcasts.md').blockId === 'douban-123');
+});
+
+test('从已有作品侧来源补回播客链接，已完成作品仍显示，刷新不重复', async () => {
+    const api = load(); const f = fixture(api); const item = (await f.service.works())[0];
+    f.content.set(item.path, api.linkWorkSource(f.content.get(item.path), item, source).replace('想看','看过'));
+    assert.equal((await f.service.works()).length, 0);
+    await f.service.refreshEpisodeLinks(); const first = f.content.get('Podcasts.md');
+    assert(first.includes('[[Recommendations/Movies#^douban-100|电影]]'));
+    await f.service.refreshEpisodeLinks(); assert.equal(f.content.get('Podcasts.md'), first);
+});
+
+test('两篇笔记更新中途失败可重复保存补全，已写入一侧的状态明确报告', async () => {
+    const api = load(); const f = fixture(api); const item = (await f.service.works())[0];
+    const process = f.podcast.app.vault.process; let fail = true;
+    f.podcast.app.vault.process = async (file, transform) => {
+        if (file.path === 'Podcasts.md' && fail) { fail = false; throw new Error('write failed'); }
+        return process(file, transform);
+    };
+    await assert.rejects(f.service.link(item, source), /作品侧关联已保存.*播客行更新失败/);
+    await f.service.link(item, source);
+    assert.equal((f.content.get(item.path).match(/douban-123\|/g) || []).length, 1);
+    assert(f.content.get('Podcasts.md').includes('Movies#^douban-100'));
+});

@@ -5,6 +5,7 @@ import { RecommendationModal } from './recommendation-modal';
 import { RecommendationService } from './recommendation-service';
 import { episodeUrl } from './core';
 import { errorMessage, record } from './validation';
+import { recommendationEditor } from './recommendation-editor';
 
 declare module 'obsidian' {
     interface Workspace {
@@ -38,6 +39,8 @@ class EpisodeButtons extends MarkdownRenderChild {
 
 export function registerRecommendationUI(plugin: Plugin, podcast: PodcastService): void {
     const service = new RecommendationService(podcast);
+    plugin.registerEditorExtension(recommendationEditor(service));
+    plugin.app.workspace.onLayoutReady(() => { void service.refreshEpisodeLinks().catch((error: unknown) => new Notice(errorMessage(error))); });
     plugin.addCommand({ id: 'add-recommendation', name: '打开播客关联入口', callback: async () => {
         try {
             const file = await podcast.ensureCatalog();

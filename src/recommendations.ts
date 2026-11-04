@@ -1,5 +1,31 @@
-import type { RecommendationItem, RecommendationKind, RecommendationSource } from './types';
-import { markdownText, vaultPath } from './core';
+import type { RecommendationItem, RecommendationKind, RecommendationSource, RecommendationWork } from './types';
+import { entryIdentity, markdownText, vaultPath } from './core';
+
+export function episodeSource(line: string, path: string): RecommendationSource | null {
+    if (!line.startsWith('- ')) return null;
+    const item = entryIdentity(line);
+    const blockId = /\^((?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+))\s*$/.exec(line)?.[1];
+    return item && blockId ? { path, blockId, title: item.title } : null;
+}
+
+export function linkEpisodeWork(text: string, source: RecommendationSource, work: RecommendationWork, reason = ''): string {
+    const path = vaultPath(work.path, '.md').replace(/\.md$/i, '');
+    if (['[', ']', '|', '#'].some(character => path.includes(character))) throw new Error('作品清单路径不支持块链接。');
+    const key = `[[${path}#^douban-${recommendationUrl(work.url, work.kind).id}|`;
+    const link = key + work.title.replaceAll('[', ' ').replaceAll(']', ' ').replace(/[|\r\n]/g, ' ').replaceAll('<', '&lt;').replaceAll('>', '&gt;').trim() + ']]';
+    const lines = text.split(/\r?\n/);
+    const index = lines.findIndex(line => episodeSource(line, source.path)?.blockId === source.blockId);
+    if (index < 0) throw new Error('来源播客已变化，请重新选择。');
+    const line = lines[index] ?? '';
+    const existing = /<!-- podcast-works:start -->.*?<!-- podcast-works:end -->/.exec(line)?.[0] ?? '';
+    if (existing.includes(key)) return text;
+    const note = reason.trim() ? `（${markdownText(reason)}）` : '';
+    const markup = existing
+        ? existing.replace('<!-- podcast-works:end -->', ` · ${link}${note} <!-- podcast-works:end -->`)
+        : `<!-- podcast-works:start --> · 推荐 ${link}${note} <!-- podcast-works:end -->`;
+    lines[index] = existing ? line.replace(existing, () => markup) : line.replace(/\s+(\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+))\s*$/, (_match, block: string) => ` ${markup} ${block}`);
+    return lines.join('\n');
+}
 
 export const recommendationKinds: readonly RecommendationKind[] = ['book', 'movie', 'teleplay', 'music', 'game', 'theater'];
 export const recommendationNames: Record<RecommendationKind, string> = {
@@ -54,7 +80,7 @@ function attachSource(line: string, source: RecommendationSource, reason: string
     const markup = existing
         ? existing.replace('<!-- podcast-sources:end -->', ` · ${link}${note} <!-- podcast-sources:end -->`)
         : `<!-- podcast-sources:start --> · 来自 ${link}${note} <!-- podcast-sources:end -->`;
-    if (existing) return line.replace(existing, markup);
+    if (existing) return line.replace(existing, () => markup);
     const block = /\s+\^douban-\d+\s*$/.exec(line)?.[0] ?? '';
     const body = block ? line.slice(0, -block.length) : line;
     return `${body.trimEnd()} ${markup}${block}`;

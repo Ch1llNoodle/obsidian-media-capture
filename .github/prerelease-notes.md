@@ -4,9 +4,9 @@ Capture Douban, Xiaoyuzhou, and Apple Podcasts episodes in a configurable Markdo
 
 This prerelease is available for testing with BRAT. Android and iOS loading is enabled; real-device compatibility remains unverified. The interface uses Chinese.
 
-#### Link wanted works from an episode
+#### Editing actions and visible episode links
 
-Select 添加关联 beside an episode in the podcast log. The source episode is fixed; choose a wanted work from a dropdown and optionally add an excerpt. Search fields, the source selector, and work-side buttons are removed. Completed and in-progress works are excluded, with state checked again at save time. Linking remains offline.
+The 添加关联 button is available beside podcast entries in both editing and reading mode. Saving displays work links and optional excerpts in the podcast row as well as source links in the work row. Existing associations restore missing episode links after layout is ready. The wanted-only dropdown and fixed source remain unchanged. Each note is saved separately, with explicit partial-failure reporting and idempotent retry.
 
 #### Apple Podcasts metadata fix
 
@@ -29,3 +29,5 @@ The release contains `main.js`, `manifest.json`, and `styles.css`. Personal sett
 Apple 单集优先通过公开目录获取名称和封面，不依赖 Apple 登录。旧播放器标题可通过“补全缺失封面”一并修正，日期、块链接、摘抄和手写名称保留。
 
 在播客记录中选择单集旁的“添加关联”，直接选择想读、想看、想听或想玩的作品，填写可选摘记。来源固定为所点单集，没有搜索框和播客选择框，不列出已完成或进行中的作品。
+
+编辑模式和阅读模式均提供单集行内“添加关联”按钮。保存后播客行显示作品链接及摘记，作品行保留来源；已有作品侧关联在工作区就绪后补回播客行链接。

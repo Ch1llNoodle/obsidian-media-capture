@@ -1,6 +1,6 @@
 {
   "name": "podcast-capture",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Capture podcast episode links in a configurable Markdown log.",
   "author": "Ch1llNoodle",
   "repository": {
@@ -21,6 +21,8 @@
   "keywords": [],
   "license": "0-BSD",
   "devDependencies": {
+    "@codemirror/state": "6.5.0",
+    "@codemirror/view": "6.38.6",
     "@eslint/js": "^9.39.4",
     "@types/node": "^22.15.17",
     "esbuild": "0.25.5",
