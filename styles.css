@@ -1,8 +1,6 @@
-/*
-
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
-*/
+.podcast-capture { max-width: 520px; }
+.podcast-capture-field { display: flex; flex-direction: column; gap: 6px; margin: 16px 0; }
+.podcast-capture-field > span { font-weight: 500; }
+.podcast-capture-field input, .podcast-capture-field select { width: 100%; }
+.podcast-capture-message { color: var(--text-muted); min-height: 1.5em; }
+.podcast-capture-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }

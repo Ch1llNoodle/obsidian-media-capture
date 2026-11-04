@@ -29,4 +29,12 @@ export default defineConfig(
 		},
 	},
 	...obsidianmd.configs.recommended,
+	{
+		files: ['tests/**/*.cjs'],
+		languageOptions: { globals: globals.node },
+		rules: {
+			'obsidianmd/no-nodejs-modules': 'off',
+			'@typescript-eslint/no-require-imports': 'off',
+		},
+	},
 );
