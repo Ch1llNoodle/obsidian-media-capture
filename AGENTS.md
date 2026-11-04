@@ -3,7 +3,7 @@
 ## Project overview
 
 - Target: Obsidian Community Plugin (TypeScript → bundled JavaScript).
-- Entry point: `src/main.ts` compiled to `main.js` and loaded by Obsidian.
+- Entry point: `src/main.ts` compiled to `release/podcast-capture/main.js`; deployment copies it to the installed plugin directory.
 - Required release artifacts: `main.js`, `manifest.json`, and optional `styles.css`.
 
 ## Environment & tooling
@@ -61,7 +61,7 @@ npm run build
     ```
 - **Do not commit build artifacts**: Never commit `node_modules/`, `main.js`, or other generated files to version control.
 - Keep the plugin small. Avoid large dependencies. Prefer browser-compatible packages.
-- Generated output should be placed at the plugin root or `dist/` depending on your build setup. Release artifacts must end up at the top level of the plugin folder in the vault (`main.js`, `manifest.json`, `styles.css`).
+- Generated output belongs in `release/podcast-capture/`, which is excluded from Git. Deployment places main.js, manifest.json, and styles.css at the top level of the installed plugin folder in the vault.
 
 ## Manifest rules (`manifest.json`)
 
@@ -267,3 +267,20 @@ this.registerInterval(
 - Developer policies: https://docs.obsidian.md/Developer+policies
 - Plugin guidelines: https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines
 - Style guide: https://help.obsidian.md/style-guide
+
+## Local deployment
+
+- Keep source control in an independent workspace outside the vault.
+- `npm run build` stages runtime files in `release/podcast-capture/`; `npm run deploy` builds and copies them into a locally configured vault.
+- `.deploy.local.json` is personal configuration and must remain ignored. Never commit an absolute personal vault path.
+- Deployment uses a fixed runtime-file allowlist. Never overwrite or delete the installed `data.json`, and never deploy the source repository or node_modules.
+- After changing output paths, update the release workflow, both README files, and deployment tests together.
+
+## Bilingual documentation
+
+- Maintain README.md in English and README.zh-CN.md in Simplified Chinese, with matching behavior, defaults, limitations, and reciprocal language links.
+- Use a level-three document title and level-four section headings. Keep paragraphs coherent; use lists for steps and tables for settings with shared comparison fields.
+- Describe the final behavior directly. Omit editing history, chat references, promotional claims, and generic reading instructions.
+- Preserve API identifiers, commands, filenames, and template variables verbatim. Define unfamiliar terms where needed.
+- Document concrete setup steps, observable results, failure handling, network requests, and device validation status. Distinguish tested behavior from pending verification.
+- Keep personal vault paths and configuration values out of tracked documentation; use generic examples and ignored local configuration.

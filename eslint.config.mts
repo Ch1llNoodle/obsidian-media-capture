@@ -9,6 +9,8 @@ export default defineConfig(
 		'.npm-cache',
 		'dist',
 		'esbuild.config.mjs',
+		'scripts/**/*.mjs',
+		'release',
 		'version-bump.mjs',
 		'versions.json',
 		'main.js',
@@ -48,6 +50,7 @@ export default defineConfig(
 		languageOptions: { globals: globals.node, parserOptions: { projectService: false, project: false } },
 		rules: {
 			'obsidianmd/no-nodejs-modules': 'off',
+			'obsidianmd/hardcoded-config-path': 'off',
 			'@typescript-eslint/no-require-imports': 'off',
 		},
 	},

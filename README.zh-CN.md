@@ -8,7 +8,7 @@ Podcast Capture 将豆瓣、小宇宙和 Apple Podcasts 的单集分享链接保
 
 在 iPhone 或电脑上测试时，从 Obsidian 社区插件安装并启用 [BRAT](https://github.com/TfTHacker/obsidian42-brat)，添加测试插件仓库 `Ch1llNoodle/obsidian-podcast-capture`，选择已发布版本或预发布版本，然后启用 Podcast Capture。BRAT 在 Obsidian 内完成文件安装和后续更新。
 
-插件要求 Obsidian 1.5.0 或更高版本。将 `main.js`、`manifest.json`、`styles.css` 放入 `<笔记库>/.obsidian/plugins/podcast-capture/`，在 **设置 → 第三方插件**中启用 **Podcast Capture**。从源码生成这三个文件时，使用下文的开发命令。
+插件要求 Obsidian 1.5.0 或更高版本。将 `main.js`、`manifest.json`、`styles.css` 放入 `<笔记库>/.obsidian/plugins/podcast-capture/`，在 **设置 → 第三方插件**中启用 **Podcast Capture**。从源码构建时，三个文件生成于 `release/podcast-capture/`。
 
 更新时替换这三个文件，重新加载插件。保留原有 `data.json`，其中保存个人设置和最近一次封面补全报告。
 
@@ -70,11 +70,19 @@ npm test
 npm run lint
 ```
 
-生产构建将运行代码打包为 `main.js`。测试使用 esbuild 编译 TypeScript 模块，再通过模拟的 Obsidian API 验证行为。可选的追踪视图兼容测试由 `PODCAST_TRACKER_TEST_PATH` 指定脚本路径；未设置时跳过该项。
+生产构建将运行代码打包为 `release/podcast-capture/main.js`，并在同目录暂存 manifest 和样式。测试使用 esbuild 编译 TypeScript 模块，再通过模拟的 Obsidian API 验证行为。可选的追踪视图兼容测试由 `PODCAST_TRACKER_TEST_PATH` 指定脚本路径；未设置时跳过该项。
 
 发布文件为 `main.js`、`manifest.json`、`styles.css`。源码仓库忽略生成的构建文件、依赖目录及个人 `data.json`。依赖安全检查使用 `npm audit`，与编译、功能测试分别执行。
 
 推送与 manifest、package 版本一致的标签后，发布工作流执行构建、测试和 ESLint，上传运行文件并发布可供 BRAT 安装的 GitHub 预发布版。该流程不提交 Obsidian 社区商店审核。
+
+#### 本地开发与部署
+
+源码仓库放在独立工作区，`release/podcast-capture/` 保存生成的安装文件，笔记库安装位置仍为 `.obsidian/plugins/podcast-capture/`。
+
+将 `.deploy.example.json` 复制为 `.deploy.local.json`，把 `vaultPath` 设置为已有笔记库的绝对路径。执行 `npm run deploy` 完成构建和运行文件复制，然后在 Obsidian 中重新加载插件。`npm run deploy -- --vault /absolute/path/to/vault` 可覆盖本机配置，也支持环境变量 `PODCAST_CAPTURE_VAULT`；取值优先级为命令参数、环境变量、本机配置。
+
+部署只复制 main.js、manifest.json 和可选的 styles.css，保留 data.json 及其他安装文件；写入前核对插件 ID 和构建版本，拒绝部署到源码仓库或通过符号链接安装目录写入。本机部署配置和 release 产物不进入 Git。`npm run dev` 监听源码并更新构建目录，不自动部署。
 
 #### 网络访问与移动端
 

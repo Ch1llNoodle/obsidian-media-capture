@@ -7,15 +7,16 @@
     "type": "git",
     "url": "git+https://github.com/Ch1llNoodle/obsidian-podcast-capture.git"
   },
-  "main": "main.js",
+  "main": "release/podcast-capture/main.js",
   "type": "module",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc --noEmit && node esbuild.config.mjs production",
     "version": "node version-bump.mjs && git add manifest.json versions.json",
     "lint": "eslint .",
-    "test": "node --test tests/core.test.cjs",
-    "typecheck": "tsc --noEmit"
+    "test": "node --test tests/core.test.cjs tests/deploy.test.cjs",
+    "typecheck": "tsc --noEmit",
+    "deploy": "npm run build && node scripts/deploy.mjs"
   },
   "keywords": [],
   "license": "0-BSD",
