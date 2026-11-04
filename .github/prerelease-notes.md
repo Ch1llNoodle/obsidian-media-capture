@@ -4,9 +4,9 @@ Capture Douban, Xiaoyuzhou, and Apple Podcasts episodes in a configurable Markdo
 
 This prerelease is available for testing with BRAT. Android and iOS loading is enabled; real-device compatibility remains unverified. The interface uses Chinese.
 
-#### Editing actions and visible episode links
+#### Indented work links
 
-The 添加关联 button is available beside podcast entries in both editing and reading mode. Saving displays work links and optional excerpts in the podcast row as well as source links in the work row. Existing associations restore missing episode links after layout is ready. The wanted-only dropdown and fixed source remain unchanged. Each note is saved separately, with explicit partial-failure reporting and idempotent retry.
+The 添加关联 button is available beside podcast entries in both editing and reading mode. Work links and excerpts appear as indented child list items beneath each episode, without a recommendation label. Existing inline episode links are converted to this layout while retaining their block IDs. Existing associations restore missing episode links after layout is ready. The wanted-only dropdown and fixed source remain unchanged. Each note is saved separately, with explicit partial-failure reporting and idempotent retry.
 
 #### Apple Podcasts metadata fix
 

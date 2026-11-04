@@ -190,3 +190,25 @@ test('两篇笔记更新中途失败可重复保存补全，已写入一侧的�
     assert.equal((f.content.get(item.path).match(/douban-123\|/g) || []).length, 1);
     assert(f.content.get('Podcasts.md').includes('Movies#^douban-100'));
 });
+
+test('旧行内关联迁移为缩进子列表，去掉推荐标签并保留摘记和单集标识', () => {
+    const api = load();
+    const old = '- 2026-11-03 [节目 · 单集](<https://www.douban.com/podcast_episode/123>) <!-- podcast-state: 听过 --> <!-- podcast-works:start --> · 推荐 [[Movies#^douban-100|电影]]（摘记） · [[Books#^douban-200|书]] <!-- podcast-works:end --> ^douban-123\n\n#### Quotes\n手写正文';
+    const text = api.normalizeEpisodeWorks(old);
+    assert(text.split('\n')[0].endsWith('^douban-123'));
+    assert(text.includes('\n  - [[Movies#^douban-100|电影]]（摘记）\n  - [[Books#^douban-200|书]]\n'));
+    assert(!text.includes('· 推荐'));
+    assert(text.endsWith('#### Quotes\n手写正文'));
+    assert.equal(api.normalizeEpisodeWorks(text), text);
+});
+
+test('新关联逐项追加在播客下方，不重复，重存播客仍保留子列表', async () => {
+    const api = load(); const f = fixture(api); const item = (await f.service.works())[0];
+    await f.service.link(item, source);
+    const first = f.content.get('Podcasts.md');
+    const second = api.linkEpisodeWork(first, source, {...item,id:'200',url:'https://movie.douban.com/subject/200/',title:'第二部'});
+    assert(second.includes('\n  - [[Recommendations/Movies#^douban-100|电影]]\n  - [[Recommendations/Movies#^douban-200|第二部]]'));
+    assert.equal(api.linkEpisodeWork(second, source, item), second);
+    const saved = api.updateCatalog(second, {id:'123',provider:'douban',blockId:'douban-123',url:'https://www.douban.com/podcast_episode/123',title:source.title,state:'听过',date:'2026-11-04'}, '').text;
+    assert(saved.includes('\n  - [[Recommendations/Movies#^douban-200|第二部]]'));
+});

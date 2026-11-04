@@ -8,22 +8,60 @@ export function episodeSource(line: string, path: string): RecommendationSource 
     return item && blockId ? { path, blockId, title: item.title } : null;
 }
 
+const worksStart = '  <!-- podcast-works:start -->';
+const worksEnd = '  <!-- podcast-works:end -->';
+
+function episodeWorksBlock(lines: string[], index: number): { start: number; end: number; entries: string[] } {
+    const start = index + 1;
+    if (lines[start]?.trim() !== '<!-- podcast-works:start -->') return { start, end: start, entries: [] };
+    let end = start + 1;
+    while (end < lines.length && lines[end]?.trim() !== '<!-- podcast-works:end -->') {
+        if (lines[end]?.startsWith('- ')) throw new Error('播客关联区域缺少结束标记，原记录已保留。');
+        end++;
+    }
+    if (end >= lines.length) throw new Error('播客关联区域缺少结束标记，原记录已保留。');
+    return { start, end: end + 1, entries: lines.slice(start + 1, end).map(line => line.trim().replace(/^- /, '')).filter(Boolean) };
+}
+
+function workRows(entries: string[]): string[] {
+    const unique = new Map<string, string>();
+    for (const entry of entries) {
+        const key = /^\[\[([^|]+)\|/.exec(entry)?.[1] ?? entry;
+        if (!unique.has(key)) unique.set(key, entry);
+    }
+    return [worksStart, ...[...unique.values()].map(entry => '  - ' + entry), worksEnd];
+}
+
+/** Move the old inline span beneath its episode without changing episode block IDs. */
+export function normalizeEpisodeWorks(text: string): string {
+    const lines = text.split(/\r?\n/);
+    for (let index = 0; index < lines.length; index++) {
+        const line = lines[index] ?? '';
+        if (!episodeSource(line, '')) continue;
+        const inline = /<!-- podcast-works:start -->.*?<!-- podcast-works:end -->/.exec(line)?.[0];
+        if (!inline) continue;
+        const entries = inline.replace('<!-- podcast-works:start -->', '').replace('<!-- podcast-works:end -->', '')
+            .replace(/^\s*·\s*推荐\s*/, '').trim().split(/\s+·\s+(?=\[\[)/).filter(Boolean);
+        const block = episodeWorksBlock(lines, index);
+        lines[index] = line.replace(inline, '').replace(/ +(?=\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+)\s*$)/, ' ');
+        lines.splice(block.start, block.end - block.start, ...workRows([...block.entries, ...entries]));
+    }
+    return lines.join('\n');
+}
+
 export function linkEpisodeWork(text: string, source: RecommendationSource, work: RecommendationWork, reason = ''): string {
     const path = vaultPath(work.path, '.md').replace(/\.md$/i, '');
     if (['[', ']', '|', '#'].some(character => path.includes(character))) throw new Error('作品清单路径不支持块链接。');
-    const key = `[[${path}#^douban-${recommendationUrl(work.url, work.kind).id}|`;
+    const key = '[[' + path + '#^douban-' + recommendationUrl(work.url, work.kind).id + '|';
     const link = key + work.title.replaceAll('[', ' ').replaceAll(']', ' ').replace(/[|\r\n]/g, ' ').replaceAll('<', '&lt;').replaceAll('>', '&gt;').trim() + ']]';
-    const lines = text.split(/\r?\n/);
+    const normalized = normalizeEpisodeWorks(text);
+    const lines = normalized.split(/\r?\n/);
     const index = lines.findIndex(line => episodeSource(line, source.path)?.blockId === source.blockId);
     if (index < 0) throw new Error('来源播客已变化，请重新选择。');
-    const line = lines[index] ?? '';
-    const existing = /<!-- podcast-works:start -->.*?<!-- podcast-works:end -->/.exec(line)?.[0] ?? '';
-    if (existing.includes(key)) return text;
-    const note = reason.trim() ? `（${markdownText(reason)}）` : '';
-    const markup = existing
-        ? existing.replace('<!-- podcast-works:end -->', ` · ${link}${note} <!-- podcast-works:end -->`)
-        : `<!-- podcast-works:start --> · 推荐 ${link}${note} <!-- podcast-works:end -->`;
-    lines[index] = existing ? line.replace(existing, () => markup) : line.replace(/\s+(\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+))\s*$/, (_match, block: string) => ` ${markup} ${block}`);
+    const block = episodeWorksBlock(lines, index);
+    if (block.entries.some(entry => entry.includes(key))) return normalized;
+    const note = reason.trim() ? '（' + markdownText(reason) + '）' : '';
+    lines.splice(block.start, block.end - block.start, ...workRows([...block.entries, link + note]));
     return lines.join('\n');
 }
 

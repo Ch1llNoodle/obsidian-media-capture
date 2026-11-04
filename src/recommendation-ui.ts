@@ -29,6 +29,8 @@ class EpisodeButtons extends MarkdownRenderChild {
             const row = link.closest('li');
             if (!source || !row || row.querySelector('.podcast-recommend-button')) continue;
             const button = row.createEl('button', { text: '添加关联', cls: 'podcast-recommend-button' });
+            const nested = Array.from(row.children).find(child => child.tagName === 'UL' || child.tagName === 'OL');
+            if (nested) row.insertBefore(button, nested);
             const selected = source;
             this.registerDomEvent(button, 'click', () => new RecommendationModal(this.service, selected).open());
             this.buttons.push(button);

@@ -2,7 +2,7 @@ import type { PodcastService } from './service';
 import type { RecommendationSource, RecommendationWork } from './types';
 import { catalogWorks, isWanted } from './recommendation-catalog';
 import { isMarkdownFile } from './storage';
-import { episodeSource, recommendationKinds, recommendationIndex, recommendationSources, linkEpisodeWork, linkWorkSource } from './recommendations';
+import { episodeSource, recommendationKinds, recommendationIndex, recommendationSources, linkEpisodeWork, linkWorkSource, normalizeEpisodeWorks } from './recommendations';
 import { errorMessage } from './validation';
 
 export class RecommendationService {
@@ -77,14 +77,17 @@ export class RecommendationService {
                     if (source) assignments.push({ source, work });
                 }
             }
-            if (!assignments.length || this.podcast.unloaded) return;
+            if (this.podcast.unloaded) return;
             const file = this.podcast.app.vault.getAbstractFileByPath(this.podcast.config.catalogPath);
             if (!isMarkdownFile(file)) return;
-            await this.podcast.app.vault.process(file, text => {
+            const transform = (text: string): string => {
+                text = normalizeEpisodeWorks(text);
                 const existing = new Set(text.split(/\r?\n/).map(line => episodeSource(line, file.path)?.blockId));
                 for (const { source, work } of assignments) if (existing.has(source.blockId)) text = linkEpisodeWork(text, source, work);
                 return text;
-            });
+            };
+            const before = await this.podcast.app.vault.read(file);
+            if (transform(before) !== before) await this.podcast.app.vault.process(file, transform);
         });
         this.podcast.queue = task.catch(() => {});
         return task;
