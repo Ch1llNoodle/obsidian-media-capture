@@ -13,6 +13,7 @@ export default class PodcastCapture extends Plugin {
         this.service = new PodcastService(this);
         await this.service.initialize();
         this.service.notes.register(this);
+        this.service.appends.register(this);
         this.addSettingTab(new CaptureSettings(this.app, this.service));
         registerRecommendationUI(this, this.service);
         this.addCommand({
@@ -26,7 +27,7 @@ export default class PodcastCapture extends Plugin {
             } }).open(),
         });
         this.addCommand({
-            id: 'apply-note-template', name: '将模板应用到已有笔记',
+            id: 'apply-note-template', name: '将模板应用到已有记录',
             callback: () => new NoteRefreshModal(this.service).open(),
         });
         this.addCommand({

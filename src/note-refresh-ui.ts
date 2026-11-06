@@ -20,8 +20,8 @@ export class NoteRefreshModal extends Modal {
     override onOpen(): void {
         this.closed = false;
         this.contentEl.addClass('podcast-template-refresh');
-        this.contentEl.createEl('h2', { text: '将模板应用到已有笔记' });
-        this.contentEl.createEl('p', { text: '所选笔记按当前模板重新生成全文，包括属性和手写区域。每篇先在原文件旁保存完整备份，后缀为 .podcast-capture-backup。文件名与位置不变；未选择的笔记不受影响。' });
+        this.contentEl.createEl('h2', { text: '将模板应用到已有记录' });
+        this.contentEl.createEl('p', { text: '新建文件规则重新生成所选文件的全文，包括属性和手写区域；追加规则只更新对应条目或管理区域，保留区域外的正文。每个文件先保存完整备份，后缀为 .podcast-capture-backup，文件名与位置不变。' });
         this.status = this.contentEl.createEl('p', { attr: { role: 'status', 'aria-live': 'polite' } });
         const actions = this.contentEl.createDiv({ cls: 'podcast-capture-actions' });
         actions.createEl('button', { text: '重新预览' }).addEventListener('click', () => { if (!this.busy) void this.load(); });

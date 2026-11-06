@@ -1,17 +1,18 @@
 import { Modal, Notice, requestUrl, type App, type Plugin, type TFile } from "obsidian";
-import { DEFAULT_SETTINGS, LEGACY_SETTINGS, isListeningState, validateSettings, recordDate, episodeUrl, validDate, metadata, coverUrl, updateCatalog, findEntry, entryIdentity, stateOf, blockId } from "./core";
+import { DEFAULT_SETTINGS, LEGACY_SETTINGS, isListeningState, validateSettings, recordDate, episodeUrl, metadata, entryIdentity, stateOf } from "./core";
 import { ensureFolder, isMarkdownFile } from "./storage";
 
-import type { CaptureSettingsData, CaptureItem, CaptureResult, CoverFailure, CoverRepairResult, EpisodeMetadata, SavedDataPatch, CaptureUpdatedEvent } from "./types";
+import type { CaptureSettingsData, CaptureItem, CaptureResult, CoverFailure, CoverRepairResult, EpisodeMetadata, SavedDataPatch } from "./types";
 import { record, errorMessage } from "./validation";
-import { fetchAppleLookup, isApplePlayerTitle } from "./apple";
-import { cacheCover } from "./covers";
+import { fetchAppleLookup } from "./apple";
+import { AppendOutputs } from "./append-output";
 
 import { EpisodeNotes } from "./episode-notes";
 import { saveCapture } from "./capture-output";
 
 export class PodcastService {
     readonly notes = new EpisodeNotes(this);
+    readonly appends = new AppendOutputs(this);
     readonly plugin: Plugin;
     app: App;
     settings: CaptureSettingsData = { ...DEFAULT_SETTINGS };
@@ -27,6 +28,7 @@ export class PodcastService {
         const data = record(await this.loadData());
         this.settings = validateSettings(data.settings ?? (this.app.vault.getAbstractFileByPath(LEGACY_SETTINGS.catalogPath) ? LEGACY_SETTINGS : DEFAULT_SETTINGS));
         this.notes.initialize(data.noteIndex, data.noteMetadata);
+        this.appends.initialize(data.outputEntries);
         if (!data.settings) await this.updateData({ settings: this.settings, settingsVersion: 1 });
     }
     dispose(): void { this.unloaded = true; }
@@ -72,6 +74,7 @@ export class PodcastService {
     }
     async ensureCatalog(): Promise<TFile> {
         const path = this.config.catalogPath;
+        this.notes.checkPath(path, true);
         let file = this.app.vault.getAbstractFileByPath(path);
         if (!file) {
             const folder = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
@@ -82,7 +85,7 @@ export class PodcastService {
         return file;
     }
     capture(item: CaptureItem): Promise<CaptureResult> {
-        const work = this.queue.then(() => this.captureOne(item));
+        const work = this.queue.then(() => saveCapture(this, item));
         this.queue = work.catch(() => {});
         return work;
     }
@@ -91,7 +94,7 @@ export class PodcastService {
         const file = this.app.vault.getAbstractFileByPath(this.config.catalogPath);
         if (!isMarkdownFile(file)) return;
         const source = await this.app.vault.read(file);
-        const missing = source.split(/\r?\n/).filter(line => line.startsWith("- ") && !/!\[(?:cover)?\|24\]\(</.test(line))
+        const missing = source.split(/\r?\n/).filter(line => line.startsWith("- ") && !/!\[(?:cover)?\|\d+\]\(</.test(line))
             .map(line => ({ line, identity: entryIdentity(line) })).filter(entry => entry.identity);
         if (!missing.length) { if (!silent) new Notice("播客封面已齐全。"); return; }
         let repaired = 0;
@@ -124,57 +127,5 @@ export class PodcastService {
             modal.open();
         }
         return { repaired, failures };
-    }
-    captureOne(item: CaptureItem): Promise<CaptureResult> { return saveCapture(this, item); }
-    async captureLogOne(item: CaptureItem): Promise<CaptureResult> {
-        if (this.unloaded) throw new Error("插件已卸载，请重新启用后重试。");
-        const episode = episodeUrl(item.url);
-        item = { ...item, ...episode };
-        if (!item.title?.trim() || !isListeningState(item.state)) throw new Error("名称或状态无效。");
-        if (item.state === "听过" && !validDate(item.date)) throw new Error("收听日期无效。");
-        const file = await this.ensureCatalog();
-        const source = await this.app.vault.read(file);
-        const existing = findEntry(source, item);
-        const savedIdentity = existing ? entryIdentity(existing) : episode;
-        const savedBlock = blockId(savedIdentity ?? episode);
-        const completed = stateOf(existing) === "听过";
-        const oldDate = recordDate(existing);
-        const diaries = this.config.dailyIntegration ? this.app.vault.getMarkdownFiles().filter(note => note.path.startsWith(this.config.dailyFolder + "/") && note.basename === item.date) : [];
-        if (item.state === "听过" && completed && oldDate !== item.date && diaries.length !== 1) {
-            throw new Error(`已在 ${oldDate || "之前"} 记录过这一集。记录重听需要开启日记联动，并先准备 ${item.date} 的日记。`);
-        }
-        let cover = existing?.match(/!\[(?:cover)?\|24\]\(<([^>]+)>\)/)?.[1] ?? "";
-        let coverError = "";
-        let coverSource = "";
-        if (!cover && this.config.downloadCovers) {
-            try {
-                let url = coverUrl(item.cover);
-                if (!url) {
-                    try {
-                        const info = await this.fetchMetadata(item.url);
-                        url = info.cover;
-                        if (episode.provider === "apple" && isApplePlayerTitle(item.title)) item = { ...item, title: info.title };
-                    }
-                    catch (error) { throw new Error(`获取单集页面失败：${errorMessage(error)}`); }
-                }
-                if (!url) throw new Error("页面未提供可识别的封面");
-                coverSource = url;
-                cover = await cacheCover(this.app, url, this.config.imageFolder, `podcast-${savedBlock}`);
-            } catch (error) { cover = ""; coverError = errorMessage(error); }
-        }
-        if (this.unloaded) throw new Error("插件已卸载，请重新启用后重试。");
-        await this.app.vault.process(file, current => updateCatalog(current, item, cover, this.config).text);
-        if (!item.repairOnly && item.state === "听过" && diaries.length === 1 && diaries[0]) {
-            const label = item.title.replace(/\[|\]|\||\r|\n/g, " ");
-            const link = `[[${this.config.catalogPath.replace(/\.md$/i, "")}#^${savedBlock}|${label}]]`;
-            try { await this.app.fileManager.processFrontMatter(diaries[0], (data: Record<string, unknown>) => {
-                const property = this.config.dailyProperty;
-                const stored: unknown = data[property];
-                const values: unknown[] = Array.isArray(stored) ? stored : stored ? [stored] : [];
-                if (!values.some(value => String(value).includes(`#^${savedBlock}|`) || String(value).includes(`#^${savedBlock}]]`))) data[property] = [...values, link];
-            }); } catch (error) { throw new Error("清单已保存，日记写入失败：" + errorMessage(error)); }
-        }
-        this.app.workspace.trigger("podcast-capture:updated", { path: this.config.catalogPath, blockId: savedBlock, state: item.state, date: item.date } satisfies CaptureUpdatedEvent);
-        return { hasCover: !!cover, coverPath: cover, coverError, coverSource, message: (completed ? "已保留原记录" : "已添加到播客记录") + (item.state === "听过" ? ` · ${item.date}` : completed ? ` · ${oldDate ?? "听过"}` : ` · ${item.state}`) + (coverError ? `（封面未获取到：${coverError}）` : "") };
     }
 }

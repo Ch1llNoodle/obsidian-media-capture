@@ -10,7 +10,9 @@
 .podcast-template-refresh-label { display: flex; align-items: start; gap: 8px; overflow-wrap: anywhere; }
 .podcast-template-refresh pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 320px; overflow-y: auto; }
 .podcast-template-refresh textarea { width: 100%; }
-.podcast-capture-message { color: var(--text-muted); min-height: 1.5em; }
+.podcast-capture-message { color: var(--text-muted); min-height: 1.5em; white-space: pre-wrap; }
+.podcast-rule-settings { margin-block-end: 20px; }
+.podcast-rule-settings > summary { cursor: pointer; color: var(--text-muted); }
 .podcast-capture-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 
 .podcast-recommend-button, .podcast-note-button {

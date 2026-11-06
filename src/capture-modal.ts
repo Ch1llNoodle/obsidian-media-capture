@@ -2,7 +2,8 @@ import { Modal, Notice } from 'obsidian';
 import { STATES, isListeningState, validDate, localDate, episodeUrl } from './core';
 import type { PodcastService } from './service';
 import type { CaptureItem, CaptureMode, Episode, EpisodeMetadata } from './types';
-import { captureModes, episodeNotePath, isCaptureMode, noteValues, splitEpisodeTitle } from './note-format';
+import { captureModes, isCaptureMode, noteValues, splitEpisodeTitle } from './note-format';
+import { rulePath, rulesFor } from './write-rules';
 import { errorMessage } from './validation';
 import { isMarkdownFile } from './storage';
 
@@ -45,7 +46,7 @@ export class CaptureModal extends Modal {
         this.stateInput = choice('状态');
         for (const state of STATES) this.stateInput.createEl('option', { text: state, value: state });
         this.stateInput.value = '听过';
-        this.outputInput = choice('保存方式');
+        this.outputInput = choice('写入预设');
         for (const [value, text] of Object.entries(captureModes)) this.outputInput.createEl('option', { value, text });
         this.outputInput.value = this.preset?.output ?? this.plugin.config.captureMode;
         this.dateInput = field('收听日期', 'date');
@@ -103,13 +104,11 @@ export class CaptureModal extends Modal {
     }
 
     private updatePreview(): void {
-        const enabled = this.outputInput.value !== 'log';
-        this.noteFields.hidden = !enabled;
-        this.preview.hidden = !enabled;
-        if (!enabled) return;
         try {
             const item = this.item();
-            this.preview.setText('保存至：' + episodeNotePath(this.plugin.config, noteValues(item, episodeUrl(item.url).blockId, '', localDate())));
+            const values = noteValues(item, episodeUrl(item.url).blockId, '', localDate());
+            const rules = rulesFor(this.plugin.config, item.output);
+            this.preview.setText(rules.length ? '新记录目标：\n' + rules.map(rule => rule.name + ' → ' + rulePath(rule, values)).join('\n') : '没有启用的写入规则。');
         } catch { this.preview.setText('填写链接和标题后显示保存路径。'); }
     }
 

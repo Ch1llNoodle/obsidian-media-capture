@@ -1,7 +1,7 @@
 {
   "name": "podcast-capture",
-  "version": "0.6.1",
-  "description": "Capture podcast episodes in a Markdown log or template-based notes.",
+  "version": "0.7.0",
+  "description": "Capture podcast episodes using Markdown templates and configurable write rules.",
   "author": "Ch1llNoodle",
   "repository": {
     "type": "git",

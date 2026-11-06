@@ -7,14 +7,14 @@ import { isMarkdownFile } from './storage';
 import { errorMessage } from './validation';
 
 export class NoteTemplatePicker extends FuzzySuggestModal<TFile> {
-    constructor(private readonly podcast: PodcastService, private readonly changed: () => void) {
+    constructor(private readonly podcast: PodcastService, private readonly changed: () => void, private readonly select: (path: string) => Promise<void>) {
         super(podcast.app);
-        this.setPlaceholder('选择单集笔记的 Markdown 模板');
+        this.setPlaceholder('选择内容模板');
     }
     getItems(): TFile[] { return this.podcast.app.vault.getMarkdownFiles(); }
     getItemText(file: TFile): string { return file.path; }
     onChooseItem(file: TFile): void {
-        void this.podcast.saveSettings({ ...this.podcast.config, noteTemplateFile: file.path })
+        void this.select(file.path)
             .then(() => this.changed()).catch((error: unknown) => new Notice(errorMessage(error)));
     }
 }
@@ -30,5 +30,5 @@ export async function openEpisodeNote(podcast: PodcastService, source: Pick<Reco
     if (!identity || !line) throw new Error('单集记录已变化，请重新选择。');
     const state = stateOf(line);
     new CaptureModal(podcast, { output: 'note', item: { ...identity, state: isListeningState(state) ? state : '想听',
-        date: recordDate(line) || localDate(), cover: line.match(/!\[(?:cover)?\|24\]\(<([^>]+)>\)/)?.[1] ?? '' } }).open();
+        date: recordDate(line) || localDate(), cover: line.match(/!\[(?:cover)?\|\d+\]\(<([^>]+)>\)/)?.[1] ?? '' } }).open();
 }

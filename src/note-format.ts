@@ -3,8 +3,8 @@ import type { CaptureItem, CaptureMode, CaptureSettingsData } from './types';
 import { isRecord } from './validation';
 
 export const DEFAULT_NOTE_TEMPLATE = '### {{title}}\n\n{{show}}\n\n{{cover}}\n\n[打开单集](<{{url}}>)\n\n#### Notes\n\n\n#### Quotes\n';
-export const captureModes: Record<CaptureMode, string> = { log: '记录清单', note: '单集笔记', both: '清单与单集笔记' };
-export function isCaptureMode(value: unknown): value is CaptureMode { return value === 'log' || value === 'note' || value === 'both'; }
+export const captureModes: Record<CaptureMode, string> = { custom: '使用已启用规则', log: '预设：集中清单', note: '预设：每集一篇', both: '预设：清单与单集笔记', show: '预设：按节目追加' };
+export function isCaptureMode(value: unknown): value is CaptureMode { return typeof value === 'string' && Object.keys(captureModes).includes(value); }
 
 export function relativeNotePath(value: string, allowEmpty = false): string {
     const path = value.trim().replace(/\\/g, '/');
@@ -16,7 +16,7 @@ export function relativeNotePath(value: string, allowEmpty = false): string {
     return path;
 }
 
-const variables = new Set(['show', 'title', 'url', 'cover', 'coverpath', 'published', 'listened', 'currentdate', 'date', 'description', 'state', 'provider', 'id']);
+const variables = new Set(['show', 'title', 'fulltitle', 'link', 'url', 'cover', 'coverpath', 'published', 'listened', 'currentdate', 'date', 'description', 'state', 'provider', 'id']);
 const pathVariables = new Set(['show', 'title', 'published', 'listened', 'currentdate', 'date', 'provider', 'id']);
 export function validateNoteTemplate(template: string, path = false): void {
     if (/\{\{|\}\}/.test(template.replace(/\{\{[^{}]+\}\}/g, ''))) throw new Error('模板变量的双花括号不完整。');
@@ -58,7 +58,8 @@ function safeName(value: string): string {
 export type NoteValues = Record<string, string>;
 export function noteValues(item: CaptureItem, id: string, coverPath: string, currentDate: string): NoteValues {
     const split = splitEpisodeTitle(item.title);
-    return { show: (item.show ?? split.show).replace(/\s+/g, ' ').trim(), title: (item.episodeTitle ?? split.episodeTitle).replace(/\s+/g, ' ').trim(), url: item.url,
+    return { show: (item.show ?? split.show).replace(/\s+/g, ' ').trim(), title: (item.episodeTitle ?? split.episodeTitle).replace(/\s+/g, ' ').trim(), fulltitle: item.title,
+        link: `[${markdown(item.title)}](<${item.url}>)`, url: item.url,
         cover: coverPath ? `![|120](<${coverPath}>)` : '', coverpath: coverPath, published: item.published ?? '',
         listened: item.state === '听过' ? item.date : '', currentdate: currentDate, date: currentDate,
         description: item.description ?? '', state: item.state, provider: item.provider ?? 'douban', id };
@@ -87,8 +88,20 @@ function markdown(value: string): string {
     return Array.from(value).map(character => '\\[]*_`'.includes(character) ? '\\' + character : character).join('').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
+export function renderTemplateBody(template: string, values: NoteValues): string {
+    validateNoteTemplate(template);
+    return template.replace(/\{\{([^{}]+)\}\}/g, (_match: string, token: string) => {
+        const value = valueOf(token, values);
+        return ['url', 'cover', 'link'].includes(token.trim().toLowerCase()) ? value : markdown(value);
+    });
+}
+
+export function withCoverWidth(values: NoteValues, width: number): NoteValues {
+    return { ...values, cover: values.coverpath ? `![|${width}](<${values.coverpath}>)` : '' };
+}
+
 /** Template YAML is parsed before inserting data, so quotes/newlines cannot create new properties. */
-export function renderEpisodeNote(template: string, values: NoteValues): string {
+export function renderEpisodeNote(template: string, values: NoteValues, ruleId = 'notes'): string {
     template = template.replace(/^\uFEFF/, '');
     validateNoteTemplate(template);
     const frontmatter = /^---\r?\n((?:[\s\S]*?\r?\n)?)---(?:\r?\n|$)/.exec(template);
@@ -128,9 +141,8 @@ export function renderEpisodeNote(template: string, values: NoteValues): string 
         body = template.slice(frontmatter[0].length);
     }
     properties.podcast_capture_id = values.id;
-    const content = body.replace(/\{\{([^{}]+)\}\}/g, (_match: string, token: string) => {
-        const value = valueOf(token, values);
-        return ['url', 'cover'].includes(token.trim().toLowerCase()) ? value : markdown(value);
-    });
+    if (ruleId !== 'notes') properties.podcast_capture_rule = ruleId;
+    else delete properties.podcast_capture_rule;
+    const content = renderTemplateBody(body, values);
     return `---\n${stringifyYaml(properties).trimEnd()}\n---\n\n${content.trim()}\n`;
 }

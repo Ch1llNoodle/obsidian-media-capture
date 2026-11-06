@@ -1,6 +1,26 @@
 export type Provider = 'douban' | 'xiaoyuzhou' | 'apple';
 export type ListeningState = '听过' | '在听' | '想听';
-export type CaptureMode = 'log' | 'note' | 'both';
+export type CaptureMode = 'log' | 'note' | 'both' | 'show' | 'custom';
+export interface WriteRule {
+    id: string;
+    name: string;
+    enabled: boolean;
+    mode: 'append' | 'create';
+    folder: string;
+    pathTemplate: string;
+    heading: string;
+    templateFile: string;
+    template: string;
+    coverWidth: number;
+}
+export interface StoredEntry {
+    ruleId: string;
+    id: string;
+    path: string;
+    content: string;
+    state: ListeningState;
+    date: string;
+}
 export type RecommendationKind = 'book' | 'movie' | 'teleplay' | 'music' | 'game' | 'theater';
 
 export interface RecommendationSource {
@@ -23,6 +43,7 @@ export interface RecommendationWork extends RecommendationItem {
 }
 
 export interface CaptureSettingsData {
+    writeRules?: WriteRule[];
     captureMode: CaptureMode;
     noteFolder: string;
     notePathTemplate: string;
@@ -45,8 +66,8 @@ export interface CaptureSettingsData {
     theaterPath: string;
 }
 
-export type TextSettingKey = { [K in keyof CaptureSettingsData]: CaptureSettingsData[K] extends string ? K : never }[keyof CaptureSettingsData];
-export type ToggleSettingKey = { [K in keyof CaptureSettingsData]: CaptureSettingsData[K] extends boolean ? K : never }[keyof CaptureSettingsData];
+export type TextSettingKey = { [K in keyof CaptureSettingsData]-?: CaptureSettingsData[K] extends string ? K : never }[keyof CaptureSettingsData];
+export type ToggleSettingKey = { [K in keyof CaptureSettingsData]-?: CaptureSettingsData[K] extends boolean ? K : never }[keyof CaptureSettingsData];
 
 export interface Episode {
     provider: Provider;
@@ -124,6 +145,7 @@ export interface SavedDataPatch {
     coverReport?: CoverReport;
     noteIndex?: Record<string, string>;
     noteMetadata?: Record<string, Record<string, string>>;
+    outputEntries?: StoredEntry[];
 }
 
 export interface CaptureUpdatedEvent {

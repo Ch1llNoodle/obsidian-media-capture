@@ -2,7 +2,8 @@ import type { CaptureItem, CaptureSettingsData, CatalogUpdate, EntryIdentity, Ep
 import { record } from "./validation";
 import { decode } from "./metadata-helpers";
 import { isApplePlayerTitle } from "./apple";
-import { DEFAULT_NOTE_TEMPLATE, isCaptureMode, validateNoteSettings } from "./note-format";
+import { DEFAULT_NOTE_TEMPLATE, isCaptureMode, validateNoteSettings, noteValues, renderTemplateBody, withCoverWidth } from "./note-format";
+import { presetRules, validateRules } from './write-rules';
 export { decode, plain, safeCover, coverUrl } from "./metadata-helpers";
 export { metadata } from "./metadata";
 
@@ -59,6 +60,15 @@ function validateSettings(settings: unknown): CaptureSettingsData {
     result.rowTemplate = String(result.rowTemplate).trim();
     if (!result.rowTemplate.startsWith("- ") || /[\r\n]/.test(result.rowTemplate) || !result.rowTemplate.includes("{{link}}")) throw new Error("输出模板必须是以 - 开头的单行列表，并包含 {{link}}。");
     for (const match of result.rowTemplate.matchAll(/\{\{(.*?)\}\}/g)) if (!["date", "cover", "link", "title", "url", "state", "provider"].includes(match[1] ?? "")) throw new Error(`未知模板变量：${match[0]}`);
+    if (supplied.writeRules !== undefined) {
+        result.writeRules = validateRules(supplied.writeRules);
+        result.captureMode = 'custom';
+        const catalog = result.writeRules.find(rule => rule.id === 'catalog');
+        if (catalog) { result.catalogPath = [catalog.folder, catalog.pathTemplate].filter(Boolean).join('/'); result.entryHeading = catalog.heading; }
+        const notes = result.writeRules.find(rule => rule.id === 'notes');
+        if (notes?.mode === 'create') { result.noteFolder = notes.folder; result.notePathTemplate = notes.pathTemplate; result.noteTemplateFile = notes.templateFile; result.noteTemplate = notes.template; }
+        for (const key of ['bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const) if (result[key] === result.catalogPath) throw new Error('作品清单不能使用播客记录文件。');
+    }
     return result;
 }
 
@@ -117,7 +127,7 @@ function entryIdentity(line: string): (Episode & { title: string }) | null {
     if (!link) return null;
     try {
         const episode = episodeUrl(link[2] ?? "");
-        return { ...episode, title: decode((link[1] ?? "").replace(/\\(\\|\[|\])/g, "$1")) };
+        return { ...episode, title: decode((link[1] ?? "").replace(/\\(.)/g, (match: string, character: string) => '\\[]*_`'.includes(character) ? character : match)) };
     } catch { return null; }
 }
 
@@ -138,14 +148,16 @@ function findEntry(source: string, item: EntryIdentity | string): string | undef
     });
 }
 
-function entryLine(item: CaptureItem, cover: string, settings: Readonly<CaptureSettingsData> = DEFAULT_SETTINGS): string {
-    const values: Record<string, string> = { date: item.state === "听过" ? item.date : "", cover: cover ? `![|24](<${cover}>)` : "", link: `[${markdownText(item.title)}](<${item.url}>)`, title: markdownText(item.title), url: item.url, state: item.state, provider: item.provider ?? "douban" };
-    const row = settings.rowTemplate.replace(/\{\{(.*?)\}\}/g, (_: string, key: string) => values[key] ?? "").trimEnd();
-    const date = values.date ? ` <!-- podcast-date: ${values.date} -->` : "";
+function entryLine(item: CaptureItem, cover: string, settings: Readonly<CaptureSettingsData> = DEFAULT_SETTINGS, createdDate = localDate()): string {
+    const rule = settings.writeRules?.find(rule => rule.id === 'catalog') ?? presetRules(settings, 'log').find(rule => rule.id === 'catalog');
+    if (!rule) throw new Error('集中清单写入规则缺失。');
+    const values = withCoverWidth(noteValues(item, blockId(item), cover, createdDate), rule.coverWidth);
+    const row = renderTemplateBody(rule.template, values).trimEnd();
+    const date = values.listened ? ` <!-- podcast-date: ${values.listened} -->` : "";
     return `${row} <!-- podcast-state: ${item.state} -->${date} ^${blockId(item)}`;
 }
 
-function updateCatalog(source: string, item: CaptureItem, cover: string, settings: Readonly<CaptureSettingsData> = DEFAULT_SETTINGS): CatalogUpdate {
+function updateCatalog(source: string, item: CaptureItem, cover: string, settings: Readonly<CaptureSettingsData> = DEFAULT_SETTINGS, createdDate = localDate()): CatalogUpdate {
     const existing = findEntry(source, item);
     const oldState = stateOf(existing);
     if (existing && oldState === "听过") {
@@ -155,12 +167,13 @@ function updateCatalog(source: string, item: CaptureItem, cover: string, setting
             updated = updated.replace(/(?<!!)\[((?:\\.|[^\]])+)\]\(<(https:\/\/[^>]+)>\)/,
                 (_match: string, _label: string, url: string) => `[${markdownText(item.title)}](<${url}>)`);
         }
-        if (cover && !/!\[(?:cover)?\|24\]\(</.test(updated)) {
-            updated = updated.replace(/^(-\s+(?:\d{4}-\d{2}-\d{2}\s+)?)/, `$1![|24](<${cover}>) `);
+        if (cover && !/!\[(?:cover)?\|\d+\]\(</.test(updated)) {
+            const width = settings.writeRules?.find(rule => rule.id === 'catalog')?.coverWidth ?? 24;
+            updated = updated.replace(/^(-\s+(?:\d{4}-\d{2}-\d{2}\s+)?)/, (_match: string, prefix: string) => `${prefix}![|${width}](<${cover}>) `);
         }
         return { text: source.replace(existing, () => updated), existing, preserved: true };
     }
-    let row = entryLine({ ...item, ...(existing ? entryIdentity(existing) : {}), state: item.state, date: item.date, title: item.title }, cover, settings);
+    let row = entryLine({ ...item, ...(existing ? entryIdentity(existing) : {}), state: item.state, date: item.date, title: item.title }, cover, settings, createdDate);
     const note = existing?.match(/<!-- podcast-note -->\s*\[\[[^\]]+\]\]/)?.[0];
     if (note) row = row.replace(/\s+(\^\S+)$/, (_match: string, block: string) => ` ${note} ${block}`);
     if (existing) return { text: source.replace(existing, () => row), existing, preserved: false };

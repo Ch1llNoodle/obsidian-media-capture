@@ -8,11 +8,13 @@ const { buildSync } = require('esbuild');
 const bundle = buildSync({ stdin: { contents: `export {PodcastService} from './src/service';
 export {appleLookupMetadata} from './src/apple';
 export * from './src/note-refresh';
+export * from './src/write-rules';
 export * from './src/note-format'; export * from './src/core';`, resolveDir: path.resolve(__dirname, '..'), loader: 'ts' },
     bundle: true, platform: 'browser', format: 'cjs', target: 'es2021', external: ['obsidian'], write: false }).outputFiles[0].text;
+let imageResponse = null, imageRequests = 0;
 const sandbox = { module: { exports: {} }, URL, URLSearchParams, Uint8Array, Date, console, require: () => ({
     parseYaml: yaml.load, stringifyYaml: yaml.dump, normalizePath: p => p.replace(/\\/g, '/'),
-    requestUrl: async () => { throw new Error('offline'); }, Modal: class {}, Notice: class {},
+    requestUrl: async () => { if (imageResponse) { imageRequests++; return imageResponse; } throw new Error('offline'); }, Modal: class {}, Notice: class {},
 }) };
 vm.runInNewContext(bundle, sandbox);
 const { PodcastService, DEFAULT_SETTINGS, validateSettings, noteValues, episodeNotePath, renderEpisodeNote, validateNoteTemplate } = sandbox.module.exports;
@@ -35,6 +37,7 @@ function fixture(options = {}) {
         getAbstractFileByPath: p => files.get(p) ?? null, getMarkdownFiles: () => [...files.values()].filter(f => f.extension === 'md'),
         read: async f => contents.get(f.path), createFolder: async p => { files.set(p, { path: p }); },
         create: async (p, text) => { if (files.has(p)) throw new Error('File exists'); writes++; return add(p, text); },
+        createBinary: async (p, bytes) => add(p, bytes),
         process: async (f, change) => { writes++; contents.set(f.path, change(contents.get(f.path))); },
         on: (name, callback) => { events.set(name, callback); return {}; },
     }, metadataCache: { getFileCache: f => ({ frontmatter: header(f.path) }) },
@@ -359,4 +362,161 @@ test('unchanged templates create no backup and duplicate identities are excluded
     f.add('Copy.md', f.contents.get(note.notePath));
     const plans = await prepareNoteRefresh(f.service);
     assert.equal(plans.length, 2); assert(plans.every(p => p.error.includes('多篇')));
+});
+
+const { presetRules, rulesFor } = sandbox.module.exports;
+async function configure(f, preset, patch = rule => rule) {
+    await f.service.initialize();
+    const rules = presetRules(f.service.config, preset).map(patch);
+    await f.service.saveSettings({ ...f.service.config, writeRules: rules });
+    return rules;
+}
+
+test('legacy output choices resolve to write rules without changing saved paths or template semantics', async () => {
+    const f = fixture({ catalogPath: 'Logs/Podcasts.md', rowTemplate: '- {{title}} {{date}} {{link}}' });
+    await f.service.initialize();
+    const [rule] = rulesFor(f.service.config);
+    assert.equal(rule.mode, 'append'); assert.equal(rule.pathTemplate, 'Logs/Podcasts.md');
+    assert.equal(rule.template, '- {{fullTitle}} {{listened}} {{link}}');
+    await configure(f, 'log'); await f.service.capture(item);
+    assert(f.contents.get('Logs/Podcasts.md').includes('节目 · 单集 2026-11-03'));
+    assert.equal(f.service.config.captureMode, 'custom');
+});
+
+test('show preset appends multiple episodes to one file and deduplicates repeat captures', async () => {
+    const f = fixture(); await configure(f, 'show');
+    const first = await f.service.capture(item);
+    await f.service.capture({ ...item, id: '456', url: 'https://www.douban.com/podcast_episode/456', title: '节目 · 另一集' });
+    await f.service.capture({ ...item, date: '2026-11-04' });
+    assert.equal(first.notePath, 'Podcasts/节目.md');
+    const content = f.contents.get(first.notePath);
+    assert.equal((content.match(/:start -->/g) ?? []).length, 2);
+    assert(content.includes('### 单集')); assert(content.includes('### 另一集'));
+    assert(!f.files.has('Podcasts.md'));
+    assert.equal(f.service.notes.values('douban-123').listened, '2026-11-03');
+});
+
+test('the same template variables render in a row, a full note, and an appended section', async () => {
+    const f = fixture();
+    await configure(f, 'both', rule => rule.id === 'catalog' ? { ...rule, template: '- {{title}} / {{show}} / {{published}} {{link}}' }
+        : rule.id === 'notes' ? { ...rule, template: '{{title}} / {{show}} / {{published}}\n{{link}}' }
+        : { ...rule, enabled: true, template: '{{title}} / {{show}} / {{published}}\n{{link}}' });
+    await f.service.capture(item);
+    for (const p of ['Podcasts.md', 'Podcasts/节目/单集.md', 'Podcasts/节目.md']) assert(f.contents.get(p).includes('单集 / 节目 / 2026-11-01'), p);
+});
+
+test('multiple create rules reuse separate identities and template updates do not treat them as duplicate notes', async () => {
+    const f = fixture(); const rules = await configure(f, 'note');
+    const primary = rules.find(rule => rule.id === 'notes');
+    await f.service.saveSettings({ ...f.service.config, writeRules: [...rules, { ...primary, id: 'archive', name: 'Archive', folder: 'Archive' }] });
+    await f.service.capture(item); await f.service.capture(item);
+    assert.equal(f.header('Archive/节目/单集.md').podcast_capture_rule, 'archive');
+    assert.equal((await prepareNoteRefresh(f.service)).filter(plan => plan.error).length, 0);
+    assert.equal(f.files.has('Archive/节目/单集 (douban-123).md'), false);
+});
+
+test('conflicting destinations and invalid rule fields fail before writing any output', async () => {
+    const f = fixture(); const rules = await configure(f, 'both');
+    const note = rules.find(rule => rule.id === 'notes');
+    await f.service.saveSettings({ ...f.service.config, writeRules: [...rules, { ...note, id: 'duplicate', name: 'Duplicate' }] });
+    await assert.rejects(f.service.capture(item), /多条规则指向同一个文件/);
+    assert.equal(f.writes(), 0);
+    for (const patch of [{ folder: '../outside' }, { pathTemplate: '{{description}}.md' }, { coverWidth: 0 }, { id: 'invalid:id' }]) {
+        assert.throws(() => validateSettings({ writeRules: [{ ...note, ...patch }] }));
+    }
+    assert.throws(() => validateSettings({ writeRules: [{ ...note, mode: 'append', template: '---\na: b\n---\nbody' }] }));
+});
+
+test('an existing append target requires the configured heading and retains unrelated content', async () => {
+    const f = fixture(); await configure(f, 'show'); f.add('Podcasts/节目.md', '手写正文');
+    await assert.rejects(f.service.capture(item), /缺少标题：Episodes/); assert.equal(f.writes(), 0);
+    f.contents.set('Podcasts/节目.md', '手写正文\n\n#### Episodes\n\n#### Quotes\n\n摘抄');
+    await f.service.capture(item);
+    assert(f.contents.get('Podcasts/节目.md').startsWith('手写正文'));
+    assert(f.contents.get('Podcasts/节目.md').endsWith('摘抄'));
+});
+
+test('retroactive append template updates back up once per file and preserve text outside managed entries', async () => {
+    const f = fixture(); await configure(f, 'show'); await f.service.capture(item);
+    await f.service.capture({ ...item, id: '456', url: 'https://www.douban.com/podcast_episode/456', title: '节目 · 另一集' });
+    const p = 'Podcasts/节目.md'; f.contents.set(p, f.contents.get(p) + '\n手写摘抄'); const original = f.contents.get(p);
+    await f.service.saveSettings({ ...f.service.config, writeRules: f.service.config.writeRules.map(rule => rule.id === 'show' ? { ...rule, template: '#### Updated {{title}}\n{{link}}' } : rule) });
+    const plans = await prepareNoteRefresh(f.service); assert.equal(plans.length, 1); assert.equal(plans[0].error, '');
+    const [result] = await applyNoteRefresh(f.service, plans);
+    assert.equal(result.status, 'updated'); assert.equal(f.contents.get(result.backupPath), original);
+    assert(f.contents.get(p).includes('#### Updated 单集')); assert(f.contents.get(p).includes('#### Updated 另一集'));
+    assert(f.contents.get(p).endsWith('手写摘抄'));
+    assert.equal(f.service.appends.all().length, 2);
+});
+
+test('retroactive catalog templates preserve work children, quotations, and episode note links', async () => {
+    const f = fixture(); await configure(f, 'both'); await f.service.capture(item);
+    f.contents.set('Podcasts.md', f.contents.get('Podcasts.md') + '\n  - 手写子项\n\n#### Quotes\n\n摘抄');
+    await f.service.saveSettings({ ...f.service.config, writeRules: f.service.config.writeRules.map(rule => rule.id === 'catalog' ? { ...rule, template: '- {{link}} / {{published}}' } : rule) });
+    const plan = (await prepareNoteRefresh(f.service)).find(plan => plan.path === 'Podcasts.md');
+    assert.equal(plan.error, ''); await applyNoteRefresh(f.service, [plan]);
+    const log = f.contents.get('Podcasts.md');
+    assert(log.includes('/ 2026-11-01')); assert(log.includes('[[Podcasts/节目/单集|笔记]]'));
+    assert(log.includes('手写子项')); assert(log.endsWith('摘抄'));
+});
+
+test('changing an in-progress append entry to listened preserves edited content by stopping with a detailed error', async () => {
+    const f = fixture(); await configure(f, 'show'); await f.service.capture({ ...item, state: '在听' });
+    const p = 'Podcasts/节目.md'; const original = f.contents.get(p).replace('### 单集', '### 单集\n\n手写'); f.contents.set(p, original);
+    await assert.rejects(f.service.capture(item), /单集区域已手工修改/);
+    assert.equal(f.contents.get(p), original);
+});
+
+test('append indexes follow file renames and repeated capture after reload does not create a second file', async () => {
+    const f = fixture(); await configure(f, 'show'); f.service.appends.register(f.plugin); await f.service.capture(item);
+    const p = 'Podcasts/节目.md', file = f.files.get(p); file.path = 'Elsewhere/Show.md';
+    f.files.delete(p); f.files.set(file.path, file); f.contents.set(file.path, f.contents.get(p)); f.contents.delete(p);
+    f.events.get('rename')(file, p); await f.service.dataQueue; await f.service.initialize(); await f.service.capture(item);
+    assert(!f.files.has(p)); assert.equal((f.contents.get(file.path).match(/:start -->/g) ?? []).length, 1);
+    const oldPath = file.path; file.path = 'Moved/Show.md'; f.files.delete(oldPath); f.files.set(file.path, file);
+    f.contents.set(file.path, f.contents.get(oldPath)); f.contents.delete(oldPath);
+    f.events.get('rename')({ path: 'Moved' }, 'Elsewhere'); await f.service.dataQueue; await f.service.capture(item);
+    assert.equal((f.contents.get(file.path).match(/:start -->/g) ?? []).length, 1);
+});
+
+test('all output rules share a single daily link and an append-only daily link targets the episode block', async () => {
+    const f = fixture({ dailyIntegration: true }); f.add('Daily/2026-11-03.md', 'diary'); await configure(f, 'show');
+    await f.service.capture(item); await f.service.capture(item);
+    const values = f.properties.get('Daily/2026-11-03.md').podcasts;
+    assert.equal(values.length, 1); assert(values[0].includes('Podcasts/节目#^douban-123-show'));
+});
+
+test('all renderers and explicit catalog refresh retain the original creation date', async () => {
+    const f = fixture(); await configure(f, 'both', rule => ({ ...rule, template: rule.id === 'catalog' ? '- {{currentDate}} {{listened}} {{link}}' : '{{currentDate}} {{listened}} {{link}}' }));
+    await f.service.notes.remember('douban-123', noteValues(item, 'douban-123', '', '2020-01-01'));
+    await f.service.capture({ ...item, date: '2026-11-04' });
+    assert(f.contents.get('Podcasts.md').includes('2020-01-01'));
+    assert(f.contents.get('Podcasts.md').includes('2026-11-03'));
+    assert(f.contents.get('Podcasts/节目/单集.md').includes('2020-01-01'));
+    assert(f.contents.get('Podcasts/节目/单集.md').includes('2026-11-03'));
+    const plan = (await prepareNoteRefresh(f.service)).find(plan => plan.path === 'Podcasts.md');
+    assert(plan.replacement.includes('2020-01-01'));
+});
+
+test('episode identity is shared across platforms even without a concentrated log', async () => {
+    for (const preset of ['note', 'show']) {
+        const f = fixture(); await configure(f, preset); const first = await f.service.capture(item);
+        const second = await f.service.capture({ ...item, id: '456', url: 'https://podcasts.apple.com/us/podcast/id12?i=456' });
+        assert.equal(second.notePath, first.notePath); assert.equal(second.noteCreated, false);
+        assert(!f.contents.get(first.notePath).includes('^apple-456'));
+    }
+});
+
+test('several output rules fetch metadata and download the shared cover only once', async () => {
+    const f = fixture({ downloadCovers: true }); await configure(f, 'both', rule => rule.id === 'show' ? { ...rule, enabled: true } : rule);
+    let metadataRequests = 0;
+    f.service.fetchMetadata = async () => { metadataRequests++; return { title: item.title, cover: 'https://img3.doubanio.com/cover.jpg' }; };
+    imageRequests = 0;
+    imageResponse = { status: 200, headers: { 'content-type': 'image/jpeg' }, arrayBuffer: Uint8Array.from([255, 216, 255, 217]).buffer };
+    try {
+        const result = await f.service.capture(item);
+        assert.equal(result.hasCover, true); assert.equal(metadataRequests, 1); assert.equal(imageRequests, 1);
+        assert.equal([...f.files.values()].filter(file => file.extension === 'jpg').length, 1);
+        for (const p of ['Podcasts.md', 'Podcasts/节目/单集.md', 'Podcasts/节目.md']) assert(f.contents.get(p).includes(result.coverPath), p);
+    } finally { imageResponse = null; }
 });

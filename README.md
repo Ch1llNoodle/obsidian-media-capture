@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md) · English
 
-Podcast Capture saves episode links from Douban, Xiaoyuzhou, and Apple Podcasts as a one-line Markdown log, individual episode notes, or both. The default remains one line per episode, with a title, optional local cover, and listening date. Episode notes support folders grouped by show and Markdown templates. Daily integration and links to centralized work wishlists are optional. The interface currently uses Chinese.
+Podcast Capture applies Markdown templates to episode information from Douban, Xiaoyuzhou, and Apple Podcasts. Configurable rules append content to existing files or create new files, supporting one-line logs, one file per episode, and one file per show. The default remains one line per episode. Daily integration and links to work wishlists are optional. The interface currently uses Chinese.
 
 #### Installation
 
@@ -10,13 +10,13 @@ For iPhone and desktop testing, install [BRAT](https://github.com/TfTHacker/obsi
 
 Obsidian 1.5.0 or later is required. Place `main.js`, `manifest.json`, and `styles.css` in `<Vault>/.obsidian/plugins/podcast-capture/`, then enable **Podcast Capture** under **Settings → Community plugins**. Source builds place these files in `release/podcast-capture/`.
 
-When updating, replace those three files and reload the plugin. Keep the existing `data.json`, which stores personal settings, the episode-note index and captured metadata, and the latest cover repair report.
+When updating, replace those three files and reload the plugin. Keep the existing `data.json`, which stores rule settings, output indexes, captured metadata, and the latest cover repair report.
 
 #### Capture an episode
 
 1. Open the command palette and run **Podcast Capture: 添加播客** (add podcast).
 2. Paste an episode share link and select **获取单集信息** (fetch episode information).
-3. Confirm the show, episode title, listening date, state, and save mode, then select **保存** (save).
+3. Confirm the show, episode title, listening date, state, and write preset, then select **保存** (save).
 
 States are `听过` (listened), `在听` (in progress), and `想听` (wishlist). Only listened entries receive a listening date. The date is entered manually; the plugin does not import playback history. With daily integration enabled, opening the dialog from a dated note in the configured daily folder uses that note's date.
 
@@ -24,42 +24,40 @@ For Apple Podcasts, share an individual episode. A show URL without an `i` episo
 
 **打开播客记录** opens the configured log. **补全缺失封面** retries missing covers and reports the failure stage; when an image URL is available, the report links to the original image.
 
-#### Episode notes
+#### Templates and write rules
 
-Choose a default save mode in the plugin settings, or change **保存方式** for a single capture:
+All outputs use the same episode metadata and template variables. Each write rule selects a template, a vault path, and either **append to file** or **create file**. Multiple enabled rules run for one capture, sharing one cover download and one daily-note link.
 
-| Mode | Output |
-| --- | --- |
-| 记录清单 | One log row; no episode note is created |
-| 单集笔记 | One episode note, opened after saving; no log is created automatically |
-| 清单与单集笔记 | A log row with a note link, plus an episode note |
+| Preset | Destination | Content |
+| --- | --- | --- |
+| 集中清单 | Append under Entries in `Podcasts.md` | One list row |
+| 每集一篇 | Create `Podcasts/{{show}}/{{title}}.md` | An episode note |
+| 清单与单集笔记 | Run the two rules above | A row and a note |
+| 按节目追加 | Append under Episodes in `Podcasts/{{show}}.md` | Multiple episode sections in one show file |
 
-The **创建单集笔记** command opens the capture dialog in note mode. In an existing log, **写笔记** opens a dialog prefilled with that row's episode; **打开笔记** reopens an indexed note. These actions work in reading mode and the editor, including mobile, without a hotkey. A note-only episode can be added to the log later with **添加播客**; work associations currently require a log row.
+In settings, apply a preset or edit individual rules: name, enabled state, write method, folder, path template, target heading, template file, inline content, and cover width. Rules can be added or removed, up to 20. Applying a preset replaces rule configuration and keeps existing files. In the capture dialog, **使用已启用规则** runs the configured rules; a named preset overrides the selection for that capture.
 
-The default note folder is `Podcasts` and the path within it is `{{show}}/{{title}}.md`. For example, a show named `Morning` and episode named `Airplanes` produce `Podcasts/Morning/Airplanes.md`. A missing show name uses `Unsorted`. The folder can be empty to use the vault root. Changing either setting affects new files only. Unsupported filename characters are replaced, reserved Windows names are prefixed, and a filename occupied by another file receives an episode-ID suffix. Creating a new note never overwrites another file.
+A fixed path collects episodes in one file; `{{show}}.md` groups them by show; `{{show}}/{{title}}.md` creates one file per episode when used with create mode. Empty folders use the vault root. Missing shows use Unsorted. Unsupported filename characters are replaced. Create mode reopens an identified episode file or adds an ID suffix for a foreign filename collision. Append mode reuses the target file and creates it when absent; an existing file must contain the configured heading, unless the heading is empty. Two enabled rules targeting the same file are rejected before writing.
 
-Select a vault Markdown file under **Markdown 模板文件**, or leave it empty to use the editable built-in **新笔记模板**. Saving a template affects new notes by default. To apply it to older notes, use **更新已有单集笔记 → 预览并选择** in settings, or the **将模板应用到已有笔记** command. Templates are plain Markdown with optional YAML properties. Templater expressions and JavaScript are not executed.
+The concentrated log rule preserves a fixed path, target heading, and single-line list template containing `{{link}}` so existing daily links and work associations remain usable. Other append rules accept multiline Markdown. Their managed episode regions are delimited by `podcast-entry` comments. Keep those comments and block IDs; handwritten content outside the regions remains intact. Live Preview hides these management markers in tracked output files. A repeated capture preserves an existing completed region. A state transition stops if the region has been edited manually.
 
-The update dialog lists managed episode notes and previews each replacement. Select the files to update, then select **备份并更新所选笔记**. This explicitly regenerates the whole selected note, including properties and handwritten sections, at its current path. It does not move or rename files. Before replacing each note, the plugin saves and verifies a full text backup beside it with a timestamp and the `.podcast-capture-backup` extension. The results include a **查看备份** action that displays the original text inside Obsidian; copy that text back into the note to restore it. Keep backup files until their contents are no longer needed.
-
-Captured metadata stored in `data.json` retains original publication, listening, and creation dates. Explicit properties in an existing note take precedence. Older notes without captured metadata use available properties, the episode link, the heading, and the local log. Missing optional fields are listed in the preview and remain empty; handwritten paragraphs are not inferred as episode descriptions. Applying templates makes no network requests.
-
-Template errors identify the template source and stop the preview before writing. Per-note errors include the path, failed stage, underlying reason, update status, and any backup path. Duplicate identities and files edited after preview are skipped. Backup failure prevents replacement; replacement failure leaves the backup available. Other selected files can still finish. Repeating the operation with unchanged content creates no extra backup. Closing an already running update dialog does not cancel the queued work.
+Select a vault Markdown file for a rule, or leave the file path empty to use its inline content. Create templates may include YAML properties; append templates contain body Markdown. Templater and JavaScript are not executed.
 
 | Variable | Value |
 | --- | --- |
-| `{{show}}`, `{{title}}` | Show name and episode title, kept separate |
-| `{{url}}` | Canonical episode link |
-| `{{cover}}`, `{{coverPath}}` | Local Markdown image with width 120, or its vault path; empty without a local cover |
-| `{{published}}` | Platform publication date, when available |
-| `{{listened}}` | Manually selected listening date for 听过; empty for other states |
-| `{{currentDate}}`, `{{date}}` | Local date when the note is created |
-| `{{description}}` | Platform description, when available, or manually entered text |
-| `{{state}}`, `{{provider}}`, `{{id}}` | Capture state, platform, and stable episode identifier |
+| `{{show}}`, `{{title}}` | Show and episode title |
+| `{{fullTitle}}`, `{{link}}` | Combined show/title text, or its Markdown episode link |
+| `{{url}}` | Canonical platform episode URL |
+| `{{cover}}`, `{{coverPath}}` | Local Markdown image at the rule's width, or its vault path; empty without a cover |
+| `{{published}}` | Publication date supplied by the platform |
+| `{{listened}}` | Selected listening date for 听过; empty for other states |
+| `{{currentDate}}`, `{{date}}` | Local date of the episode's first generated record; retained during template updates |
+| `{{description}}` | Available platform description or manually entered text |
+| `{{state}}`, `{{provider}}`, `{{id}}` | State, platform, and stable episode identifier |
 
-Date variables accept formats such as `{{published:YYYY-MM-DD}}` or `{{currentDate:YYYY-MM}}`. Paths support `show`, `title`, `published`, `listened`, `currentDate`, `date`, `provider`, and `id`; body-only variables are rejected in paths. Use `/` between path components to create subfolders. Missing optional metadata stays empty in the note and uses `Untitled` in a filename.
+Date formats support YYYY, MM, and DD, for example `{{published:YYYY-MM-DD}}`. Paths accept show, title, published, listened, currentDate, date, provider, and id; use literal slashes between subfolders. Missing optional values remain empty in content and use Untitled in filenames. Cover width is 16–600 pixels; preset rows use 24 and episode sections use 120.
 
-For example, save the following as a Markdown template and select it in settings:
+A row template can be `- {{listened}} {{cover}} {{link}}`. A multiline append template can contain a title, link, description, and your own section headings. For create mode, a Markdown template may include properties:
 
 ```markdown
 ---
@@ -79,9 +77,21 @@ tags: [podcast]
 #### Quotes
 ```
 
-New episode notes always include one managed property, `podcast_capture_id`, used to find them after a rename or move. Keep that property intact. Other properties come from the selected template; existing logs and daily notes receive no new managed properties. Repeated capture of a note reopens it without changing its content or dates. The index in `data.json` accelerates lookup; vault metadata can recover a note after syncing it to another device. Ambiguous duplicate identities require manual cleanup.
+**创建单集笔记** opens the capture dialog with the per-episode preset. **写笔记** beside a log row preselects that episode; **打开笔记** reopens its primary episode note. The log also keeps a link to the first additional output, including a show file when selected. Reading mode and the editor provide row actions without hotkeys. Work associations and log-based tracking still use the concentrated log rule; arbitrary output files are not automatically included by external trackers.
 
-Templates and paths are checked before creating outputs. If a later write fails after the log or note was saved, the error identifies the saved side; retrying reuses it. With daily integration enabled, both mode keeps the log block link, while note-only mode links the episode note when no log row exists. Only one link is added for an unchanged episode target.
+Created files contain `podcast_capture_id`. Additional create rules also use `podcast_capture_rule` to distinguish outputs for the same episode. Existing primary notes keep their original identifier. Append indexes follow file renames; if a tracked file or its region disappears, saving reports the missing target rather than recreating it elsewhere. Keep data.json with the vault for cross-device continuity.
+
+#### Apply templates to existing records
+
+Template edits apply to new records by default. Use **将模板应用到已有记录 → 预览并选择** in settings, or the command of the same name, to preview updates and select files.
+
+Create outputs are regenerated in full, including properties and handwritten sections. Append outputs replace only managed rows or episode regions, retaining surrounding text, work children, and quotations. A show file containing several episodes is updated once and backed up once. File names and locations remain unchanged.
+
+Before replacing a file, the plugin saves and verifies a timestamped text backup beside it with the `.podcast-capture-backup` extension. Results provide **查看备份** inside Obsidian; copy the original text back to restore it. Keep backups until no longer needed.
+
+Stored metadata retains original dates and descriptions; explicit properties in a note take precedence. Older notes recover available information from their local link, heading, properties, and log. Missing optional fields are shown before updating. Missing essential links, duplicate identities, removed rules, and damaged region markers produce errors. No network requests are made during template updates.
+
+Reports identify each file, failed stage, reason, update status, and backup path. Files changed after preview are skipped. Backup failure prevents replacement; other selected files can still finish. Identical content creates no new backup. Closing a running update dialog does not cancel queued work.
 
 #### Link works to podcast episodes
 
@@ -105,32 +115,17 @@ Custom sync tools must preserve the span between `podcast-sources:start` and `po
 
 | Setting | Default | Behavior |
 | --- | --- | --- |
-| Save mode | `log` | Log, episode note, or both; can be overridden per capture |
-| Note folder | `Podcasts` | Relative vault folder; empty uses the root |
-| Note path template | `{{show}}/{{title}}.md` | Path inside the note folder, including `.md` |
-| Markdown template file | Empty | An existing vault `.md` template; empty uses the built-in template |
-| New note template | Title, show, cover, link, Notes, Quotes | Used for creation and explicit updates to selected existing notes |
-| Log file | `Podcasts.md` | Created when absent; changing this setting does not move the existing file |
-| Entry heading | `Entries` | New entries are inserted under this heading; other content is preserved |
-| Cover folder | `image/podcasts` | Relative path inside the vault |
-| Row template | `- {{date}} {{cover}} {{link}}` | One list item per line; must begin with `- ` and contain `{{link}}` |
-| Download covers | Enabled | Downloads cover images when saving or repairing entries |
-| Repair on startup | Disabled | Checks for missing covers after the workspace is ready |
-| Daily integration | Disabled | Writes links for listened episodes to an existing daily note |
-| Daily folder | `Daily` | Searches this folder and its subfolders for notes named `YYYY-MM-DD` |
-| Daily property | `podcasts` | Stores episode links as a list and preserves other properties |
-| Book list | `Recommendations/Books.md` | Existing collection |
-| Movie list | `Recommendations/Movies.md` | Existing collection |
-| Series list | `Recommendations/Series.md` | Existing collection |
-| Music list | `Recommendations/Music.md` | Existing collection |
-| Game list | `Recommendations/Games.md` | Existing collection |
-| Theater list | `Recommendations/Theater.md` | Existing collection |
+| Write rules | Concentrated log enabled | Presets or independently configured append/create rules |
+| Cover folder | `image/podcasts` | Shared local cover directory |
+| Download covers | Enabled | Downloads missing covers when capturing or repairing |
+| Repair on startup | Disabled | Repairs concentrated-log covers after layout is ready |
+| Daily integration | Disabled | Links listened episodes to exactly one existing dated note |
+| Daily folder / property | `Daily` / `podcasts` | Searches subfolders; preserves other properties |
+| Collection paths | Files under `Recommendations/`: `Books.md`, `Movies.md`, `Series.md`, `Music.md`, `Games.md`, `Theater.md` | Existing wanted-work collections |
 
-Daily integration writes a link only when exactly one matching note exists. It does not create daily notes. Changing paths does not relocate records, covers, or daily notes.
+Daily integration creates no daily notes. When the concentrated log rule runs, its block link is used; otherwise the first additional output supplies the link, including an episode anchor in a show file. A note created from an existing log row keeps the existing activity source. Changing rule paths affects new outputs and does not move existing files.
 
-#### Templates and record identity
-
-Template variables are `date`, `cover`, `link`, `title`, `url`, `state`, and `provider`. `cover` expands to a Markdown image with a width of 24; `link` expands to the episode's Markdown link. The other variables expand to text. For example, `- {{link}} · {{date}} {{cover}}` places the title before the date.
+#### Record identity and repair
 
 Cover repair also replaces a previously saved generic Apple web player title when exact episode metadata is available; custom titles, dates, block identifiers, and quotations are retained.
 
@@ -144,11 +139,13 @@ The output is ordinary Markdown. Dataview and other tracking plugins are optiona
 
 Installations predating configurable settings can migrate their existing paths once, when no saved settings exist and the legacy log is present. Saved settings take precedence. Legacy `douban-state` comments and block identifiers remain readable.
 
+Settings from 0.6.x resolve to equivalent rules in memory, retaining paths, templates, and selected outputs. Editing rules saves the unified `writeRules` configuration. Legacy `captureMode`, `rowTemplate`, and note fields remain compatibility inputs; the settings UI edits rules directly. Earlier row-template `date` and `title` variables map to `listened` and `fullTitle`, preserving their existing meaning. Deployments never replace personal data.json.
+
 #### Development and validation
 
 Runtime source files are TypeScript. The compiler enables `strict`, unchecked indexed access checks, explicit override checks, and unused declaration checks; JavaScript source inclusion is disabled. ESLint rejects explicit `any` and unsafe assignments, arguments, calls, member access, and returns in runtime code. Persisted data and third-party JSON enter as `unknown` and are narrowed before use.
 
-`src/main.ts` manages lifecycle and commands. `service.ts` coordinates capture and cover repair, `storage.ts` handles vault operations, and `core.ts` handles settings, links, and Markdown records. `metadata.ts` and `metadata-helpers.ts` parse public page metadata. The capture dialog and settings tab have separate modules; `types.ts` defines their shared contracts.
+`src/main.ts` manages lifecycle and commands. `capture-output.ts` executes one shared capture pipeline; `capture-context.ts` handles cover retrieval and the daily link once per capture. `write-rules.ts` validates rules and resolves presets, and `note-format.ts` renders shared variables. `episode-notes.ts` and `append-output.ts` implement create and append destinations. `refresh-plan.ts` builds per-file template updates, and `note-refresh.ts` applies them with verified backups. The service, settings UI, platform parsers, and vault helpers retain separate responsibilities. Runtime contracts are defined in `types.ts`.
 
 ```sh
 npm ci

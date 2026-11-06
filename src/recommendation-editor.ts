@@ -35,7 +35,8 @@ class EpisodeAction extends WidgetType {
 export function recommendationEditor(service: RecommendationService): ViewPlugin<{ decorations: DecorationSet }> {
     const decorations = (view: EditorView): DecorationSet => {
         const path = view.state.field(editorInfoField, false)?.file?.path;
-        if (path !== service.podcast.config.catalogPath) return Decoration.none;
+        const catalog = path === service.podcast.config.catalogPath;
+        if (!path || !catalog && !service.podcast.appends.hasPath(path)) return Decoration.none;
         const ranges: Range<Decoration>[] = [];
         const seen = new Set<number>();
         const livePreview = view.state.field(editorLivePreviewField, false) === true;
@@ -44,9 +45,10 @@ export function recommendationEditor(service: RecommendationService): ViewPlugin
                 const line = view.state.doc.lineAt(position);
                 if (!seen.has(line.from)) {
                     seen.add(line.from);
-                    const source = episodeSource(line.text, path);
-                    if (livePreview && (source || /^ {2}- .*<!-- podcast-work -->\s*$/.test(line.text))) {
-                        const metadata = /\s*<!--\s*(?:(?:podcast-state|podcast-date|douban-state):[^>]*|podcast-work|podcast-note)\s*-->|\s+\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+)\s*$/g;
+                    const source = catalog ? episodeSource(line.text, path) : null;
+                    if (livePreview && (!catalog || source || /^ {2}- .*<!-- podcast-work -->\s*$/.test(line.text))) {
+                        const metadata = catalog ? /\s*<!--\s*(?:(?:podcast-state|podcast-date|douban-state):[^>]*|podcast-work|podcast-note)\s*-->|\s+\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+)\s*$/g
+                            : /<!-- podcast-entry:[a-z][a-z0-9-]*:(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+):(?:start|end) -->|^\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+)-[a-z][a-z0-9-]*\s*$/g;
                         for (const match of line.text.matchAll(metadata)) {
                             ranges.push(Decoration.replace({}).range(line.from + match.index, line.from + match.index + match[0].length));
                         }
