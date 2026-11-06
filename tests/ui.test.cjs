@@ -10,7 +10,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
         external: ['obsidian', '@codemirror/state', '@codemirror/view'], platform: 'browser', format: 'cjs', target: 'es2021', minify: true, write: false }).outputFiles[0].text;
     const all = node => [node, ...node.children.flatMap(all)];
     function element(tag = 'div', options = {}) {
-        const node = { tag, children: [], value: options.value ?? '', classList: { add() {} }, ...options,
+        const node = { tag, children: [], style: {}, value: options.value ?? '', classList: { add() {} }, ...options,
             setAttribute(key, value) { this[key] = value; }, focus() {}, addClass() {}, setText(value) { this.text = value; }, empty() { this.children = []; },
             createEl(tag, options = {}) {
                 const child = element(tag, options); this.children.push(child);
@@ -38,7 +38,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
         getAbstractFileByPath: p => files.get(p) ?? null,
         read: async file => content.get(file.path),
         createFolder: async p => { files.set(p, { path: p }); },
-        create: async (p, text) => { const file = { path: p, extension: 'md' }; files.set(p, file); content.set(p, text); return file; },
+        create: async (p, text) => { const file = { path: p, extension: p.split('.').at(-1) }; files.set(p, file); content.set(p, text); return file; },
         process: async (file, fn) => { content.set(file.path, fn(content.get(file.path))); },
     }, workspace: {
         trigger() {},
@@ -59,6 +59,8 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     }
     class Modal {
         constructor(app) { this.app = app; this.contentEl = element(); }
+        onOpen() {}
+        onClose() {}
         open() { modals.push(this); this.onOpen(); }
         close() { this.onClose(); }
     }
@@ -110,7 +112,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     vm.runInNewContext(bundle, sandbox);
     const plugin = new sandbox.module.exports.default();
     await plugin.onload();
-    assert.equal(commands.length, 5);
+    assert.equal(commands.length, 6);
     assert.equal(plugin.supportsRecommendations, true);
     events.get('podcast-capture:recommend')({ path: 'Podcasts.md', blockId: 'douban-123' });
     await new Promise(resolve => setImmediate(resolve));
@@ -209,6 +211,23 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     picker.onChooseItem(files.get('Podcasts/另一个节目/单集.md'));
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(plugin.service.config.noteTemplateFile, 'Podcasts/另一个节目/单集.md');
+    await plugin.service.saveSettings({ ...plugin.service.config, noteTemplateFile: '', noteTemplate: 'Changed {{title}}' });
+    commands.find(command => command.id === 'apply-note-template').callback();
+    await new Promise(resolve => setImmediate(resolve));
+    const refresh = modals.at(-1);
+    assert.equal(refresh.selected.size, 1);
+    const checkbox = all(refresh.contentEl).find(node => node.type === 'checkbox');
+    checkbox.checked = false; checkbox.change();
+    assert.equal(refresh.applyButton.disabled, true);
+    checkbox.checked = true; checkbox.change();
+    assert.equal(refresh.applyButton.disabled, false);
+    const originalNote = content.get('Podcasts/另一个节目/单集.md');
+    await refresh.apply();
+    assert(content.get('Podcasts/另一个节目/单集.md').includes('Changed 单集'));
+    assert(all(refresh.contentEl).some(node => node.tag === 'textarea' && node.value.includes('已更新')));
+    all(refresh.contentEl).find(node => node.tag === 'button' && node.text === '查看备份').click();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(all(modals.at(-1).contentEl).find(node => node.tag === 'textarea').value, originalNote);
     plugin.onunload();
     assert.equal(plugin.service.unloaded, true);
 });

@@ -1,7 +1,7 @@
 import { parseYaml, type Plugin, type TFile } from 'obsidian';
 import type { PodcastService } from './service';
 import type { CaptureItem } from './types';
-import { episodeNotePath, noteValues, relativeNotePath, renderEpisodeNote, validateNoteTemplate } from './note-format';
+import { episodeNotePath, noteValues, relativeNotePath, renderEpisodeNote, validateNoteTemplate, type NoteValues } from './note-format';
 import { ensureFolder, isMarkdownFile } from './storage';
 import { localDate } from './core';
 import { record } from './validation';
@@ -16,11 +16,12 @@ export interface EpisodeNotePlan {
 
 export class EpisodeNotes {
     private readonly index = new Map<string, string>();
+    private readonly metadata = new Map<string, NoteValues>();
     constructor(private readonly podcast: PodcastService) {}
 
     known(id: string): boolean { return this.index.has(id); }
 
-    private checkPath(path: string): void {
+    checkPath(path: string): void {
         relativeNotePath(path);
         const config = this.podcast.app.vault.configDir?.toLowerCase();
         if (config && (path.toLowerCase() === config || path.toLowerCase().startsWith(config + '/'))) throw new Error('单集笔记和模板不能使用笔记库配置目录。');
@@ -29,12 +30,32 @@ export class EpisodeNotes {
         if (reserved.some(value => value.toLowerCase() === path.toLowerCase())) throw new Error('单集笔记不能覆盖播客记录或作品清单。');
     }
 
-    initialize(value: unknown): void {
+    initialize(value: unknown, metadata?: unknown): void {
         this.index.clear();
+        this.metadata.clear();
+        for (const [id, item] of Object.entries(record(metadata))) {
+            const values: NoteValues = {};
+            for (const [key, value] of Object.entries(record(item))) if (typeof value === 'string') values[key] = value;
+            if (values.id === id) this.metadata.set(id, values);
+        }
         for (const [id, path] of Object.entries(record(value))) {
             if (!/^(douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+)$/.test(id) || typeof path !== 'string') continue;
             try { this.index.set(id, relativeNotePath(path)); } catch { /* Ignore invalid persisted entries. */ }
         }
+    }
+
+    paths(): string[] { return [...this.index.values()]; }
+    values(id: string): NoteValues | undefined { const value = this.metadata.get(id); return value ? { ...value } : undefined; }
+    remember(id: string, values: NoteValues): Promise<void> { this.metadata.set(id, { ...values }); return this.persist(); }
+
+    async template(): Promise<string> {
+        const settings = this.podcast.config;
+        if (!settings.noteTemplateFile) return settings.noteTemplate;
+        this.checkPath(settings.noteTemplateFile);
+        const file = this.podcast.app.vault.getAbstractFileByPath(settings.noteTemplateFile);
+        if (!isMarkdownFile(file)) throw new Error(`读取模板失败：${settings.noteTemplateFile} 不是现有 Markdown 文件。`);
+        try { return await this.podcast.app.vault.read(file); }
+        catch (error) { throw new Error(`读取模板失败：${settings.noteTemplateFile}；${error instanceof Error ? error.message : String(error)}`); }
     }
 
     register(plugin: Plugin): void {
@@ -77,13 +98,7 @@ export class EpisodeNotes {
         const existing = await this.find(id);
         if (existing) return { item, id, path: existing.path, template: '', existing };
         const settings = this.podcast.config;
-        let template = settings.noteTemplate;
-        if (settings.noteTemplateFile) {
-            this.checkPath(settings.noteTemplateFile);
-            const file = this.podcast.app.vault.getAbstractFileByPath(settings.noteTemplateFile);
-            if (!isMarkdownFile(file)) throw new Error('找不到单集 Markdown 模板文件，请检查插件设置。');
-            template = await this.podcast.app.vault.read(file);
-        }
+        const template = await this.template();
         validateNoteTemplate(template);
         const values = noteValues(item, id, '', localDate());
         renderEpisodeNote(template, values);
@@ -109,16 +124,18 @@ export class EpisodeNotes {
         if (existing) return { file: existing, created: false };
         if (plan.existing) throw new Error('单集笔记已被移除或标识已变化，请重新打开后重试。');
         const vault = this.podcast.app.vault;
-        const content = renderEpisodeNote(plan.template, noteValues(plan.item, plan.id, coverPath, localDate()));
+        const values = noteValues(plan.item, plan.id, coverPath, localDate());
+        const content = renderEpisodeNote(plan.template, values);
         const folder = plan.path.includes('/') ? plan.path.slice(0, plan.path.lastIndexOf('/')) : '';
         if (folder) await ensureFolder(vault, folder);
         if (this.podcast.unloaded) throw new Error('插件已卸载，请重新启用后重试。');
         const file = await vault.create(plan.path, content);
         this.index.set(plan.id, file.path);
+        this.metadata.set(plan.id, values);
         try { await this.persist(); }
         catch { throw new Error('单集笔记已创建，但索引未能保存；再次保存可找回原笔记。'); }
         return { file, created: true };
     }
 
-    private persist(): Promise<void> { return this.podcast.updateData({ noteIndex: Object.fromEntries(this.index) }); }
+    private persist(): Promise<void> { return this.podcast.updateData({ noteIndex: Object.fromEntries(this.index), noteMetadata: Object.fromEntries(this.metadata) }); }
 }

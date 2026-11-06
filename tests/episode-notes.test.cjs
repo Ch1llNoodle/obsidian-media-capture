@@ -7,6 +7,7 @@ const { buildSync } = require('esbuild');
 
 const bundle = buildSync({ stdin: { contents: `export {PodcastService} from './src/service';
 export {appleLookupMetadata} from './src/apple';
+export * from './src/note-refresh';
 export * from './src/note-format'; export * from './src/core';`, resolveDir: path.resolve(__dirname, '..'), loader: 'ts' },
     bundle: true, platform: 'browser', format: 'cjs', target: 'es2021', external: ['obsidian'], write: false }).outputFiles[0].text;
 const sandbox = { module: { exports: {} }, URL, URLSearchParams, Uint8Array, Date, console, require: () => ({
@@ -22,7 +23,7 @@ function fixture(options = {}) {
     let data = { settings: { ...DEFAULT_SETTINGS, downloadCovers: false, ...options }, unrelated: { retained: true } };
     let writes = 0;
     const add = (p, text) => {
-        const file = { path: p, extension: 'md', basename: p.split('/').at(-1).replace(/\.md$/, '') };
+        const file = { path: p, extension: p.split('.').at(-1), basename: p.split('/').at(-1).replace(/\.md$/, '') };
         files.set(p, file); contents.set(p, text); return file;
     };
     const header = p => {
@@ -255,4 +256,107 @@ test('structured platform metadata separates show, title, publication date and d
     assert.equal(apple.show, 'Show'); assert.equal(apple.episodeTitle, 'Episode'); assert.equal(apple.published, '2026-10-31'); assert.equal(apple.description, 'Notes');
     const missing = metadata('<meta property="og:title" content="Episode"><meta property="article:published_time" content="2026-02-30">');
     assert.equal(missing.published, '');
+});
+
+const { prepareNoteRefresh, applyNoteRefresh } = sandbox.module.exports;
+
+test('retroactive template changes are explicit, previewable, selected, and backed up', async () => {
+    const f = fixture({ captureMode: 'note' }); await f.service.initialize();
+    const first = await f.service.capture({ ...item, description: 'original description' });
+    const second = await f.service.capture({ ...item, id: '456', url: 'https://www.douban.com/podcast_episode/456', title: '节目 · 另一集' });
+    const original = f.contents.get(first.notePath) + '\n手写内容'; f.contents.set(first.notePath, original);
+    const other = f.contents.get(second.notePath);
+    await f.service.saveSettings({ ...f.service.config, noteTemplate: '### Changed {{title}}\n{{published}} / {{listened}} / {{currentDate}}\n{{description}}' });
+    assert.equal(f.contents.get(first.notePath), original, 'saving settings alone changes no notes');
+    const plans = await prepareNoteRefresh(f.service);
+    const plan = plans.find(p => p.path === first.notePath);
+    assert.equal(plan.error, ''); assert(plan.replacement.includes('original description'));
+    assert(plan.replacement.includes('2026-11-01 / 2026-11-03 / '));
+    const [result] = await applyNoteRefresh(f.service, [plan]);
+    assert.equal(result.status, 'updated'); assert.equal(result.error, '');
+    assert.equal(f.contents.get(result.backupPath), original);
+    assert(f.contents.get(first.notePath).includes('### Changed 单集'));
+    assert.equal(f.contents.get(second.notePath), other, 'unselected notes are untouched');
+    assert.equal((await prepareNoteRefresh(f.service)).length, 2, 'backup files are not episode notes');
+});
+
+test('metadata snapshots retain original dates and description after reload and rename', async () => {
+    const f = fixture({ captureMode: 'note' }); await f.service.initialize();
+    const first = await f.service.capture({ ...item, description: 'captured description' });
+    const originalValues = f.service.notes.values('douban-123');
+    const file = f.files.get(first.notePath); f.files.delete(first.notePath);
+    f.files.set('Elsewhere/renamed.md', file); f.contents.set('Elsewhere/renamed.md', f.contents.get(first.notePath)); file.path = 'Elsewhere/renamed.md';
+    await f.service.initialize(); await f.service.saveSettings({ ...f.service.config, noteTemplate: '{{description}} {{currentDate}} {{listened}}' });
+    const plan = (await prepareNoteRefresh(f.service)).find(p => p.path === file.path);
+    assert.equal(plan.error, ''); assert.equal(plan.values.currentdate, originalValues.currentdate);
+    assert(plan.replacement.includes('captured description')); assert(plan.replacement.includes('2026-11-03'));
+});
+
+test('legacy notes recover local metadata while absent fields appear in the preview', async () => {
+    const f = fixture({ captureMode: 'note', noteTemplate: '{{show}} {{title}} {{published}} {{listened}} {{description}}' });
+    f.add('Legacy.md', '---\npodcast_capture_id: douban-123\n---\n\n### 单集\n\n[打开](<https://www.douban.com/podcast_episode/123>)\n\n手写段落');
+    f.add('Podcasts.md', '#### Entries\n- 2026-11-03 [节目 · 单集](<https://www.douban.com/podcast_episode/123>) <!-- podcast-state: 听过 --> ^douban-123');
+    await f.service.initialize(); const [plan] = await prepareNoteRefresh(f.service);
+    assert.equal(plan.error, ''); assert.equal(plan.values.show, '节目'); assert.equal(plan.values.listened, '2026-11-03');
+    assert(plan.missing.includes('published')); assert(plan.missing.includes('description'));
+    assert.equal(plan.values.description, '', 'handwritten content is not guessed to be platform metadata');
+});
+
+test('per-file errors include the path and stage and allow other notes to proceed', async () => {
+    const f = fixture({ captureMode: 'note', noteTemplate: '{{title}}' });
+    f.add('Bad.md', '---\npodcast_capture_id: douban-456\n---\n### no link');
+    await f.service.initialize(); await f.service.capture(item);
+    const plans = await prepareNoteRefresh(f.service);
+    assert(plans.find(p => p.path === 'Bad.md').error.includes('恢复单集信息失败'));
+    assert(plans.find(p => p.path === 'Bad.md').error.includes('缺少单集链接'));
+    await f.service.saveSettings({ ...f.service.config, noteTemplate: 'Updated {{title}}' });
+    const results = await applyNoteRefresh(f.service, await prepareNoteRefresh(f.service));
+    assert.equal(results.find(r => r.path === 'Bad.md').status, 'failed');
+    assert.equal(results.find(r => r.path !== 'Bad.md').status, 'updated');
+});
+
+test('invalid template aborts preview before any write and identifies its source', async () => {
+    const f = fixture({ captureMode: 'note', noteTemplateFile: 'Template.md' });
+    f.add('Template.md', '---\ninvalid: [\n---\ntext'); await f.service.initialize();
+    await assert.rejects(prepareNoteRefresh(f.service), /模板检查失败：Template.md[\s\S]*未修改/);
+    assert.equal(f.writes(), 0);
+});
+
+test('edits after preview or during backup are preserved and reported', async () => {
+    for (const duringBackup of [false, true]) {
+        const f = fixture({ captureMode: 'note' }); await f.service.initialize(); const note = await f.service.capture(item);
+        await f.service.saveSettings({ ...f.service.config, noteTemplate: 'Updated {{title}}' });
+        const [plan] = await prepareNoteRefresh(f.service);
+        const userEdit = plan.original + '\nnew edit';
+        if (duringBackup) {
+            const create = f.service.app.vault.create;
+            f.service.app.vault.create = async (p, content) => { const result = await create(p, content); f.contents.set(note.notePath, userEdit); return result; };
+        } else f.contents.set(note.notePath, userEdit);
+        const [result] = await applyNoteRefresh(f.service, [plan]);
+        assert.equal(result.status, 'failed'); assert(result.error.includes('已修改'));
+        assert.equal(f.contents.get(note.notePath), userEdit);
+    }
+});
+
+test('backup failure prevents overwrite, replacement failure retains a recoverable backup', async () => {
+    for (const failBackup of [true, false]) {
+        const f = fixture({ captureMode: 'note' }); await f.service.initialize(); const note = await f.service.capture(item);
+        await f.service.saveSettings({ ...f.service.config, noteTemplate: 'Updated {{title}}' });
+        const [plan] = await prepareNoteRefresh(f.service);
+        if (failBackup) f.service.app.vault.create = async () => { throw new Error('quota exceeded'); };
+        else f.service.app.vault.process = async () => { throw new Error('read only'); };
+        const [result] = await applyNoteRefresh(f.service, [plan]);
+        assert.equal(result.status, 'failed'); assert(result.error.includes(failBackup ? '保存备份失败' : '替换正文失败'));
+        assert.equal(f.contents.get(note.notePath), plan.original);
+        if (!failBackup) assert.equal(f.contents.get(result.backupPath), plan.original);
+    }
+});
+
+test('unchanged templates create no backup and duplicate identities are excluded', async () => {
+    const f = fixture({ captureMode: 'note' }); await f.service.initialize(); const note = await f.service.capture(item);
+    const [result] = await applyNoteRefresh(f.service, await prepareNoteRefresh(f.service));
+    assert.equal(result.status, 'unchanged'); assert.equal(result.backupPath, '');
+    f.add('Copy.md', f.contents.get(note.notePath));
+    const plans = await prepareNoteRefresh(f.service);
+    assert.equal(plans.length, 2); assert(plans.every(p => p.error.includes('多篇')));
 });

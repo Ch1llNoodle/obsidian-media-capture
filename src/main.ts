@@ -3,6 +3,7 @@ import { PodcastService } from './service';
 import { CaptureModal } from './capture-modal';
 import { CaptureSettings } from './settings-ui';
 import { registerRecommendationUI } from './recommendation-ui';
+import { NoteRefreshModal } from './note-refresh-ui';
 
 export default class PodcastCapture extends Plugin {
     service!: PodcastService;
@@ -23,6 +24,10 @@ export default class PodcastCapture extends Plugin {
             callback: () => new CaptureModal(this.service, { output: 'note', item: {
                 id: '', url: '', title: '', state: '听过', date: '',
             } }).open(),
+        });
+        this.addCommand({
+            id: 'apply-note-template', name: '将模板应用到已有笔记',
+            callback: () => new NoteRefreshModal(this.service).open(),
         });
         this.addCommand({
             id: 'open-podcasts', name: '打开播客记录',

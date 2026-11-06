@@ -26,7 +26,7 @@ export class PodcastService {
         this.dataQueue = Promise.resolve();
         const data = record(await this.loadData());
         this.settings = validateSettings(data.settings ?? (this.app.vault.getAbstractFileByPath(LEGACY_SETTINGS.catalogPath) ? LEGACY_SETTINGS : DEFAULT_SETTINGS));
-        this.notes.initialize(data.noteIndex);
+        this.notes.initialize(data.noteIndex, data.noteMetadata);
         if (!data.settings) await this.updateData({ settings: this.settings, settingsVersion: 1 });
     }
     dispose(): void { this.unloaded = true; }

@@ -123,6 +123,7 @@ export interface SavedDataPatch {
     settingsVersion?: number;
     coverReport?: CoverReport;
     noteIndex?: Record<string, string>;
+    noteMetadata?: Record<string, Record<string, string>>;
 }
 
 export interface CaptureUpdatedEvent {

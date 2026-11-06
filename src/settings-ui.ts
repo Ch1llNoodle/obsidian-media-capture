@@ -6,6 +6,7 @@ import { errorMessage } from "./validation";
 import { recommendationKinds, recommendationNames } from "./recommendations";
 import { captureModes } from './note-format';
 import { NoteTemplatePicker } from './note-ui';
+import { NoteRefreshModal } from './note-refresh-ui';
 
 export class CaptureSettings extends PluginSettingTab {
     private readonly plugin: PodcastService;
@@ -40,7 +41,7 @@ export class CaptureSettings extends PluginSettingTab {
         new Setting(container).setName('单集笔记').setHeading();
         text('noteFolder', '笔记目录', '库内相对目录；留空使用笔记库根目录。');
         text('notePathTemplate', '目录内路径模板', '默认 {{show}}/{{title}}.md，按节目分组。可用 id、provider、published、listened、currentDate；日期支持 :YYYY-MM-DD。');
-        text('noteTemplateFile', 'Markdown 模板文件', '留空使用下方模板。修改模板只影响新建笔记。')
+        text('noteTemplateFile', 'Markdown 模板文件', '留空使用下方模板。保存后可选择将模板应用到已有笔记。')
             .addButton(button => button.setButtonText('选择').onClick(() => new NoteTemplatePicker(this.plugin, () => this.display()).open()))
             .addExtraButton(button => button.setIcon('x').setTooltip('使用下方模板').onClick(() => {
                 void this.plugin.saveSettings({ ...this.plugin.config, noteTemplateFile: '' }).then(() => this.display())
@@ -54,6 +55,8 @@ export class CaptureSettings extends PluginSettingTab {
                     .catch((error: unknown) => new Notice(errorMessage(error)));
             });
         });
+        new Setting(container).setName('更新已有单集笔记').setDesc('默认只用于新笔记。此操作先预览，可逐篇选择，备份后按当前模板替换全文。')
+            .addButton(button => button.setButtonText('预览并选择').onClick(() => new NoteRefreshModal(this.plugin).open()));
         new Setting(container).setName("日记联动（可选）").setHeading();
         toggle("dailyIntegration", "写入日记属性", "默认关闭。开启后，已听过条目可写入对应日期的现有日记，无需 Dataview。");
         text("dailyFolder", "日记目录", "此目录及子目录中的日记文件名使用 YYYY-MM-DD。");
