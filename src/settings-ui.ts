@@ -1,6 +1,6 @@
 import { PluginSettingTab, Setting, Notice, type App } from "obsidian";
 
-import type { PodcastService } from "./service";
+import type { CaptureService } from "./service";
 import type { TextSettingKey, ToggleSettingKey } from "./types";
 import { errorMessage } from "./validation";
 import { recommendationKinds, recommendationNames } from "./recommendations";
@@ -8,8 +8,8 @@ import { renderRuleSettings } from './rule-settings';
 import { NoteRefreshModal } from './note-refresh-ui';
 
 export class CaptureSettings extends PluginSettingTab {
-    private readonly plugin: PodcastService;
-    constructor(app: App, plugin: PodcastService) { super(app, plugin.plugin); this.plugin = plugin; }
+    private readonly plugin: CaptureService;
+    constructor(app: App, plugin: CaptureService) { super(app, plugin.plugin); this.plugin = plugin; }
     override display(): void {
         const container = this.containerEl;
         container.empty();

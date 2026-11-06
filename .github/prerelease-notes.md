@@ -1,22 +1,15 @@
-### Media Capture 0.8.2
+### Media Capture 0.8.3
 
-Capture podcast episodes and videos using Markdown templates and configurable write rules. Existing settings and records remain compatible; the released plugin ID remains `podcast-capture`.
+#### Scope and cleanup
 
-#### Changes
+Personal diary sections, completion styling and bulk attachment maintenance belong to the vault. Capture uses explicit saved settings and generic defaults; it no longer probes personal directories or guesses video filenames from path language. Existing saved paths, templates, command IDs and the released plugin ID remain compatible.
 
-- Use readable cover filenames: podcast show names when available, video titles otherwise. Invalid filename characters are sanitized; different artwork with the same name receives a short suffix.
-- Reuse identical artwork across platforms and legacy filenames by comparing image bytes. URL caches persist across reloads. Recompressed or resized variants remain separate.
-- Keep video rows in a separately configurable video log. In-vault playback is optional and disabled by default; its controls use generic names.
-- Strike through associated works when the local collection marks them completed, and refresh after collection updates.
+Artwork reuse now considers only images referenced by configured Capture logs, captured metadata or the URL cache. Unrelated attachments are not enumerated. Readable filenames and byte-for-byte cross-platform reuse remain available.
 
-#### 更新说明
-
-封面使用可读名称，优先采用播客节目名或视频标题，同名不同图增加短后缀。跨平台图片内容完全相同时复用已有文件，缓存重载后继续生效；重新压缩、缩放的图片仍分别保存。
-
-视频使用独立清单；“在 Obsidian 中播放”为默认关闭的可选配置。关联作品完成并同步到本地清单后显示删除线。已有记录、模板、配置与插件 ID 保留兼容；更新只替换 main.js、manifest.json、styles.css，不覆盖 data.json。
-
-手机使用预发布安装工具更新仓库 `Ch1llNoodle/obsidian-media-capture` 至 `0.8.2`。插件显示名称为 Media Capture，手机实际播放与新版界面仍需设备验证。
+Removed or consolidated duplicate file guards, repeated URL parsing, an unused fingerprint calculation and the separate small collection-parser file. Internal service names now match Media Capture. The vault can maintain completed-work formatting independently when Capture is disabled.
 
 #### Validation
 
-103 automated tests, strict TypeScript and production builds cover capture, shared artwork, legacy cover reuse, write rules, template updates, associations and deployment. Runtime code uses Obsidian and standard Web APIs; mobile loading is enabled. Actual iOS and Android behavior remains subject to device validation.
+107 automated tests cover capture, legacy configuration inputs, template updates, cross-platform artwork reuse, unrelated-attachment isolation, association formatting preservation, independent vault presentation and deployment. Strict TypeScript and production builds pass. ESLint retains one existing settings-search warning. Actual mobile interface and playback behavior still require device validation.
+
+Update only main.js, manifest.json and styles.css; keep data.json. The released plugin ID remains podcast-capture.

@@ -7,14 +7,14 @@ const path = require("node:path");
 const { buildSync } = require("esbuild");
 const testBundle = buildSync({
     stdin: {
-        contents: `import { PodcastService } from "./src/service";
+        contents: `import { CaptureService } from "./src/service";
 import * as core from "./src/core";
-class TestService extends PodcastService {
+class TestService extends CaptureService {
     constructor() { super({loadData: async () => null, saveData: async () => {}}); }
     onload() { return this.initialize(); }
 }
 module.exports = TestService;
-module.exports._internals = core;`,
+module.exports._internals = {...core, LEGACY_SETTINGS: {...core.DEFAULT_SETTINGS, catalogPath: '追踪/播客.md', videoCatalogPath: '追踪/视频.md', imageFolder: '追踪/image', repairOnStartup: true, dailyIntegration: true, dailyFolder: 'daily', dailyProperty: '播客'}};`,
         resolveDir: path.resolve(__dirname, ".."),
         loader: "ts",
     },
@@ -354,7 +354,7 @@ test("日记联动按配置目录与属性写入，封面按配置目录保存",
     assert.equal(fixture.frontmatter.get("daily/2026/2026-11/2026-11-03.md").播客.length, 0);
 });
 
-test("新安装与旧安装分别选取默认设置和迁移设置，保留诊断记录", async () => {
+test("新安装不因私人目录存在而切换设置，保留诊断记录", async () => {
     for (const legacy of [false, true]) {
         const Plugin = load(); const fixture = appFixture(base);
         if (!legacy) fixture.files.delete("追踪/播客.md");
@@ -365,8 +365,8 @@ test("新安装与旧安装分别选取默认设置和迁移设置，保留诊�
         plugin.addCommand = () => {}; plugin.addSettingTab = () => {};
         fixture.app.workspace.onLayoutReady = () => {};
         await plugin.onload();
-        assert.equal(plugin.config.dailyIntegration, legacy);
-        assert.equal(plugin.config.catalogPath, legacy ? "追踪/播客.md" : "Podcasts.md");
+        assert.equal(plugin.config.dailyIntegration, false);
+        assert.equal(plugin.config.catalogPath, "Podcasts.md");
         assert.equal(data.coverReport.repaired, 1);
         assert.equal(data.settingsVersion, 1);
     }

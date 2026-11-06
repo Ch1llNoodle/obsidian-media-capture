@@ -9,8 +9,6 @@ export { decode, plain, safeCover, coverUrl } from "./metadata-helpers";
 export { metadata } from "./metadata";
 
 const DEFAULT_SETTINGS: Readonly<CaptureSettingsData> = Object.freeze({ captureMode: "log", videoCatalogPath: "Videos.md", playbackIntegration: false, noteFolder: "Podcasts", notePathTemplate: "{{show}}/{{title}}.md", noteTemplateFile: "", noteTemplate: DEFAULT_NOTE_TEMPLATE, catalogPath: "Podcasts.md", entryHeading: "Entries", imageFolder: "image/podcasts", rowTemplate: "- {{date}} {{cover}} {{link}}", downloadCovers: true, repairOnStartup: false, dailyIntegration: false, dailyFolder: "Daily", dailyProperty: "podcasts", bookPath: "Recommendations/Books.md", moviePath: "Recommendations/Movies.md", teleplayPath: "Recommendations/Series.md", musicPath: "Recommendations/Music.md", gamePath: "Recommendations/Games.md", theaterPath: "Recommendations/Theater.md" });
-// Only used to migrate installations created before settings were available.
-const LEGACY_SETTINGS: Readonly<CaptureSettingsData> = Object.freeze({ ...DEFAULT_SETTINGS, catalogPath: "追踪/播客.md", imageFolder: "追踪/image", repairOnStartup: true, dailyIntegration: true, dailyFolder: "daily", dailyProperty: "播客" });
 const STATES: readonly ListeningState[] = ["听过", "在听", "想听"];
 
 export function isListeningState(value: unknown): value is ListeningState {
@@ -69,10 +67,6 @@ function validateSettings(settings: unknown): CaptureSettingsData {
         const notes = result.writeRules.find(rule => rule.id === 'notes');
         if (notes?.mode === 'create') { result.noteFolder = notes.folder; result.notePathTemplate = notes.pathTemplate; result.noteTemplateFile = notes.templateFile; result.noteTemplate = notes.template; }
         for (const key of ['bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const) if (result[key] === result.catalogPath) throw new Error('作品清单不能使用媒体记录文件。');
-    }
-    if (supplied.videoCatalogPath === undefined) {
-        const folder = result.catalogPath.includes('/') ? result.catalogPath.slice(0, result.catalogPath.lastIndexOf('/') + 1) : '';
-        result.videoCatalogPath = folder + (Array.from(result.catalogPath).some(character => character.charCodeAt(0) > 127) ? '视频.md' : 'Videos.md');
     }
     result.videoCatalogPath = vaultPath(result.videoCatalogPath, '.md');
     if (result.videoCatalogPath.toLowerCase() === result.catalogPath.toLowerCase()) throw new Error('播客与视频清单必须使用不同文件。');
@@ -196,4 +190,4 @@ function updateCatalog(source: string, item: CaptureItem, cover: string, setting
 }
 
 
-export { DEFAULT_SETTINGS, LEGACY_SETTINGS, STATES, vaultPath, validateSettings, recordDate, localDate, validDate, episodeUrl, blockId, stateOf, markdownText, entryIdentity, titleKey, findEntry, entryLine, updateCatalog };
+export { DEFAULT_SETTINGS, STATES, vaultPath, validateSettings, recordDate, localDate, validDate, episodeUrl, blockId, stateOf, markdownText, entryIdentity, titleKey, findEntry, entryLine, updateCatalog };

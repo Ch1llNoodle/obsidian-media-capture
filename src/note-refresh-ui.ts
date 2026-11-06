@@ -1,11 +1,8 @@
-import { Modal, type TAbstractFile, type TFile } from 'obsidian';
-import type { PodcastService } from './service';
+import { Modal } from 'obsidian';
+import type { CaptureService } from './service';
 import { applyNoteRefresh, prepareNoteRefresh, type NoteRefreshEntry, type NoteRefreshResult } from './note-refresh';
+import { isVaultFile } from './storage';
 import { errorMessage } from './validation';
-
-function isBackupFile(file: TAbstractFile | null): file is TFile {
-    return file !== null && 'extension' in file && file.extension === 'podcast-capture-backup';
-}
 
 export class NoteRefreshModal extends Modal {
     private closed = false;
@@ -16,7 +13,7 @@ export class NoteRefreshModal extends Modal {
     private list!: HTMLDivElement;
     private status!: HTMLParagraphElement;
 
-    constructor(private readonly podcast: PodcastService) { super(podcast.app); }
+    constructor(private readonly podcast: CaptureService) { super(podcast.app); }
     override onOpen(): void {
         this.closed = false;
         this.contentEl.addClass('podcast-template-refresh');
@@ -97,7 +94,7 @@ export class NoteRefreshModal extends Modal {
     private async showBackup(path: string): Promise<void> {
         try {
             const file = this.app.vault.getAbstractFileByPath(path);
-            if (!isBackupFile(file)) throw new Error('备份文件已移动、删除或扩展名已改变。');
+            if (!isVaultFile(file) || file.extension !== 'podcast-capture-backup') throw new Error('备份文件已移动、删除或扩展名已改变。');
             const content = await this.app.vault.read(file);
             if (this.closed) return;
             const modal = new Modal(this.app);

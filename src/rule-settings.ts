@@ -1,11 +1,11 @@
 import { Notice, Setting } from 'obsidian';
-import type { PodcastService } from './service';
+import type { CaptureService } from './service';
 import type { CaptureMode, WriteRule } from './types';
 import { presetRules } from './write-rules';
 import { NoteTemplatePicker } from './note-ui';
 import { errorMessage } from './validation';
 
-export function renderRuleSettings(container: HTMLElement, podcast: PodcastService, refresh: () => void): void {
+export function renderRuleSettings(container: HTMLElement, podcast: CaptureService, refresh: () => void): void {
     const rules = podcast.config.writeRules ?? presetRules(podcast.config);
     const save = async (updated: WriteRule[]): Promise<void> => { await podcast.saveSettings({ ...podcast.config, writeRules: updated }); };
     let queue: Promise<void> = Promise.resolve();

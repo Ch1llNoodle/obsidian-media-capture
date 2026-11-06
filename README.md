@@ -26,7 +26,7 @@ For Apple Podcasts, share an individual episode. A show URL without an `i` episo
 
 #### Video records and optional playback
 
-Video rows use a separate configured log: `Videos.md` for new installations, or a sibling `视频.md` for existing Chinese log paths. Both logs share the row template and heading. Independent notes and show/channel append outputs continue using their own rules.
+Video rows use a separate configured log: `Videos.md` by default, or another explicitly configured vault path. File names are not inferred from path language. Both logs share the row template and heading. Independent notes and show/channel append outputs continue using their own rules.
 
 YouTube watch, shorts, live, embed and youtu.be links and full Bilibili BV/av links are supported. Bilibili parts remain separate records. Open short links first to copy the full address. Tracking parameters and start times are removed. Missing metadata can be entered manually.
 
@@ -137,6 +137,8 @@ Daily integration creates no daily notes. When the concentrated log rule runs, i
 
 #### Record identity and repair
 
+Artwork filenames use the podcast show name when available, or the record title; videos use their title. Invalid characters become underscores, and different artwork with the same name receives an eight-character suffix. Cached image URLs reuse their files. New URLs are compared byte-for-byte only with artwork referenced by configured logs, captured metadata or the URL cache. Other attachments are not enumerated, renamed or deleted. Bulk attachment maintenance belongs to the vault. Recompressed, cropped and resized variants remain separate; shared artwork does not merge episode identities.
+
 Cover repair also replaces a previously saved generic Apple web player title when exact episode metadata is available; custom titles, dates, block identifiers, and quotations are retained.
 
 The plugin appends a state comment, a date comment for listened entries, and an Obsidian block identifier. These markers support deduplication, cover repair, and daily note links. Keep them when editing records manually. Notes and quotations outside the episode row are preserved.
@@ -145,9 +147,11 @@ Episodes from the same platform are matched by episode ID. Across platforms, rec
 
 #### Integration and migration
 
+Daily sections, activity summaries, completion styling and personal collection presentation belong to vault scripts or configuration. The plugin exposes optional paths, templates, daily fields and workspace events; it does not hardcode personal directories or diary titles or rewrite work labels based on completion. Existing handwritten formatting is preserved.
+
 The output is ordinary Markdown. Dataview and other tracking plugins are optional. After saving, the plugin emits `podcast-capture:updated` with `path`, `blockId`, `state`, and `date`. Note captures also include `notePath` and `output`; `blockId` is empty when no log row exists. `CaptureUpdatedEvent` in `src/types.ts` defines the payload. Log-only tracking integrations do not automatically count standalone notes.
 
-Installations predating configurable settings can migrate their existing paths once, when no saved settings exist and the legacy log is present. Saved settings take precedence. Legacy `douban-state` comments and block identifiers remain readable.
+Saved settings take precedence; installations without settings use generic defaults. The plugin does not probe personal directories or enable daily integration automatically. Legacy `douban-state` comments and block identifiers remain readable.
 
 Settings from 0.6.x resolve to equivalent rules in memory, retaining paths, templates, and selected outputs. Editing rules saves the unified `writeRules` configuration. Legacy `captureMode`, `rowTemplate`, and note fields remain compatibility inputs; the settings UI edits rules directly. Earlier row-template `date` and `title` variables map to `listened` and `fullTitle`, preserving their existing meaning. Deployments never replace personal data.json.
 
@@ -165,7 +169,7 @@ npm test
 npm run lint
 ```
 
-The production build bundles runtime code into `release/podcast-capture/main.js` and stages the manifest and stylesheet alongside it. Tests bundle TypeScript modules with esbuild and execute them against mocked Obsidian APIs. An optional tracker compatibility test uses the script path provided by `PODCAST_TRACKER_TEST_PATH`; it is skipped when that variable is absent. `PODCAST_DOUBAN_SYNC_TEST_PATH` enables an additional integration test against a custom Douban sync view.
+The production build bundles runtime code into `release/podcast-capture/main.js` and stages the manifest and stylesheet alongside it. Tests bundle TypeScript modules with esbuild and execute them against mocked Obsidian APIs. An optional tracker compatibility test uses the script path provided by `PODCAST_TRACKER_TEST_PATH`; it is skipped when that variable is absent. `PODCAST_DOUBAN_SYNC_TEST_PATH` enables an additional integration test against a custom Douban sync view. `PODCAST_WORK_PRESENTATION_TEST_PATH` can point to an independent vault presentation script to verify completion markers and cleanup without Capture.
 
 Release files are `main.js`, `manifest.json`, and `styles.css`. Generated bundles, dependencies, and personal `data.json` are excluded from source control. Dependency security checks use `npm audit` separately from compilation and functional tests.
 
@@ -188,9 +192,3 @@ Runtime code uses Obsidian APIs and standard Web APIs, with no Node.js or Electr
 #### License
 
 [Zero-Clause BSD](LICENSE).
-
-Video rows use a separately configured video log. Playback is opt-in; when disabled, playback actions and newly generated mediaLink/mediaUrl values are absent. Platform links remain available.
-
-Cover reuse is independent of platform and show names. Cached image URLs reuse existing files. New URLs are downloaded and compared byte-for-byte against same-sized artwork in the cover folder, including legacy episode-named files. Identical files are reused without renaming or deleting older assets; different content is retained separately. Recompressed, cropped or resized variants are not merged automatically. Sharing artwork does not merge episode identities.
-
-New artwork uses readable filenames: a podcast show name when available, or the record title; videos use their title. Invalid filename characters are replaced with underscores. Different artwork with the same name receives an eight-character suffix. Identical artwork continues to reuse an existing file; full fingerprints are not exposed in filenames.

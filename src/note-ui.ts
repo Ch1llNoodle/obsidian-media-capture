@@ -1,5 +1,5 @@
 import { FuzzySuggestModal, Notice, type TFile } from 'obsidian';
-import type { PodcastService } from './service';
+import type { CaptureService } from './service';
 import type { RecommendationSource } from './types';
 import { CaptureModal } from './capture-modal';
 import { entryIdentity, isListeningState, localDate, recordDate, stateOf } from './core';
@@ -7,7 +7,7 @@ import { isMarkdownFile } from './storage';
 import { errorMessage } from './validation';
 
 export class NoteTemplatePicker extends FuzzySuggestModal<TFile> {
-    constructor(private readonly podcast: PodcastService, private readonly changed: () => void, private readonly select: (path: string) => Promise<void>) {
+    constructor(private readonly podcast: CaptureService, private readonly changed: () => void, private readonly select: (path: string) => Promise<void>) {
         super(podcast.app);
         this.setPlaceholder('选择内容模板');
     }
@@ -19,7 +19,7 @@ export class NoteTemplatePicker extends FuzzySuggestModal<TFile> {
     }
 }
 
-export async function openEpisodeNote(podcast: PodcastService, source: Pick<RecommendationSource, 'path' | 'blockId'>): Promise<void> {
+export async function openEpisodeNote(podcast: CaptureService, source: Pick<RecommendationSource, 'path' | 'blockId'>): Promise<void> {
     if (podcast.unloaded || !podcast.isCatalog(source.path)) throw new Error('请从媒体记录选择单集。');
     const existing = await podcast.notes.find(source.blockId);
     if (existing) { await podcast.app.workspace.getLeaf(false).openFile(existing); return; }

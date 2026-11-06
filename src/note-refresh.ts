@@ -1,4 +1,4 @@
-import type { PodcastService } from './service';
+import type { CaptureService } from './service';
 import type { NoteValues } from './note-format';
 import type { StoredEntry } from './types';
 export { prepareNoteRefresh } from './refresh-plan';
@@ -25,7 +25,7 @@ export interface NoteRefreshResult {
 }
 
 
-async function backup(podcast: PodcastService, entry: NoteRefreshEntry): Promise<string> {
+async function backup(podcast: CaptureService, entry: NoteRefreshEntry): Promise<string> {
     const vault = podcast.app.vault;
     const suffix = new Date().toISOString().replace(/[:.]/g, '-');
     const base = `${entry.path}.${suffix}`;
@@ -36,7 +36,7 @@ async function backup(podcast: PodcastService, entry: NoteRefreshEntry): Promise
     return path;
 }
 
-export function applyNoteRefresh(podcast: PodcastService, entries: readonly NoteRefreshEntry[]): Promise<NoteRefreshResult[]> {
+export function applyNoteRefresh(podcast: CaptureService, entries: readonly NoteRefreshEntry[]): Promise<NoteRefreshResult[]> {
     const work = podcast.queue.then(async () => {
         const results: NoteRefreshResult[] = [];
         for (const entry of entries) {

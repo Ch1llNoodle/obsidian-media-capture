@@ -1,5 +1,5 @@
 import type { Plugin } from 'obsidian';
-import type { PodcastService } from './service';
+import type { CaptureService } from './service';
 import type { CaptureItem, StoredEntry, WriteRule } from './types';
 import { isListeningState, localDate } from './core';
 import { noteValues, relativeNotePath, renderTemplateBody, withCoverWidth } from './note-format';
@@ -35,7 +35,7 @@ export interface AppendPlan { rule: WriteRule; path: string; template: string; p
 export class AppendOutputs {
     private entries: StoredEntry[] = [];
     private paths = new Set<string>();
-    constructor(private readonly podcast: PodcastService) {}
+    constructor(private readonly podcast: CaptureService) {}
     initialize(value: unknown): void {
         this.entries = [];
         this.paths.clear();

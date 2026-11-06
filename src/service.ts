@@ -1,5 +1,5 @@
 import { Modal, Notice, requestUrl, type App, type Plugin, type TFile } from "obsidian";
-import { DEFAULT_SETTINGS, LEGACY_SETTINGS, isListeningState, validateSettings, recordDate, episodeUrl, metadata, entryIdentity, stateOf } from "./core";
+import { DEFAULT_SETTINGS, isListeningState, validateSettings, recordDate, episodeUrl, metadata, entryIdentity, stateOf } from "./core";
 import { ensureFolder, isMarkdownFile } from "./storage";
 
 import type { CaptureSettingsData, CaptureItem, CaptureResult, CoverFailure, CoverRepairResult, EpisodeMetadata, SavedDataPatch } from "./types";
@@ -11,7 +11,7 @@ import { AppendOutputs } from "./append-output";
 import { EpisodeNotes } from "./episode-notes";
 import { saveCapture } from "./capture-output";
 
-export class PodcastService {
+export class CaptureService {
     readonly notes = new EpisodeNotes(this);
     readonly appends = new AppendOutputs(this);
     readonly plugin: Plugin;
@@ -27,7 +27,7 @@ export class PodcastService {
         this.queue = Promise.resolve();
         this.dataQueue = Promise.resolve();
         const data = record(await this.loadData());
-        this.settings = validateSettings(data.settings ?? (this.app.vault.getAbstractFileByPath(LEGACY_SETTINGS.catalogPath) ? LEGACY_SETTINGS : DEFAULT_SETTINGS));
+        this.settings = validateSettings(data.settings ?? DEFAULT_SETTINGS);
         this.notes.initialize(data.noteIndex, data.noteMetadata);
         this.appends.initialize(data.outputEntries);
         if (!data.settings) await this.updateData({ settings: this.settings, settingsVersion: 1 });
@@ -130,9 +130,7 @@ export class PodcastService {
                 else failures.push({ title: identity.title, url: identity.url, imageUrl: result.coverSource, error: result.coverError || "未获取到封面" });
             } catch (error) { failures.push({ title: identity.title, url: identity.url, error: errorMessage(error) }); }
         }
-        if (typeof this.saveData === "function") {
-            await this.updateData({ coverReport: { checkedAt: new Date().toISOString(), repaired, failures } });
-        }
+        await this.updateData({ coverReport: { checkedAt: new Date().toISOString(), repaired, failures } });
         if (!silent || repaired) new Notice(`已补全 ${repaired} 个媒体封面${repaired < missing.length ? `，${missing.length - repaired} 个暂未获取到` : ""}。`);
         if (!silent && failures.length) {
             const modal = new Modal(this.app);

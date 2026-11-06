@@ -2,7 +2,7 @@ import type { CaptureMode, CaptureSettingsData, WriteRule } from './types';
 import { episodeNotePath, noteValues, renderTemplateBody, relativeNotePath, validateNoteTemplate } from './note-format';
 import { isRecord } from './validation';
 import { isMarkdownFile } from './storage';
-import type { PodcastService } from './service';
+import type { CaptureService } from './service';
 
 export function presetRules(settings: Readonly<CaptureSettingsData>, preset: CaptureMode = settings.captureMode): WriteRule[] {
     if (preset === 'custom' && settings.writeRules) return settings.writeRules.map(rule => ({ ...rule }));
@@ -59,7 +59,7 @@ export function rulePath(rule: WriteRule, values: ReturnType<typeof noteValues>)
     return episodeNotePath({ noteFolder: rule.folder, notePathTemplate: rule.pathTemplate }, values);
 }
 
-export async function ruleTemplate(podcast: PodcastService, rule: WriteRule): Promise<string> {
+export async function ruleTemplate(podcast: CaptureService, rule: WriteRule): Promise<string> {
     let template = rule.template;
     if (rule.templateFile) {
         podcast.notes.checkPath(rule.templateFile);

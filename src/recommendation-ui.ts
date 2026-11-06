@@ -1,5 +1,5 @@
 import { MarkdownRenderChild, Notice, type Plugin } from 'obsidian';
-import type { PodcastService } from './service';
+import type { CaptureService } from './service';
 import type { RecommendationSource } from './types';
 import { RecommendationModal } from './recommendation-modal';
 import { RecommendationService } from './recommendation-service';
@@ -55,16 +55,9 @@ class EpisodeButtons extends MarkdownRenderChild {
     override onunload(): void { this.disposed = true; this.buttons.forEach(button => button.remove()); }
 }
 
-export function registerRecommendationUI(plugin: Plugin, podcast: PodcastService): void {
+export function registerRecommendationUI(plugin: Plugin, podcast: CaptureService): void {
     const service = new RecommendationService(podcast);
     plugin.registerEditorExtension(recommendationEditor(service));
-    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
-    plugin.registerEvent(plugin.app.vault.on('modify', file => {
-        if (![podcast.config.bookPath, podcast.config.moviePath, podcast.config.teleplayPath, podcast.config.musicPath, podcast.config.gamePath, podcast.config.theaterPath].includes(file.path)) return;
-        if (refreshTimer) clearTimeout(refreshTimer);
-        refreshTimer = setTimeout(() => { void service.refreshEpisodeLinks().catch((error: unknown) => new Notice(errorMessage(error))); }, 400);
-    }));
-    plugin.register(() => { if (refreshTimer) clearTimeout(refreshTimer); });
     plugin.app.workspace.onLayoutReady(() => { void service.refreshEpisodeLinks().catch((error: unknown) => new Notice(errorMessage(error))); });
     plugin.addCommand({ id: 'add-recommendation', name: '打开媒体关联入口', callback: async () => {
         try {

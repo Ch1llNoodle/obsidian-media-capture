@@ -1,5 +1,5 @@
 import { parseYaml, type Plugin, type TFile } from 'obsidian';
-import type { PodcastService } from './service';
+import type { CaptureService } from './service';
 import type { CaptureItem, WriteRule } from './types';
 import { noteValues, relativeNotePath, renderEpisodeNote, withCoverWidth, type NoteValues } from './note-format';
 import { presetRules, rulePath, ruleTemplate } from './write-rules';
@@ -19,7 +19,7 @@ export interface EpisodeNotePlan {
 export class EpisodeNotes {
     private readonly index = new Map<string, string>();
     private readonly metadata = new Map<string, NoteValues>();
-    constructor(private readonly podcast: PodcastService) {}
+    constructor(private readonly podcast: CaptureService) {}
 
     known(id: string): boolean { return this.index.has(id); }
 

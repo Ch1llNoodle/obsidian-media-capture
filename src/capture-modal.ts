@@ -1,7 +1,7 @@
 import { Modal, Notice } from 'obsidian';
 import { videoUrl } from './media';
 import { STATES, isListeningState, validDate, localDate, episodeUrl } from './core';
-import type { PodcastService } from './service';
+import type { CaptureService } from './service';
 import type { CaptureItem, CaptureMode, Episode, EpisodeMetadata } from './types';
 import { captureModes, isCaptureMode, noteValues, splitEpisodeTitle } from './note-format';
 import { rulePath, rulesFor } from './write-rules';
@@ -23,7 +23,7 @@ export class CaptureModal extends Modal {
     private preview!: HTMLParagraphElement;
     private message!: HTMLParagraphElement;
 
-    constructor(private readonly plugin: PodcastService, private readonly preset?: { item: CaptureItem; output: CaptureMode }) { super(plugin.app); }
+    constructor(private readonly plugin: CaptureService, private readonly preset?: { item: CaptureItem; output: CaptureMode }) { super(plugin.app); }
 
     override onOpen(): void {
         this.contentEl.addClass('podcast-capture');

@@ -1,12 +1,11 @@
-import type { PodcastService } from './service';
+import type { CaptureService } from './service';
 import type { RecommendationSource, RecommendationWork } from './types';
-import { catalogWorks, isWanted } from './recommendation-catalog';
 import { isMarkdownFile } from './storage';
-import { episodeSource, recommendationKinds, recommendationIndex, recommendationSources, linkEpisodeWork, linkWorkSource, normalizeEpisodeWorks } from './recommendations';
+import { catalogWorks, isWanted, episodeSource, recommendationKinds, recommendationIndex, recommendationSources, linkEpisodeWork, linkWorkSource, normalizeEpisodeWorks } from './recommendations';
 import { errorMessage } from './validation';
 
 export class RecommendationService {
-    constructor(readonly podcast: PodcastService) {}
+    constructor(readonly podcast: CaptureService) {}
 
     async works(): Promise<RecommendationWork[]> {
         return (await this.catalogs()).filter(isWanted);
@@ -87,14 +86,6 @@ export class RecommendationService {
                     text = normalizeEpisodeWorks(text);
                     const existing = new Set(text.split(/\r?\n/).map(line => episodeSource(line, file.path)?.blockId));
                     for (const { source, work } of assignments) if (source.path === path && existing.has(source.blockId)) text = linkEpisodeWork(text, source, work);
-                    const states = new Map(allWorks.map(work => [work.path.replace(/\.md$/i, '') + '#^douban-' + work.id, work.state]));
-                    text = text.split(/\r?\n/).map(line => {
-                        if (!line.trimEnd().endsWith('<!-- podcast-work -->')) return line;
-                        return line.replace(/(?:<u>|~~)?(\[\[([^|\]]+)\|[^\]]+\]\])(?:<\/u>|~~)?/g, (_match: string, link: string, target: string) => {
-                            const state = states.get(target);
-                            return state && ['读过', '看过', '听过', '玩过'].includes(state) ? '~~' + link + '~~' : link;
-                        });
-                    }).join('\n');
                     return text;
                 };
                 const before = await this.podcast.app.vault.read(file);

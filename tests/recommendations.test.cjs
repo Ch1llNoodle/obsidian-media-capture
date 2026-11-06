@@ -7,11 +7,10 @@ const { buildSync } = require('esbuild');
 
 const bundle = buildSync({
     stdin: { contents: `import * as recommendations from './src/recommendations';
-import * as catalog from './src/recommendation-catalog';
 import * as core from './src/core';
-import { PodcastService } from './src/service';
+import { CaptureService } from './src/service';
 import { RecommendationService } from './src/recommendation-service';
-module.exports = {...recommendations, ...catalog, ...core, PodcastService, RecommendationService};`,
+module.exports = {...recommendations, ...core, CaptureService, RecommendationService};`,
     resolveDir: path.resolve(__dirname, '..'), loader: 'ts' },
     bundle: true, platform: 'browser', format: 'cjs', target: 'es2021', external: ['obsidian'], write: false,
 }).outputFiles[0].text;
@@ -41,7 +40,7 @@ function fixture(api) {
         read: async file => content.get(file.path),
         process: async (file, fn) => { content.set(file.path, fn(content.get(file.path))); },
     } };
-    const podcast = new api.PodcastService({ app });
+    const podcast = new api.CaptureService({ app });
     podcast.settings = api.validateSettings({ downloadCovers: true });
     return { content, files, service: new api.RecommendationService(podcast), podcast };
 }
@@ -222,4 +221,42 @@ test('独立关联标记行转换为普通嵌套列表，手写内容与单集�
     assert(next.includes('^douban-123\n  - [[Movies#^douban-100|电影]]（摘记） <!-- podcast-work -->\n  - 手写内容'));
     assert(next.endsWith('#### Quotes\n正文'));
     assert.equal(api.normalizeEpisodeWorks(next),next);
+});
+
+
+test('association refresh preserves note-owned completed-work formatting', async () => {
+    const api = load(), f = fixture(api);
+    const work = (await f.service.works())[0];
+    await f.service.link(work, source);
+    const link = '[[Recommendations/Movies#^douban-100|电影]]';
+    f.content.set('Podcasts.md', f.content.get('Podcasts.md').replace(link, '~~' + link + '~~'));
+    await f.service.refreshEpisodeLinks();
+    assert(f.content.get('Podcasts.md').includes('~~' + link + '~~'));
+});
+
+test('vault presentation updates completed work marks without Capture', {skip: !process.env.PODCAST_WORK_PRESENTATION_TEST_PATH}, async () => {
+    const script = fs.readFileSync(process.env.PODCAST_WORK_PRESENTATION_TEST_PATH, 'utf8');
+    const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+    const contents = new Map([
+        ['追踪/电影.md', '- [电影](<https://movie.douban.com/subject/100/>) <!-- douban-state: 看过 --> ^douban-100'],
+        ['追踪/播客.md', '  - [[追踪/电影#^douban-100|电影]]（原摘记） <!-- podcast-work -->\n手写段落'],
+    ]);
+    const callbacks = new Map(), cleanup = [];
+    const owner = {registerEvent() {}, register: fn => cleanup.push(fn)};
+    const app = {plugins: {plugins: {dataview: owner}}, vault: {
+        getAbstractFileByPath: path => contents.has(path) ? {path} : null,
+        read: async file => contents.get(file.path),
+        process: async (file, transform) => contents.set(file.path, transform(contents.get(file.path))),
+        on: (name, fn) => {callbacks.set(name, fn); return {};},
+    }};
+    const execute = () => new AsyncFunction('app', 'window', script)(app, {setTimeout, clearTimeout});
+    await execute();
+    assert(contents.get('追踪/播客.md').includes('~~[[追踪/电影#^douban-100|电影]]~~（原摘记）'));
+    assert(contents.get('追踪/播客.md').endsWith('手写段落'));
+    contents.set('追踪/电影.md', contents.get('追踪/电影.md').replace('看过', '想看'));
+    await execute();
+    assert(!contents.get('追踪/播客.md').includes('~~'));
+    assert.equal(callbacks.size, 1);
+    cleanup.forEach(fn => fn());
+    assert.equal(Object.getOwnPropertySymbols(owner).length, 0);
 });

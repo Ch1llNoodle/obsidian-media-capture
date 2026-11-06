@@ -1,4 +1,4 @@
-import type { PodcastService } from './service';
+import type { CaptureService } from './service';
 import type { CaptureItem, CaptureResult, CaptureUpdatedEvent, WriteRule } from './types';
 import type { EpisodeNotePlan } from './episode-notes';
 import type { AppendPlan } from './append-output';
@@ -11,7 +11,7 @@ import { captureCover, dailyNotes, writeDailyLink } from './capture-context';
 
 type Plan = { kind: 'catalog'; rule: WriteRule; path: string } | { kind: 'create'; rule: WriteRule; path: string; plan: EpisodeNotePlan } | { kind: 'append'; rule: WriteRule; path: string; plan: AppendPlan };
 
-export async function saveCapture(service: PodcastService, input: CaptureItem): Promise<CaptureResult> {
+export async function saveCapture(service: CaptureService, input: CaptureItem): Promise<CaptureResult> {
     const mode = input.repairOnly ? 'log' : input.output ?? service.config.captureMode;
     if (!isCaptureMode(mode)) throw new Error('请选择有效的写入预设。');
     const parsed = episodeUrl(input.url);
@@ -19,7 +19,7 @@ export async function saveCapture(service: PodcastService, input: CaptureItem): 
     const settings = { ...service.config, catalogPath };
     const rules = rulesFor(settings, mode);
     if (!rules.length) throw new Error('没有启用的写入规则，请在设置中启用至少一条。');
-    const item: CaptureItem = { ...input, ...episodeUrl(input.url) };
+    const item: CaptureItem = { ...input, ...parsed };
     if (service.unloaded) throw new Error('插件已卸载，请重新启用后重试。');
     if (!item.title.trim() || !isListeningState(item.state)) throw new Error('名称或状态无效。');
     if (item.state === '听过' && !validDate(item.date)) throw new Error('收听日期无效。');

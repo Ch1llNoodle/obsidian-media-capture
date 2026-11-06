@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const yaml = require('js-yaml');
 const { buildSync } = require('esbuild');
 
-const bundle = buildSync({ stdin: { contents: `export {PodcastService} from './src/service';
+const bundle = buildSync({ stdin: { contents: `export {CaptureService} from './src/service';
 export {appleLookupMetadata} from './src/apple';
 export * from './src/note-refresh';
 export * from './src/write-rules';
@@ -17,7 +17,7 @@ const sandbox = { module: { exports: {} }, URL, URLSearchParams, Uint8Array, Dat
     requestUrl: async () => { if (imageResponse) { imageRequests++; return imageResponse; } throw new Error('offline'); }, Modal: class {}, Notice: class {},
 }) };
 vm.runInNewContext(bundle, sandbox);
-const { PodcastService, DEFAULT_SETTINGS, validateSettings, noteValues, episodeNotePath, renderEpisodeNote, validateNoteTemplate } = sandbox.module.exports;
+const { CaptureService, DEFAULT_SETTINGS, validateSettings, noteValues, episodeNotePath, renderEpisodeNote, validateNoteTemplate } = sandbox.module.exports;
 const item = { id: '123', url: 'https://www.douban.com/podcast_episode/123', title: '节目 · 单集', state: '听过', date: '2026-11-03', published: '2026-11-01' };
 
 function fixture(options = {}) {
@@ -46,7 +46,7 @@ function fixture(options = {}) {
     fileManager: { processFrontMatter: async (f, change) => { const value = properties.get(f.path) ?? {}; change(value); properties.set(f.path, value); } },
     workspace: { trigger: (name, event) => updated.push({ name, ...event }) } };
     const plugin = { app, loadData: async () => data, saveData: async value => { data = value; }, registerEvent() {} };
-    const service = new PodcastService(plugin);
+    const service = new CaptureService(plugin);
     return { service, plugin, files, contents, properties, events, updated, add, header, data: () => data, writes: () => writes };
 }
 
@@ -581,9 +581,35 @@ test('a new platform capture reuses historical artwork without renaming existing
     const f = fixture({downloadCovers: true}); await f.service.initialize();
     const bytes = Uint8Array.from([255,216,255,217]).buffer;
     await f.plugin.app.vault.createBinary('image/podcasts/old-episode-cover.jpg', bytes);
+    f.add('Podcasts.md', '#### Entries\n\n- ![|24](<image/podcasts/old-episode-cover.jpg>) [旧节目 · 旧单集](<https://www.douban.com/podcast_episode/987>) ^douban-987\n');
     imageResponse = {status: 200, arrayBuffer: bytes};
     await f.service.capture({...item, cover: 'https://image.xyzcdn.net/new-platform-url.jpg'});
     assert(f.contents.get('Podcasts.md').includes('image/podcasts/old-episode-cover.jpg'));
     assert.equal([...f.files.keys()].filter(path => /\.jpg$/.test(path)).length, 1);
     imageResponse = null;
+});
+
+
+test('unreferenced images are not scanned or renamed during capture', async () => {
+    const f = fixture({downloadCovers: true}); await f.service.initialize();
+    const bytes = Uint8Array.from([255,216,255,217]).buffer;
+    await f.plugin.app.vault.createBinary('image/podcasts/other-tool.jpg', bytes);
+    f.plugin.app.vault.getFiles = () => { throw new Error('Must not enumerate vault attachments'); };
+    const readBinary = f.plugin.app.vault.readBinary;
+    f.plugin.app.vault.readBinary = file => {
+        assert.notEqual(file.path, 'image/podcasts/other-tool.jpg');
+        return readBinary(file);
+    };
+    imageResponse = {status: 200, arrayBuffer: bytes};
+    await f.service.capture({...item, cover: 'https://image.xyzcdn.net/test.jpg'});
+    assert(f.files.has('image/podcasts/other-tool.jpg'));
+    assert(f.files.has('image/podcasts/节目.jpg'));
+    imageResponse = null;
+});
+
+test('video destination uses an explicit setting rather than guessing from path language', () => {
+    assert.equal(validateSettings({catalogPath: '专题/节目.md'}).videoCatalogPath, 'Videos.md');
+    const settings = validateSettings({catalogPath: '专题/节目.md', videoCatalogPath: '专题/视频记录.md', dailyProperty: '个人活动'});
+    assert.equal(settings.videoCatalogPath, '专题/视频记录.md');
+    assert.equal(settings.dailyProperty, '个人活动');
 });

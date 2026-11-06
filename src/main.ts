@@ -1,16 +1,16 @@
 import { Notice, Plugin } from 'obsidian';
-import { PodcastService } from './service';
+import { CaptureService } from './service';
 import { CaptureModal } from './capture-modal';
 import { CaptureSettings } from './settings-ui';
 import { registerRecommendationUI } from './recommendation-ui';
 import { NoteRefreshModal } from './note-refresh-ui';
 
-export default class PodcastCapture extends Plugin {
-    service!: PodcastService;
+export default class MediaCapture extends Plugin {
+    service!: CaptureService;
     readonly supportsRecommendations = true;
 
     override async onload(): Promise<void> {
-        this.service = new PodcastService(this);
+        this.service = new CaptureService(this);
         await this.service.initialize();
         this.service.notes.register(this);
         this.service.appends.register(this);

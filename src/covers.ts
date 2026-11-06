@@ -1,9 +1,10 @@
-import { requestUrl, type App, type RequestUrlParam, type TFile } from 'obsidian';
+import { requestUrl, type App, type RequestUrlParam } from 'obsidian';
 import { safeCover } from './metadata-helpers';
-import { ensureFolder } from './storage';
+import { relativeNotePath } from './note-format';
+import { ensureFolder, isVaultFile } from './storage';
 import { errorMessage } from './validation';
 
-export async function cacheCover(app: App, input: string, folder: string, stem: string): Promise<string> {
+export async function cacheCover(app: App, input: string, folder: string, stem: string, candidates: readonly string[] = []): Promise<string> {
     const url = safeCover(input);
     if (!url) throw new Error('封面地址无效。');
     const name = Array.from(stem.normalize('NFKC')).filter(character => character.charCodeAt(0) >= 32).join('').replace(/[\\/:*?"<>|#[\]]/g, '_').replace(/\s+/g, ' ').trim().replace(/[. ]+$/, '').slice(0, 120) || '封面';
@@ -23,21 +24,19 @@ export async function cacheCover(app: App, input: string, folder: string, stem: 
     if (!extension) throw new Error(`图片服务器返回了无法识别的图片格式（${bytes.length} 字节）`);
     if (bytes.length > 10 * 1024 * 1024) throw new Error('封面超过 10 MB，未保存');
     await ensureFolder(app.vault, folder);
-    let first = 2166136261, second = 5381;
-    for (const byte of bytes) { first = Math.imul(first ^ byte, 16777619); second = Math.imul(second, 33) ^ byte; }
-    const digest = (first >>> 0).toString(16).padStart(8, '0') + (second >>> 0).toString(16).padStart(8, '0');
+    let first = 2166136261;
+    for (const byte of bytes) { first = Math.imul(first ^ byte, 16777619); }
+    const digest = (first >>> 0).toString(16).padStart(8, '0');
     const sameBytes = async (path: string): Promise<boolean> => {
         const file = app.vault.getAbstractFileByPath(path);
-        if (!file || !('extension' in file)) return false;
-        const saved = new Uint8Array(await app.vault.readBinary(file as TFile));
+        if (!isVaultFile(file)) return false;
+        const saved = new Uint8Array(await app.vault.readBinary(file));
         return saved.length === bytes.length && saved.every((value, index) => value === bytes[index]);
     };
-    // Reuse historical artwork too; do not rename files or rewrite unrelated notes.
-    if (typeof app.vault.getFiles === 'function') {
-        for (const file of app.vault.getFiles()) {
-            if (file.path.startsWith(folder + '/') && /^(?:jpg|jpeg|png|webp|gif|avif)$/i.test(file.extension) && file.stat.size === bytes.length
-                && await sameBytes(file.path)) return file.path;
-        }
+    // Only images referenced by this plugin's configured logs, metadata or URL cache are candidates.
+    for (const candidate of new Set(candidates)) {
+        try { relativeNotePath(candidate); } catch { continue; }
+        if (candidate.startsWith(folder + '/') && await sameBytes(candidate)) return candidate;
     }
     const base = `${folder}/${safeName}`;
     let path = `${base}.${extension}`;

@@ -1,4 +1,4 @@
-import type { PodcastService } from './service';
+import type { CaptureService } from './service';
 import type { NoteRefreshEntry } from './note-refresh';
 import type { WriteRule } from './types';
 import { blockId, entryIdentity, entryLine, isListeningState } from './core';
@@ -16,7 +16,7 @@ function missing(entry: NoteRefreshEntry, template: string, values: NoteValues):
     }
 }
 
-export async function prepareNoteRefresh(podcast: PodcastService): Promise<NoteRefreshEntry[]> {
+export async function prepareNoteRefresh(podcast: CaptureService): Promise<NoteRefreshEntry[]> {
     await podcast.queue;
     const rules = podcast.config.writeRules ?? presetRules(podcast.config);
     const templates = new Map<string, string>();

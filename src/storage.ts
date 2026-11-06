@@ -13,6 +13,10 @@ async function ensureFolder(vault: Vault, path: string): Promise<void> {
 
 export { ensureFolder };
 
-export function isMarkdownFile(file: TAbstractFile | null): file is TFile {
-    return file !== null && "extension" in file && file.extension === "md";
+export function isVaultFile(file: TAbstractFile | null | undefined): file is TFile {
+    return file != null && 'extension' in file;
+}
+
+export function isMarkdownFile(file: TAbstractFile | null | undefined): file is TFile {
+    return isVaultFile(file) && file.extension === 'md';
 }
