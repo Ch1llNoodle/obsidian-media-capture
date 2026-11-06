@@ -1,6 +1,7 @@
 import type { TFile } from 'obsidian';
 import type { PodcastService } from './service';
 import type { CaptureItem } from './types';
+import { splitEpisodeTitle } from './note-format';
 import { cacheCover } from './covers';
 import { coverUrl } from './metadata-helpers';
 import { isApplePlayerTitle } from './apple';
@@ -40,7 +41,7 @@ export async function captureCover(service: PodcastService, item: CaptureItem, i
             const cached = cache[source];
             if (typeof cached === 'string' && cached.startsWith(service.config.imageFolder + '/') && service.app.vault.getAbstractFileByPath(cached)) path = cached;
             else {
-                path = await cacheCover(service.app, source, service.config.imageFolder, `podcast-${id}`);
+                path = await cacheCover(service.app, source, service.config.imageFolder, item.provider === 'youtube' || item.provider === 'bilibili' ? (item.episodeTitle || item.title) : (item.show || splitEpisodeTitle(item.title).show || item.episodeTitle || item.title || id));
                 const entries: Record<string, string> = {};
                 for (const [key, value] of Object.entries(cache)) if (typeof value === 'string') entries[key] = value;
                 entries[source] = path;

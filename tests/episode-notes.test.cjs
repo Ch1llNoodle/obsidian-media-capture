@@ -571,6 +571,8 @@ test('cover assets are shared across providers and survive reload; changed artwo
     imageResponse = {status: 200, arrayBuffer: Uint8Array.from([255,216,255,1,217]).buffer};
     await f.service.capture({...one, ...sandbox.module.exports.episodeUrl('https://www.douban.com/podcast_episode/456'), title: '节目 · 特别集', cover: 'https://img3.doubanio.com/mpic/new.jpg'});
     assert.equal(covers().length, 2);
+    assert(covers().includes("image/podcasts/节目.jpg"));
+    assert(covers().some(path => /节目-[a-f0-9]{8}\.jpg$/.test(path)));
     imageResponse = null;
 });
 

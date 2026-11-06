@@ -1,25 +1,22 @@
-### Podcast Capture 0.7.0
+### Media Capture 0.8.2
 
-Podcast Capture uses one template and write-rule system for concentrated logs, individual notes, and files grouped by show. The default remains one row per episode.
+Capture podcast episodes and videos using Markdown templates and configurable write rules. Existing settings and records remain compatible; the released plugin ID remains `podcast-capture`.
 
-#### Templates and destinations
+#### Changes
 
-Each rule selects its content template, folder, path pattern, append or create method, and optional target heading. Enable several rules to produce several outputs from one capture. Presets cover a concentrated log, one file per episode, both, and one file per show. Template variables are shared across all outputs. Cover retrieval and daily linking run once per capture.
+- Use readable cover filenames: podcast show names when available, video titles otherwise. Invalid filename characters are sanitized; different artwork with the same name receives a short suffix.
+- Reuse identical artwork across platforms and legacy filenames by comparing image bytes. URL caches persist across reloads. Recompressed or resized variants remain separate.
+- Keep video rows in a separately configurable video log. In-vault playback is optional and disabled by default; its controls use generic names.
+- Strike through associated works when the local collection marks them completed, and refresh after collection updates.
 
-Settings now edit rules directly. Existing 0.6.x paths, templates, identifiers, and output choices remain compatible. Work associations continue to use the concentrated log rule.
+#### 更新说明
 
-#### Existing records
+封面使用可读名称，优先采用播客节目名或视频标题，同名不同图增加短后缀。跨平台图片内容完全相同时复用已有文件，缓存重载后继续生效；重新压缩、缩放的图片仍分别保存。
 
-Template updates preview replacements per file. Create outputs regenerate the selected file; append outputs replace managed entries while retaining surrounding handwritten text, work children, and quotations. Several episodes in one show file are updated together, with one verified backup. Results identify failed stages and saved files, with backup viewing inside Obsidian. Live Preview hides management markers in tracked show files as well as the main log.
+视频使用独立清单；“在 Obsidian 中播放”为默认关闭的可选配置。关联作品完成并同步到本地清单后显示删除线。已有记录、模板、配置与插件 ID 保留兼容；更新只替换 main.js、manifest.json、styles.css，不覆盖 data.json。
 
-#### 使用
-
-重新加载插件后，在设置的“写入规则”中应用预设或编辑规则。按节目记录可选择“按节目追加”，默认将同一节目的多集内容写入一篇笔记。添加窗口选择“使用已启用规则”沿用配置，也可只为本次选择其他预设。
-
-需要更新旧内容时，使用“将模板应用到已有记录 → 预览并选择”。追加规则保留管理区域外的正文，新建规则会重新生成所选文件全文；每篇先备份后替换，结果中可直接查看原文。
-
-发布附件为 main.js、manifest.json、styles.css，不包含个人 data.json。旧配置继续可用，部署保留个人数据。
+手机使用预发布安装工具更新仓库 `Ch1llNoodle/obsidian-media-capture` 至 `0.8.2`。插件显示名称为 Media Capture，手机实际播放与新版界面仍需设备验证。
 
 #### Validation
 
-Strict TypeScript, production bundling, ESLint, and 95 automated tests cover legacy compatibility, rule execution, grouped append, shared template variables, duplicate capture, original dates, file collisions, rename recovery, per-file template updates, recommendations, and deployment. Android and iOS loading is enabled; the new rule settings and grouped output still need real-device validation. The interface uses Chinese.
+103 automated tests, strict TypeScript and production builds cover capture, shared artwork, legacy cover reuse, write rules, template updates, associations and deployment. Runtime code uses Obsidian and standard Web APIs; mobile loading is enabled. Actual iOS and Android behavior remains subject to device validation.

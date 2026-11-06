@@ -192,3 +192,5 @@ Runtime code uses Obsidian APIs and standard Web APIs, with no Node.js or Electr
 Video rows use a separately configured video log. Playback is opt-in; when disabled, playback actions and newly generated mediaLink/mediaUrl values are absent. Platform links remain available.
 
 Cover reuse is independent of platform and show names. Cached image URLs reuse existing files. New URLs are downloaded and compared byte-for-byte against same-sized artwork in the cover folder, including legacy episode-named files. Identical files are reused without renaming or deleting older assets; different content is retained separately. Recompressed, cropped or resized variants are not merged automatically. Sharing artwork does not merge episode identities.
+
+New artwork uses readable filenames: a podcast show name when available, or the record title; videos use their title. Invalid filename characters are replaced with underscores. Different artwork with the same name receives an eight-character suffix. Identical artwork continues to reuse an existing file; full fingerprints are not exposed in filenames.

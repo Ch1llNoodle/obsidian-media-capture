@@ -5,7 +5,9 @@ import { errorMessage } from './validation';
 
 export async function cacheCover(app: App, input: string, folder: string, stem: string): Promise<string> {
     const url = safeCover(input);
-    if (!url || !/^[a-zA-Z0-9-]+$/.test(stem)) throw new Error('封面地址或文件名无效。');
+    if (!url) throw new Error('封面地址无效。');
+    const name = Array.from(stem.normalize('NFKC')).filter(character => character.charCodeAt(0) >= 32).join('').replace(/[\\/:*?"<>|#[\]]/g, '_').replace(/\s+/g, ' ').trim().replace(/[. ]+$/, '').slice(0, 120) || '封面';
+    const safeName = /^(?:con|prn|aux|nul|com[0-9]|lpt[0-9])(?:\.|$)/i.test(name) ? '_' + name : name;
     const options: RequestUrlParam = { url, throw: false };
     if (new URL(url).hostname.endsWith('.doubanio.com')) options.headers = { Referer: 'https://www.douban.com/' };
     let response;
@@ -37,11 +39,11 @@ export async function cacheCover(app: App, input: string, folder: string, stem: 
                 && await sameBytes(file.path)) return file.path;
         }
     }
-    const base = `${folder}/cover-${digest}-${bytes.length}`;
+    const base = `${folder}/${safeName}`;
     let path = `${base}.${extension}`;
     for (let suffix = 1; app.vault.getAbstractFileByPath(path); suffix++) {
         if (await sameBytes(path)) return path;
-        path = `${base}-${suffix}.${extension}`;
+        path = `${base}-${digest.slice(0, 8)}${suffix > 1 ? "-" + suffix : ""}.${extension}`;
     }
     await app.vault.createBinary(path, response.arrayBuffer);
     return path;
