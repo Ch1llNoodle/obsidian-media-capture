@@ -190,17 +190,6 @@ test('两篇笔记更新中途失败可重复保存补全，已写入一侧的�
     assert(f.content.get('Podcasts.md').includes('Movies#^douban-100'));
 });
 
-test('旧行内关联迁移为缩进子列表，去掉推荐标签并保留摘记和单集标识', () => {
-    const api = load();
-    const old = '- 2026-11-03 [节目 · 单集](<https://www.douban.com/podcast_episode/123>) <!-- podcast-state: 听过 --> <!-- podcast-works:start --> · 推荐 [[Movies#^douban-100|电影]]（摘记） · [[Books#^douban-200|书]] <!-- podcast-works:end --> ^douban-123\n\n#### Quotes\n手写正文';
-    const text = api.normalizeEpisodeWorks(old);
-    assert(text.split('\n')[0].endsWith('^douban-123'));
-    assert(text.includes('\n  - [[Movies#^douban-100|电影]]（摘记） <!-- podcast-work -->\n  - [[Books#^douban-200|书]] <!-- podcast-work -->\n'));
-    assert(!text.includes('· 推荐'));
-    assert(text.endsWith('#### Quotes\n手写正文'));
-    assert.equal(api.normalizeEpisodeWorks(text), text);
-});
-
 test('新关联逐项追加在播客下方，不重复，重存播客仍保留子列表', async () => {
     const api = load(); const f = fixture(api); const item = (await f.service.works())[0];
     await f.service.link(item, source);
@@ -211,18 +200,6 @@ test('新关联逐项追加在播客下方，不重复，重存播客仍保留�
     const saved = api.updateCatalog(second, {id:'123',provider:'douban',blockId:'douban-123',url:'https://www.douban.com/podcast_episode/123',title:source.title,state:'听过',date:'2026-11-04'}, '').text;
     assert(saved.includes('\n  - [[Recommendations/Movies#^douban-200|第二部]]'));
 });
-
-test('独立关联标记行转换为普通嵌套列表，手写内容与单集块不变', () => {
-    const api=load();
-    const old='- [节目 · 单集](<https://www.douban.com/podcast_episode/123>) ^douban-123\n  <!-- podcast-works:start -->\n  - [[Movies#^douban-100|电影]]（摘记）\n  <!-- podcast-works:end -->\n  - 手写内容\n\n#### Quotes\n正文';
-    const next=api.normalizeEpisodeWorks(old);
-    assert(!next.includes('podcast-works:start'));
-    assert(!next.includes('podcast-works:end'));
-    assert(next.includes('^douban-123\n  - [[Movies#^douban-100|电影]]（摘记） <!-- podcast-work -->\n  - 手写内容'));
-    assert(next.endsWith('#### Quotes\n正文'));
-    assert.equal(api.normalizeEpisodeWorks(next),next);
-});
-
 
 test('association refresh preserves note-owned completed-work formatting', async () => {
     const api = load(), f = fixture(api);
@@ -259,4 +236,11 @@ test('vault presentation updates completed work marks without Capture', {skip: !
     assert.equal(callbacks.size, 1);
     cleanup.forEach(fn => fn());
     assert.equal(Object.getOwnPropertySymbols(owner).length, 0);
+});
+
+
+test('retired inline association blocks are rejected without migration', () => {
+    const api = load();
+    const text = '- [Episode](<https://www.douban.com/podcast_episode/123>) <!-- podcast-works:start -->old<!-- podcast-works:end --> ^douban-123';
+    assert.throws(() => api.linkEpisodeWork(text, source, {...film, path: 'Recommendations/Movies.md', state: 'wish'}), /Unsupported association format/);
 });

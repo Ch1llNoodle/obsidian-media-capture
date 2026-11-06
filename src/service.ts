@@ -1,5 +1,5 @@
 import { Modal, Notice, requestUrl, type App, type Plugin, type TFile } from "obsidian";
-import { DEFAULT_SETTINGS, isListeningState, validateSettings, recordDate, episodeUrl, metadata, entryIdentity, stateOf } from "./core";
+import { ruleTargets, isListeningState, validateSettings, recordDate, episodeUrl, metadata, entryIdentity, stateOf } from "./core";
 import { ensureFolder, isMarkdownFile } from "./storage";
 
 import type { CaptureSettingsData, CaptureItem, CaptureResult, CoverFailure, CoverRepairResult, EpisodeMetadata, SavedDataPatch } from "./types";
@@ -16,21 +16,22 @@ export class CaptureService {
     readonly appends = new AppendOutputs(this);
     readonly plugin: Plugin;
     app: App;
-    settings: CaptureSettingsData = { ...DEFAULT_SETTINGS };
+    settings: CaptureSettingsData = validateSettings({});
     unloaded = false;
     queue: Promise<unknown> = Promise.resolve();
     dataQueue: Promise<void> = Promise.resolve();
     constructor(plugin: Plugin) { this.plugin = plugin; this.app = plugin.app; }
-    get config(): Readonly<CaptureSettingsData> { return this.settings ?? DEFAULT_SETTINGS; }
+    get config(): Readonly<CaptureSettingsData> { return ruleTargets(this.settings); }
     async initialize(): Promise<void> {
         this.unloaded = false;
         this.queue = Promise.resolve();
         this.dataQueue = Promise.resolve();
         const data = record(await this.loadData());
-        this.settings = validateSettings(data.settings ?? DEFAULT_SETTINGS);
+        if (data.settings && data.schemaVersion !== 1) throw new Error('Unsupported saved data. Version 0.9 requires schemaVersion 1 and writeRules. Export and rebuild the settings before loading.');
+        this.settings = validateSettings(data.settings ?? {});
         this.notes.initialize(data.noteIndex, data.noteMetadata);
         this.appends.initialize(data.outputEntries);
-        if (!data.settings) await this.updateData({ settings: this.settings, settingsVersion: 1 });
+        if (!data.settings) await this.updateData({ settings: this.settings, schemaVersion: 1 });
     }
     dispose(): void { this.unloaded = true; }
     async loadData(): Promise<unknown> { return this.plugin.loadData() as Promise<unknown>; }
@@ -50,7 +51,7 @@ export class CaptureService {
     }
     async saveSettings(value: unknown): Promise<void> {
         const settings = validateSettings(value);
-        await this.updateData({ settings, settingsVersion: 1 });
+        await this.updateData({ settings, schemaVersion: 1 });
         this.settings = settings;
     }
     async fetchMetadata(url: string): Promise<EpisodeMetadata> {
@@ -85,7 +86,7 @@ export class CaptureService {
             throw new Error([lookupError, errorMessage(error)].filter(Boolean).join("；"));
         }
     }
-    get catalogPaths(): string[] { return [this.config.catalogPath, this.config.videoCatalogPath]; }
+    get catalogPaths(): string[] { return [this.config.catalogPath, this.config.videoCatalogPath].filter(Boolean); }
     isCatalog(path: string | undefined): boolean { return path !== undefined && this.catalogPaths.includes(path); }
     catalogPathFor(item: Pick<CaptureItem, 'provider'>): string {
         return item.provider === 'youtube' || item.provider === 'bilibili' ? this.config.videoCatalogPath : this.config.catalogPath;

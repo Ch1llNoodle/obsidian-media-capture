@@ -3,8 +3,8 @@ import type { CaptureItem, CaptureResult, CaptureUpdatedEvent, WriteRule } from 
 import type { EpisodeNotePlan } from './episode-notes';
 import type { AppendPlan } from './append-output';
 import { blockId, entryIdentity, episodeUrl, findEntry, isListeningState, localDate, recordDate, stateOf, updateCatalog, validDate } from './core';
-import { isCaptureMode, noteValues, splitEpisodeTitle } from './note-format';
-import { presetRules, rulesFor, ruleTemplate } from './write-rules';
+import { isCapturePreset, noteValues, splitEpisodeTitle } from './note-format';
+import { rulesFor, ruleTemplate } from './write-rules';
 import { isMarkdownFile } from './storage';
 import { errorMessage } from './validation';
 import { captureCover, dailyNotes, writeDailyLink } from './capture-context';
@@ -12,8 +12,8 @@ import { captureCover, dailyNotes, writeDailyLink } from './capture-context';
 type Plan = { kind: 'catalog'; rule: WriteRule; path: string } | { kind: 'create'; rule: WriteRule; path: string; plan: EpisodeNotePlan } | { kind: 'append'; rule: WriteRule; path: string; plan: AppendPlan };
 
 export async function saveCapture(service: CaptureService, input: CaptureItem): Promise<CaptureResult> {
-    const mode = input.repairOnly ? 'log' : input.output ?? service.config.captureMode;
-    if (!isCaptureMode(mode)) throw new Error('请选择有效的写入预设。');
+    const mode = input.repairOnly ? 'log' : input.output ?? 'custom';
+    if (!isCapturePreset(mode)) throw new Error('请选择有效的写入预设。');
     const parsed = episodeUrl(input.url);
     const catalogPath = service.catalogPathFor(parsed);
     const settings = { ...service.config, catalogPath };
@@ -29,6 +29,7 @@ export async function saveCapture(service: CaptureService, input: CaptureItem): 
     const catalog = service.app.vault.getAbstractFileByPath(catalogPath) ?? null;
     const source = isMarkdownFile(catalog) ? await service.app.vault.read(catalog) : '';
     const previous = findEntry(source, item);
+    if (previous && !isListeningState(stateOf(previous))) throw new Error('Unsupported log row: missing podcast-state marker.');
     const identity = previous ? entryIdentity(previous) : null;
     const id = identity ? blockId(identity) : service.notes.matchId(item) ?? blockId(item);
     const createdDate = service.notes.values(id)?.currentdate || localDate();
@@ -43,7 +44,7 @@ export async function saveCapture(service: CaptureService, input: CaptureItem): 
     // Prepare every destination before writing any of them.
     const plans: Plan[] = [];
     const destinations = new Set<string>();
-    const templates = [...(service.config.writeRules ?? presetRules(service.config)), ...rules].map(rule => rule.templateFile.toLowerCase()).filter(Boolean);
+    const templates = [...service.config.writeRules, ...rules].map(rule => rule.templateFile.toLowerCase()).filter(Boolean);
     for (const rule of rules) {
         try {
             let plan: Plan;

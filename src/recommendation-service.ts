@@ -1,7 +1,7 @@
 import type { CaptureService } from './service';
 import type { RecommendationSource, RecommendationWork } from './types';
 import { isMarkdownFile } from './storage';
-import { catalogWorks, isWanted, episodeSource, recommendationKinds, recommendationIndex, recommendationSources, linkEpisodeWork, linkWorkSource, normalizeEpisodeWorks } from './recommendations';
+import { catalogWorks, isWanted, episodeSource, recommendationKinds, recommendationIndex, recommendationSources, linkEpisodeWork, linkWorkSource } from './recommendations';
 import { errorMessage } from './validation';
 
 export class RecommendationService {
@@ -83,7 +83,6 @@ export class RecommendationService {
                 const file = this.podcast.app.vault.getAbstractFileByPath(path);
                 if (!isMarkdownFile(file)) continue;
                 const transform = (text: string): string => {
-                    text = normalizeEpisodeWorks(text);
                     const existing = new Set(text.split(/\r?\n/).map(line => episodeSource(line, file.path)?.blockId));
                     for (const { source, work } of assignments) if (source.path === path && existing.has(source.blockId)) text = linkEpisodeWork(text, source, work);
                     return text;

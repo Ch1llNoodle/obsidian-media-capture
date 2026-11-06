@@ -1,27 +1,28 @@
-import type { CaptureMode, CaptureSettingsData, WriteRule } from './types';
-import { episodeNotePath, noteValues, renderTemplateBody, relativeNotePath, validateNoteTemplate } from './note-format';
+import type { CapturePreset, CaptureSettingsData, WriteRule } from './types';
+import { episodeNotePath, noteValues, DEFAULT_NOTE_TEMPLATE, renderTemplateBody, relativeNotePath, validateNoteTemplate } from './note-format';
 import { isRecord } from './validation';
 import { isMarkdownFile } from './storage';
 import type { CaptureService } from './service';
 
-export function presetRules(settings: Readonly<CaptureSettingsData>, preset: CaptureMode = settings.captureMode): WriteRule[] {
-    if (preset === 'custom' && settings.writeRules) return settings.writeRules.map(rule => ({ ...rule }));
-    const catalog: WriteRule = { id: 'catalog', name: '集中清单', enabled: preset === 'log' || preset === 'both', mode: 'append', folder: '',
-        pathTemplate: settings.catalogPath, heading: settings.entryHeading, templateFile: '', coverWidth: 24,
-        template: settings.rowTemplate.replace(/\{\{date\}\}/g, '{{listened}}').replace(/\{\{title\}\}/g, '{{fullTitle}}') };
-    const notes: WriteRule = { id: 'notes', name: '独立笔记', enabled: preset === 'note' || preset === 'both', mode: 'create', folder: settings.noteFolder,
-        pathTemplate: settings.notePathTemplate, heading: '', templateFile: settings.noteTemplateFile, template: settings.noteTemplate, coverWidth: 120 };
-    const show: WriteRule = { ...notes, id: 'show', name: '按节目／频道追加', enabled: preset === 'show', mode: 'append', pathTemplate: '{{show}}.md', heading: 'Episodes',
-        templateFile: '', template: '### {{title}}\n\n{{link}}\n\n{{cover}}\n\n{{description}}' };
-    return [catalog, notes, show].map(rule => {
-        const configured = settings.writeRules?.find(value => value.id === rule.id && value.mode === rule.mode);
-        return configured ? { ...configured, enabled: rule.enabled } : rule;
+export function defaultRules(): WriteRule[] {
+    return [
+        { id: 'catalog', name: 'Log', enabled: true, mode: 'append', folder: '', pathTemplate: 'Podcasts.md', heading: 'Entries', templateFile: '', coverWidth: 24, template: '- {{listened}} {{cover}} {{link}}' },
+        { id: 'notes', name: 'Media note', enabled: false, mode: 'create', folder: 'Media', pathTemplate: '{{show}}/{{title}}.md', heading: '', templateFile: '', template: DEFAULT_NOTE_TEMPLATE, coverWidth: 120 },
+        { id: 'show', name: 'Show or channel', enabled: false, mode: 'append', folder: 'Media', pathTemplate: '{{show}}.md', heading: 'Entries', templateFile: '', template: '### {{title}}\n\n{{link}}\n\n{{cover}}\n\n{{description}}', coverWidth: 120 },
+    ];
+}
+
+export function presetRules(settings: Readonly<CaptureSettingsData>, preset: CapturePreset = 'custom'): WriteRule[] {
+    if (preset === 'custom') return settings.writeRules.map(rule => ({ ...rule }));
+    return defaultRules().map(rule => {
+        const configured = settings.writeRules.find(value => value.id === rule.id && value.mode === rule.mode);
+        return { ...(configured ?? rule), enabled: rule.id === 'catalog' ? preset === 'log' || preset === 'both'
+            : rule.id === 'notes' ? preset === 'note' || preset === 'both' : preset === 'show' };
     });
 }
 
-export function rulesFor(settings: Readonly<CaptureSettingsData>, preset?: CaptureMode): WriteRule[] {
-    const rules = preset && preset !== 'custom' ? presetRules(settings, preset) : settings.writeRules ?? presetRules(settings);
-    return rules.filter(rule => rule.enabled).map(rule => ({ ...rule }));
+export function rulesFor(settings: Readonly<CaptureSettingsData>, preset: CapturePreset = 'custom'): WriteRule[] {
+    return presetRules(settings, preset).filter(rule => rule.enabled);
 }
 
 export function validateRules(value: unknown): WriteRule[] {
@@ -56,7 +57,7 @@ export function validateRules(value: unknown): WriteRule[] {
 }
 
 export function rulePath(rule: WriteRule, values: ReturnType<typeof noteValues>): string {
-    return episodeNotePath({ noteFolder: rule.folder, notePathTemplate: rule.pathTemplate }, values);
+    return episodeNotePath(rule.folder, rule.pathTemplate, values);
 }
 
 export async function ruleTemplate(podcast: CaptureService, rule: WriteRule): Promise<string> {

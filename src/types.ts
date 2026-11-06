@@ -1,6 +1,6 @@
 export type Provider = 'douban' | 'xiaoyuzhou' | 'apple' | 'youtube' | 'bilibili';
 export type ListeningState = '听过' | '在听' | '想听';
-export type CaptureMode = 'log' | 'note' | 'both' | 'show' | 'custom';
+export type CapturePreset = 'log' | 'note' | 'both' | 'show' | 'custom';
 export interface WriteRule {
     id: string;
     name: string;
@@ -43,18 +43,12 @@ export interface RecommendationWork extends RecommendationItem {
 }
 
 export interface CaptureSettingsData {
-    writeRules?: WriteRule[];
-    captureMode: CaptureMode;
-    noteFolder: string;
-    notePathTemplate: string;
-    noteTemplateFile: string;
-    noteTemplate: string;
-    catalogPath: string;
+    writeRules: WriteRule[];
+    readonly catalogPath: string;
+    readonly entryHeading: string;
     videoCatalogPath: string;
     playbackIntegration: boolean;
-    entryHeading: string;
     imageFolder: string;
-    rowTemplate: string;
     downloadCovers: boolean;
     repairOnStartup: boolean;
     dailyIntegration: boolean;
@@ -87,7 +81,7 @@ export interface EpisodeMetadata {
     description?: string;
 }
 
-// Optional identity fields preserve the pre-settings Douban record format.
+// Identity may be supplied by the URL parser at the capture boundary.
 export interface EntryIdentity {
     id: string;
     provider?: Provider;
@@ -102,7 +96,7 @@ export interface CaptureItem extends EntryIdentity {
     date: string;
     cover?: string;
     repairOnly?: boolean;
-    output?: CaptureMode;
+    output?: CapturePreset;
     show?: string;
     episodeTitle?: string;
     published?: string;
@@ -144,7 +138,7 @@ export interface CoverReport extends CoverRepairResult {
 export interface SavedDataPatch {
     coverCache?: Record<string, string>;
     settings?: CaptureSettingsData;
-    settingsVersion?: number;
+    schemaVersion?: 1;
     coverReport?: CoverReport;
     noteIndex?: Record<string, string>;
     noteMetadata?: Record<string, Record<string, string>>;
@@ -157,5 +151,5 @@ export interface CaptureUpdatedEvent {
     state: ListeningState;
     date: string;
     notePath?: string;
-    output?: CaptureMode;
+    output?: CapturePreset;
 }

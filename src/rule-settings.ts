@@ -1,16 +1,16 @@
 import { Notice, Setting } from 'obsidian';
 import type { CaptureService } from './service';
-import type { CaptureMode, WriteRule } from './types';
+import type { CapturePreset, WriteRule } from './types';
 import { presetRules } from './write-rules';
 import { NoteTemplatePicker } from './note-ui';
 import { errorMessage } from './validation';
 
 export function renderRuleSettings(container: HTMLElement, podcast: CaptureService, refresh: () => void): void {
-    const rules = podcast.config.writeRules ?? presetRules(podcast.config);
+    const rules = podcast.config.writeRules;
     const save = async (updated: WriteRule[]): Promise<void> => { await podcast.saveSettings({ ...podcast.config, writeRules: updated }); };
     let queue: Promise<void> = Promise.resolve();
     const mutate = (update: (current: WriteRule[]) => WriteRule[]): Promise<void> => {
-        const work = queue.then(() => save(update(podcast.config.writeRules ?? rules)));
+        const work = queue.then(() => save(update(podcast.config.writeRules)));
         queue = work.catch(() => {});
         return work;
     };
@@ -18,7 +18,7 @@ export function renderRuleSettings(container: HTMLElement, podcast: CaptureServi
     const run = (work: Promise<void>, redraw = false): void => {
         void work.then(() => { if (redraw) refresh(); }).catch((error: unknown) => new Notice(errorMessage(error)));
     };
-    let preset: CaptureMode = 'log';
+    let preset: CapturePreset = 'log';
     new Setting(container).setName('常用预设').setDesc('应用预设会替换下面的规则配置，已有文件保留。')
         .addDropdown(component => component.addOptions({ log: '集中清单', note: '每条一篇', both: '清单与独立笔记', show: '按节目／频道追加' }).setValue(preset).onChange(value => {
             if (value === 'log' || value === 'note' || value === 'both' || value === 'show') preset = value;

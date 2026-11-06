@@ -2,13 +2,19 @@ import type { CaptureItem, CaptureSettingsData, CatalogUpdate, EntryIdentity, Ep
 import { videoUrl } from "./media";
 import { record } from "./validation";
 import { decode } from "./metadata-helpers";
-import { isApplePlayerTitle } from "./apple";
-import { DEFAULT_NOTE_TEMPLATE, isCaptureMode, validateNoteSettings, noteValues, renderTemplateBody, withCoverWidth } from "./note-format";
-import { presetRules, validateRules } from './write-rules';
+import { noteValues, renderTemplateBody, withCoverWidth } from "./note-format";
+import { validateRules, defaultRules } from './write-rules';
 export { decode, plain, safeCover, coverUrl } from "./metadata-helpers";
 export { metadata } from "./metadata";
 
-const DEFAULT_SETTINGS: Readonly<CaptureSettingsData> = Object.freeze({ captureMode: "log", videoCatalogPath: "Videos.md", playbackIntegration: false, noteFolder: "Podcasts", notePathTemplate: "{{show}}/{{title}}.md", noteTemplateFile: "", noteTemplate: DEFAULT_NOTE_TEMPLATE, catalogPath: "Podcasts.md", entryHeading: "Entries", imageFolder: "image/podcasts", rowTemplate: "- {{date}} {{cover}} {{link}}", downloadCovers: true, repairOnStartup: false, dailyIntegration: false, dailyFolder: "Daily", dailyProperty: "podcasts", bookPath: "Recommendations/Books.md", moviePath: "Recommendations/Movies.md", teleplayPath: "Recommendations/Series.md", musicPath: "Recommendations/Music.md", gamePath: "Recommendations/Games.md", theaterPath: "Recommendations/Theater.md" });
+function ruleTargets(settings: Omit<CaptureSettingsData, 'catalogPath' | 'entryHeading'>): CaptureSettingsData {
+    return Object.defineProperties(settings, {
+        catalogPath: { configurable: true, get: () => { const rule = settings.writeRules.find(rule => rule.id === 'catalog'); return rule ? [rule.folder, rule.pathTemplate].filter(Boolean).join('/') : ''; } },
+        entryHeading: { configurable: true, get: () => settings.writeRules.find(rule => rule.id === 'catalog')?.heading ?? '' },
+    }) as CaptureSettingsData;
+}
+
+const DEFAULT_SETTINGS: Readonly<CaptureSettingsData> = Object.freeze(ruleTargets({ writeRules: defaultRules(), videoCatalogPath: 'Videos.md', playbackIntegration: false, imageFolder: 'image/media', downloadCovers: true, repairOnStartup: false, dailyIntegration: false, dailyFolder: 'Daily', dailyProperty: 'media', bookPath: 'Recommendations/Books.md', moviePath: 'Recommendations/Movies.md', teleplayPath: 'Recommendations/Series.md', musicPath: 'Recommendations/Music.md', gamePath: 'Recommendations/Games.md', theaterPath: 'Recommendations/Theater.md' }));
 const STATES: readonly ListeningState[] = ["听过", "在听", "想听"];
 
 export function isListeningState(value: unknown): value is ListeningState {
@@ -25,56 +31,36 @@ function vaultPath(value: unknown, extension = ""): string {
 
 function validateSettings(settings: unknown): CaptureSettingsData {
     const supplied = record(settings);
-    const result = { ...DEFAULT_SETTINGS };
-    for (const key of ["noteFolder", "notePathTemplate", "noteTemplateFile", "noteTemplate", "catalogPath", "videoCatalogPath", "imageFolder", "dailyFolder", "entryHeading", "dailyProperty", "rowTemplate", "bookPath", "moviePath", "teleplayPath", "musicPath", "gamePath", "theaterPath"] as const) {
-        const value = supplied[key];
-        if (value !== undefined) {
-            if (typeof value !== "string") throw new Error(`设置 ${key} 必须是文本。`);
-            result[key] = value;
+    const result = ruleTargets({ ...DEFAULT_SETTINGS, writeRules: defaultRules() });
+    for (const key of Object.keys(supplied)) if (!Object.prototype.hasOwnProperty.call(DEFAULT_SETTINGS, key) || ['catalogPath', 'entryHeading'].includes(key)) throw new Error(`Unknown settings field: ${key}. Version 0.9 requires writeRules; old settings are not migrated.`);
+    for (const key of ['videoCatalogPath', 'imageFolder', 'dailyFolder', 'dailyProperty', 'bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const) {
+        if (supplied[key] !== undefined) {
+            if (typeof supplied[key] !== 'string') throw new Error(`Setting ${key} must be text.`);
+            result[key] = supplied[key];
         }
     }
-    for (const key of ["downloadCovers", "repairOnStartup", "dailyIntegration", "playbackIntegration"] as const) {
-        const value = supplied[key];
-        if (value !== undefined) {
-            if (typeof value !== "boolean") throw new Error(`设置 ${key} 必须是布尔值。`);
-            result[key] = value;
+    for (const key of ['downloadCovers', 'repairOnStartup', 'dailyIntegration', 'playbackIntegration'] as const) {
+        if (supplied[key] !== undefined) {
+            if (typeof supplied[key] !== 'boolean') throw new Error(`Setting ${key} must be boolean.`);
+            result[key] = supplied[key];
         }
     }
-    if (supplied.captureMode !== undefined) {
-        if (!isCaptureMode(supplied.captureMode)) throw new Error("请选择有效的保存方式。");
-        result.captureMode = supplied.captureMode;
-    }
-    validateNoteSettings(result);
-    result.catalogPath = vaultPath(result.catalogPath, ".md");
-    result.imageFolder = vaultPath(result.imageFolder);
-    for (const key of ["bookPath", "moviePath", "teleplayPath", "musicPath", "gamePath", "theaterPath"] as const) {
-        result[key] = vaultPath(result[key], ".md");
-        if (result[key] === result.catalogPath) throw new Error("作品清单不能使用媒体记录文件。");
-    }
-    result.dailyFolder = vaultPath(result.dailyFolder);
-    result.entryHeading = String(result.entryHeading).trim();
-    result.dailyProperty = String(result.dailyProperty).trim();
-    if (!result.entryHeading || /[\r\n#]/.test(result.entryHeading)) throw new Error("记录区标题不能为空，且不能包含换行或 #。");
-    if (!result.dailyProperty || /[\r\n]/.test(result.dailyProperty) || ["__proto__", "constructor", "prototype"].includes(result.dailyProperty)) throw new Error("日记属性名无效。");
-    result.rowTemplate = String(result.rowTemplate).trim();
-    if (!result.rowTemplate.startsWith("- ") || /[\r\n]/.test(result.rowTemplate) || !result.rowTemplate.includes("{{link}}")) throw new Error("输出模板必须是以 - 开头的单行列表，并包含 {{link}}。");
-    for (const match of result.rowTemplate.matchAll(/\{\{(.*?)\}\}/g)) if (!["date", "cover", "link", "title", "url", "state", "provider"].includes(match[1] ?? "")) throw new Error(`未知模板变量：${match[0]}`);
-    if (supplied.writeRules !== undefined) {
-        result.writeRules = validateRules(supplied.writeRules);
-        result.captureMode = 'custom';
-        const catalog = result.writeRules.find(rule => rule.id === 'catalog');
-        if (catalog) { result.catalogPath = [catalog.folder, catalog.pathTemplate].filter(Boolean).join('/'); result.entryHeading = catalog.heading; }
-        const notes = result.writeRules.find(rule => rule.id === 'notes');
-        if (notes?.mode === 'create') { result.noteFolder = notes.folder; result.notePathTemplate = notes.pathTemplate; result.noteTemplateFile = notes.templateFile; result.noteTemplate = notes.template; }
-        for (const key of ['bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const) if (result[key] === result.catalogPath) throw new Error('作品清单不能使用媒体记录文件。');
-    }
+    if (supplied.writeRules !== undefined) result.writeRules = validateRules(supplied.writeRules);
     result.videoCatalogPath = vaultPath(result.videoCatalogPath, '.md');
-    if (result.videoCatalogPath.toLowerCase() === result.catalogPath.toLowerCase()) throw new Error('播客与视频清单必须使用不同文件。');
-    for (const key of ['bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const) if (result[key].toLowerCase() === result.videoCatalogPath.toLowerCase()) throw new Error('视频清单不能使用作品清单文件。');
+    result.imageFolder = vaultPath(result.imageFolder);
+    result.dailyFolder = vaultPath(result.dailyFolder);
+    result.dailyProperty = result.dailyProperty.trim();
+    if (!result.dailyProperty || /[\r\n]/.test(result.dailyProperty) || ['__proto__', 'constructor', 'prototype'].includes(result.dailyProperty)) throw new Error('Invalid daily property name.');
+    const mediaPaths = [result.catalogPath, result.videoCatalogPath].filter(Boolean).map(path => path.toLowerCase());
+    if (new Set(mediaPaths).size !== mediaPaths.length) throw new Error('Podcast and video logs must use different paths.');
+    for (const key of ['bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const) {
+        result[key] = vaultPath(result[key], '.md');
+        if (mediaPaths.includes(result[key].toLowerCase())) throw new Error('Work collections must not use media log paths.');
+    }
     return result;
 }
 
-function recordDate(line: string | null | undefined): string { return line?.match(/<!--\s*podcast-date:\s*(\d{4}-\d{2}-\d{2})\s*-->/)?.[1] ?? line?.match(/^-\s+(\d{4}-\d{2}-\d{2})/)?.[1] ?? ""; }
+function recordDate(line: string | null | undefined): string { return line?.match(/<!--\s*podcast-date:\s*(\d{4}-\d{2}-\d{2})\s*-->/)?.[1] ?? ""; }
 
 function localDate(): string {
     const date = new Date();
@@ -118,9 +104,13 @@ function episodeUrl(input: string): Episode {
     throw new Error("请粘贴豆瓣、小宇宙、Apple Podcasts 单集，或 YouTube、Bilibili 视频链接。Bilibili 请使用含 BV 或 av 编号的完整视频链接。");
 }
 
-function blockId(item: EntryIdentity): string { return item.blockId ?? `${item.provider ?? "douban"}-${item.id}`; }
+function blockId(item: EntryIdentity): string {
+    if (item.blockId) return item.blockId;
+    if (!item.provider) throw new Error('Missing provider or blockId.');
+    return `${item.provider}-${item.id}`;
+}
 
-function stateOf(line: string | null | undefined): string | undefined { return line?.match(/<!--\s*(?:podcast|douban)-state:\s*(.*?)\s*-->/)?.[1]; }
+function stateOf(line: string | null | undefined): string | undefined { return line?.match(/<!--\s*podcast-state:\s*(.*?)\s*-->/)?.[1]; }
 
 function markdownText(value: string): string {
     return String(value).replace(/\s+/g, " ").trim().replace(/\\/g, "\\\\").replace(/\[/g, "\\[").replace(/\]/g, "\\]").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -137,8 +127,8 @@ function entryIdentity(line: string): (Episode & { title: string }) | null {
 
 function titleKey(title: string): string { return title.normalize("NFKC").replace(/\s+/g, " ").trim().toLowerCase(); }
 
-function findEntry(source: string, item: EntryIdentity | string): string | undefined {
-    const candidate: EntryIdentity = typeof item === "string" ? { id: item } : item;
+function findEntry(source: string, item: EntryIdentity): string | undefined {
+    const candidate = item;
     const lines = source.split(/\r?\n/).filter(line => line.startsWith("- "));
     const exact = lines.find(line => {
         const identity = entryIdentity(line);
@@ -154,7 +144,7 @@ function findEntry(source: string, item: EntryIdentity | string): string | undef
 }
 
 function entryLine(item: CaptureItem, cover: string, settings: Readonly<CaptureSettingsData> = DEFAULT_SETTINGS, createdDate = localDate()): string {
-    const rule = settings.writeRules?.find(rule => rule.id === 'catalog') ?? presetRules(settings, 'log').find(rule => rule.id === 'catalog');
+    const rule = settings.writeRules.find(rule => rule.id === 'catalog');
     if (!rule) throw new Error('集中清单写入规则缺失。');
     const values = withCoverWidth(noteValues(item, blockId(item), cover, createdDate, settings.playbackIntegration), rule.coverWidth);
     const row = renderTemplateBody(rule.template, values).trimEnd();
@@ -166,14 +156,9 @@ function updateCatalog(source: string, item: CaptureItem, cover: string, setting
     const existing = findEntry(source, item);
     const oldState = stateOf(existing);
     if (existing && oldState === "听过") {
-        let updated = existing.replace(/<!--\s*douban-state:/, "<!-- podcast-state:");
-        const identity = entryIdentity(existing);
-        if (identity?.provider === "apple" && isApplePlayerTitle(identity.title) && !isApplePlayerTitle(item.title)) {
-            updated = updated.replace(/(?<!!)\[((?:\\.|[^\]])+)\]\(<(https:\/\/[^>]+)>\)/,
-                (_match: string, _label: string, url: string) => `[${markdownText(item.title)}](<${url}>)`);
-        }
+        let updated = existing;
         if (cover && !/!\[(?:cover)?\|\d+\]\(</.test(updated)) {
-            const width = settings.writeRules?.find(rule => rule.id === 'catalog')?.coverWidth ?? 24;
+            const width = settings.writeRules.find(rule => rule.id === 'catalog')?.coverWidth ?? 24;
             updated = updated.replace(/^(-\s+(?:\d{4}-\d{2}-\d{2}\s+)?)/, (_match: string, prefix: string) => `${prefix}![|${width}](<${cover}>) `);
         }
         return { text: source.replace(existing, () => updated), existing, preserved: true };
@@ -183,11 +168,11 @@ function updateCatalog(source: string, item: CaptureItem, cover: string, setting
     if (note) row = row.replace(/\s+(\^\S+)$/, (_match: string, block: string) => ` ${note} ${block}`);
     if (existing) return { text: source.replace(existing, () => row), existing, preserved: false };
     const lines = source.split(/\r?\n/);
-    const heading = lines.findIndex(line => /^#{1,6}\s+/.test(line) && line.replace(/^#{1,6}\s+/, "").trim() === settings.entryHeading);
-    if (heading < 0) throw new Error(`记录文件缺少 ${settings.entryHeading} 标题，请添加该标题或调整设置。`);
+    const heading = lines.findIndex(line => /^#{1,6}\s+/.test(line) && line.replace(/^#{1,6}\s+/, "").trim() === (settings.writeRules.find(rule => rule.id === 'catalog')?.heading ?? ''));
+    if (heading < 0) throw new Error(`记录文件缺少 ${(settings.writeRules.find(rule => rule.id === 'catalog')?.heading ?? '')} 标题，请添加该标题或调整设置。`);
     lines.splice(heading + 1, 0, "", row);
     return { text: lines.join("\n"), existing: null, preserved: false };
 }
 
 
-export { DEFAULT_SETTINGS, STATES, vaultPath, validateSettings, recordDate, localDate, validDate, episodeUrl, blockId, stateOf, markdownText, entryIdentity, titleKey, findEntry, entryLine, updateCatalog };
+export { ruleTargets, DEFAULT_SETTINGS, STATES, vaultPath, validateSettings, recordDate, localDate, validDate, episodeUrl, blockId, stateOf, markdownText, entryIdentity, titleKey, findEntry, entryLine, updateCatalog };

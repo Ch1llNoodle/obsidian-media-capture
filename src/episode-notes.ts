@@ -21,7 +21,7 @@ export class EpisodeNotes {
     private readonly metadata = new Map<string, NoteValues>();
     constructor(private readonly podcast: CaptureService) {}
 
-    known(id: string): boolean { return this.index.has(id); }
+    known(id: string): boolean { return this.index.has('notes::' + id); }
 
     matchId(item: CaptureItem): string | undefined {
         const exact = blockId(item);
@@ -51,11 +51,12 @@ export class EpisodeNotes {
         for (const [id, item] of Object.entries(record(metadata))) {
             const values: NoteValues = {};
             for (const [key, value] of Object.entries(record(item))) if (typeof value === 'string') values[key] = value;
-            if (values.id === id) this.metadata.set(id, values);
+            if (values.id !== id) throw new Error(`Invalid captured metadata identity: ${id}.`);
+            this.metadata.set(id, values);
         }
         for (const [id, path] of Object.entries(record(value))) {
-            if (!/^(?:[a-z][a-z0-9-]*::)?(douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?)$/.test(id) || typeof path !== 'string') continue;
-            try { this.index.set(id, relativeNotePath(path)); } catch { /* Ignore invalid persisted entries. */ }
+            if (!/^[a-z][a-z0-9-]*::(douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?)$/.test(id) || typeof path !== 'string') throw new Error(`Invalid output index: ${id}. Expected rule::recordId.`);
+            this.index.set(id, relativeNotePath(path));
         }
     }
 
@@ -82,20 +83,20 @@ export class EpisodeNotes {
         const text = await this.podcast.app.vault.read(file);
         const header = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text)?.[1];
         if (header === undefined) return '';
-        try { const props = record(parseYaml(header)); const id = props.podcast_capture_id; return (props.podcast_capture_rule ?? 'notes') === ruleId && typeof id === 'string' ? id : ''; }
+        try { const props = record(parseYaml(header)); const id = props.podcast_capture_id; return props.podcast_capture_rule === ruleId && typeof id === 'string' ? id : ''; }
         catch { return ''; }
     }
 
     async find(id: string, ruleId = 'notes'): Promise<TFile | null> {
         const vault = this.podcast.app.vault;
-        const key = ruleId === 'notes' ? id : ruleId + '::' + id;
+        const key = ruleId + '::' + id;
         const path = this.index.get(key);
         const indexed = path ? vault.getAbstractFileByPath(path) : null;
         if (isMarkdownFile(indexed) && await this.identity(indexed, ruleId) === id) { this.checkPath(indexed.path); return indexed; }
         const matches = vault.getMarkdownFiles().filter(file => {
             const properties: unknown = this.podcast.app.metadataCache?.getFileCache(file)?.frontmatter;
             const props = record(properties);
-            return props.podcast_capture_id === id && (props.podcast_capture_rule ?? 'notes') === ruleId;
+            return props.podcast_capture_id === id && props.podcast_capture_rule === ruleId;
         });
         if (matches.length > 1) throw new Error('找到多篇相同单集标识的笔记，请先整理重复笔记。');
         const match = matches[0];
@@ -139,7 +140,7 @@ export class EpisodeNotes {
         if (folder) await ensureFolder(vault, folder);
         if (this.podcast.unloaded) throw new Error('插件已卸载，请重新启用后重试。');
         const file = await vault.create(plan.path, content);
-        this.index.set(plan.rule.id === 'notes' ? plan.id : plan.rule.id + '::' + plan.id, file.path);
+        this.index.set(plan.rule.id + '::' + plan.id, file.path);
         this.metadata.set(plan.id, values);
         try { await this.persist(); }
         catch { throw new Error('单集笔记已创建，但索引未能保存；再次保存可找回原笔记。'); }

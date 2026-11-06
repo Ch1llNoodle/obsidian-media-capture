@@ -1,3 +1,4 @@
+const scenario = require('./settings-fixture.cjs');
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -14,7 +15,7 @@ class TestService extends CaptureService {
     onload() { return this.initialize(); }
 }
 module.exports = TestService;
-module.exports._internals = {...core, LEGACY_SETTINGS: {...core.DEFAULT_SETTINGS, catalogPath: '追踪/播客.md', videoCatalogPath: '追踪/视频.md', imageFolder: '追踪/image', repairOnStartup: true, dailyIntegration: true, dailyFolder: 'daily', dailyProperty: '播客'}};`,
+module.exports._internals = {...core, FIXTURE_SETTINGS: core.validateSettings({...core.DEFAULT_SETTINGS, writeRules: core.DEFAULT_SETTINGS.writeRules.map(rule => rule.id === 'catalog' ? {...rule, folder: '', pathTemplate: '追踪/播客.md'} : rule), videoCatalogPath: '追踪/视频.md', imageFolder: '追踪/image', repairOnStartup: true, dailyIntegration: true, dailyFolder: 'daily', dailyProperty: '播客'})};`,
         resolveDir: path.resolve(__dirname, ".."),
         loader: "ts",
     },
@@ -58,7 +59,7 @@ function appFixture(source, dates = ["2026-11-03", "2026-11-04"]) {
 }
 
 const base = "### Podcasts\n\n#### Entries\n\n#### Quotes\n\n手写摘抄与 [[已有笔记]]\n";
-const item = { id: "509937", url: "https://www.douban.com/podcast_episode/509937", title: "无人知晓 · E46 我们从未看见彼此", state: "听过", date: "2026-11-03", cover: "https://img3.doubanio.com/mpic/cover.jpg" };
+const item = { provider: "douban", blockId: "douban-509937", id: "509937", url: "https://www.douban.com/podcast_episode/509937", title: "无人知晓 · E46 我们从未看见彼此", state: "听过", date: "2026-11-03", cover: "https://img3.doubanio.com/mpic/cover.jpg" };
 
 test("分享链接归一化，拒绝仿冒域名与非法日期", () => {
     const { episodeUrl, validDate, safeCover } = load()._internals;
@@ -94,7 +95,7 @@ test("插入与更新只影响对应作品行，保留摘抄及原记录日期",
 test("并发重复保存去重，封面失败仍保存，日记保留其他属性", async () => {
     const Plugin = load();
     const fixture = appFixture(base);
-    const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.LEGACY_SETTINGS }; plugin.app = fixture.app;
+    const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.FIXTURE_SETTINGS }; plugin.app = fixture.app;
     plugin.queue = Promise.resolve();
     const results = await Promise.all([plugin.capture(item), plugin.capture(item)]);
     assert.equal((fixture.contents.get("追踪/播客.md").match(/\^douban-509937/g) || []).length, 1);
@@ -108,7 +109,7 @@ test("并发重复保存去重，封面失败仍保存，日记保留其他属�
 test("本地封面只保存经过校验的图片，既有封面复用", async () => {
     let requests = 0;
     const Plugin = load(async () => { requests++; return { status: 200, arrayBuffer: Uint8Array.from([255, 216, 255, 217]).buffer }; });
-    const fixture = appFixture(base); const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.LEGACY_SETTINGS }; plugin.app = fixture.app; plugin.queue = Promise.resolve();
+    const fixture = appFixture(base); const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.FIXTURE_SETTINGS }; plugin.app = fixture.app; plugin.queue = Promise.resolve();
     await plugin.capture(item);
     assert(fixture.files.has("追踪/image/无人知晓.jpg"));
     await plugin.capture(item);
@@ -118,7 +119,7 @@ test("本地封面只保存经过校验的图片，既有封面复用", async ()
 test("重听写入新日期日记，保留首次收听日；没有目标日记时停止", async () => {
     const Plugin = load(); const row = Plugin._internals.entryLine(item, "追踪/image/cover.jpg");
     const fixture = appFixture(base.replace("#### Entries", "#### Entries\n\n" + row));
-    const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.LEGACY_SETTINGS }; plugin.app = fixture.app; plugin.queue = Promise.resolve();
+    const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.FIXTURE_SETTINGS }; plugin.app = fixture.app; plugin.queue = Promise.resolve();
     await plugin.capture({ ...item, date: "2026-11-04" });
     assert(fixture.contents.get("追踪/播客.md").includes("- 2026-11-03"));
     assert.equal(fixture.frontmatter.get("daily/2026/2026-11/2026-11-04.md").播客.length, 1);
@@ -126,7 +127,7 @@ test("重听写入新日期日记，保留首次收听日；没有目标日记�
 });
 
 test("在听与想听记录不写入完成日期或日记属性", async () => {
-    const Plugin = load(); const fixture = appFixture(base); const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.LEGACY_SETTINGS }; plugin.app = fixture.app; plugin.queue = Promise.resolve();
+    const Plugin = load(); const fixture = appFixture(base); const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.FIXTURE_SETTINGS }; plugin.app = fixture.app; plugin.queue = Promise.resolve();
     await plugin.capture({ ...item, state: "想听", cover: "" });
     assert(!fixture.contents.get("追踪/播客.md").includes("2026-11-03"));
     assert.equal(fixture.frontmatter.get("daily/2026/2026-11/2026-11-03.md").播客.length, 0);
@@ -177,7 +178,7 @@ test("Apple JSON-LD 和标题回退解析节目及单集，封面允许 Apple CD
 test("跨平台相同节目和单集复用旧行、旧封面与日记块链接", async () => {
     const Plugin = load(); const row = Plugin._internals.entryLine(item, "追踪/image/original.jpg");
     const fixture = appFixture(base.replace("#### Entries", "#### Entries\n\n" + row));
-    const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.LEGACY_SETTINGS }; plugin.app = fixture.app; plugin.queue = Promise.resolve();
+    const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.FIXTURE_SETTINGS }; plugin.app = fixture.app; plugin.queue = Promise.resolve();
     await plugin.capture({ ...item, url: appleUrl });
     const text = fixture.contents.get("追踪/播客.md");
     assert.equal((text.match(/^- /gm) || []).length, 1);
@@ -200,7 +201,7 @@ test("跨平台在听转为听过仍保留原始标识，防止历史日记断�
 test("三平台自动获取使用公开网页或目录，无需账号信息", async () => {
     const calls = [];
     const Plugin = load(async options => { calls.push(options); return { status: 200, text: options.url.startsWith("https://itunes.apple.com/") ? JSON.stringify(appleLookup()) : '<meta property="og:title" content="单集名称">' }; });
-    const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.LEGACY_SETTINGS };
+    const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.FIXTURE_SETTINGS };
     for (const url of [item.url, xyzUrl, appleUrl]) await plugin.fetchMetadata(url);
     assert.equal(calls.length, 3);
     assert.equal(new URL(calls[2].url).searchParams.get("id"), "1000785771591");
@@ -243,28 +244,6 @@ test("小宇宙仅提供节目 smallPicUrl 时仍获取封面，非法首选地�
     assert.equal(metadata('<meta property="og:title" content="单集"><meta property="og:image" content="https://invalid.example/a.jpg"><meta name="twitter:image:src" content="//image.xyzcdn.net/valid.jpg">', episodeUrl(xyzUrl)).cover, "https://image.xyzcdn.net/valid.jpg");
 });
 
-test("旧状态标记兼容，已听过条目补图时保留原日期、标题、链接及摘抄", async () => {
-    const Plugin = load(async options => {
-        if (options.url.startsWith("https://www.xiaoyuzhoufm.com/")) return { status: 200, text: '<meta property="og:title" content="新标题 - 节目"><meta property="og:image" content="https://image.xyzcdn.net/valid.jpg">' };
-        return { status: 200, arrayBuffer: Uint8Array.from([255, 216, 255, 217]).buffer };
-    });
-    const { episodeUrl, entryLine } = Plugin._internals;
-    const xyz = { ...item, ...episodeUrl(xyzUrl), date: "2026-11-03" };
-    const row = entryLine(xyz, "").replace("podcast-state:", "douban-state:");
-    const fixture = appFixture(base.replace("#### Entries", "#### Entries\n\n" + row));
-    const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.LEGACY_SETTINGS }; plugin.app = fixture.app; plugin.queue = Promise.resolve();
-    await plugin.repairCovers(true);
-    const result = fixture.contents.get("追踪/播客.md");
-    assert(result.includes("![|24](<追踪/image/无人知晓.jpg>)"));
-    assert(result.includes("- 2026-11-03"));
-    assert(result.includes(item.title));
-    assert(!result.includes("新标题"));
-    assert(result.includes("podcast-state: 听过"));
-    assert(result.endsWith("#### Quotes\n\n手写摘抄与 [[已有笔记]]\n"));
-    assert.equal(fixture.frontmatter.get("daily/2026/2026-11/2026-11-03.md").播客.length, 0);
-    assert.equal((result.match(/\^xiaoyuzhou-/g) || []).length, 1);
-});
-
 test("已听过记录重新添加也能补全封面，失败后仍可再试", async () => {
     let offline = true;
     const Plugin = load(async () => {
@@ -273,7 +252,7 @@ test("已听过记录重新添加也能补全封面，失败后仍可再试", as
     });
     const row = Plugin._internals.entryLine(item, "");
     const fixture = appFixture(base.replace("#### Entries", "#### Entries\n\n" + row));
-    const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.LEGACY_SETTINGS }; plugin.app = fixture.app; plugin.queue = Promise.resolve();
+    const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.FIXTURE_SETTINGS }; plugin.app = fixture.app; plugin.queue = Promise.resolve();
     assert.equal((await plugin.capture(item)).hasCover, false);
     offline = false;
     assert.equal((await plugin.capture(item)).hasCover, true);
@@ -287,7 +266,7 @@ test("补图报告保存真实失败阶段，不再只有零个封面的提示",
             : { status: imageStatus, arrayBuffer: Uint8Array.from([255, 216, 255, 217]).buffer });
         const row = Plugin._internals.entryLine(item, "");
         const fixture = appFixture(base.replace("#### Entries", "#### Entries\n\n" + row));
-        const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.LEGACY_SETTINGS }; plugin.app = fixture.app; plugin.queue = Promise.resolve();
+        const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.FIXTURE_SETTINGS }; plugin.app = fixture.app; plugin.queue = Promise.resolve();
         let saved;
         plugin.loadData = async () => ({ retainedSetting: true });
         plugin.saveData = async value => { saved = value; };
@@ -308,7 +287,7 @@ test("小宇宙图片使用无自定义 Referer 的标准请求，已完成条�
     });
     const xyz = { ...item, ...Plugin._internals.episodeUrl(xyzUrl), cover: "" };
     const fixture = appFixture(base.replace("#### Entries", "#### Entries\n\n" + Plugin._internals.entryLine(xyz, "")));
-    const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.LEGACY_SETTINGS }; plugin.app = fixture.app; plugin.queue = Promise.resolve();
+    const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.FIXTURE_SETTINGS }; plugin.app = fixture.app; plugin.queue = Promise.resolve();
     assert.equal((await plugin.capture(xyz)).hasCover, true);
     assert(fixture.contents.get("追踪/播客.md").includes("![|24]"));
 });
@@ -329,7 +308,7 @@ test("全新配置只写普通 Markdown，不访问日记、不要求 Dataview",
 
 test("自定义文件、标题和模板可独立工作，调换日期位置仍可再次识别", async () => {
     const Plugin = load(); const fixture = appFixture(base);
-    const plugin = new Plugin(); plugin.settings = Plugin._internals.validateSettings({ catalogPath: "Library/Listen.md", entryHeading: "Episodes", imageFolder: "Library/image", downloadCovers: false, rowTemplate: "- {{link}} — {{date}} {{cover}}" });
+    const plugin = new Plugin(); plugin.settings = scenario(Plugin._internals.validateSettings, Plugin._internals.DEFAULT_SETTINGS, { logPath: "Library/Listen.md", logHeading: "Episodes", imageFolder: "Library/image", downloadCovers: false, logTemplate: "- {{link}} — {{listened}} {{cover}}" });
     plugin.app = fixture.app; plugin.queue = Promise.resolve();
     await plugin.capture(item);
     const output = fixture.contents.get("Library/Listen.md");
@@ -343,7 +322,7 @@ test("自定义文件、标题和模板可独立工作，调换日期位置仍�
 test("日记联动按配置目录与属性写入，封面按配置目录保存", async () => {
     const Plugin = load(async () => ({ status: 200, arrayBuffer: Uint8Array.from([255, 216, 255, 217]).buffer }));
     const fixture = appFixture(base); const plugin = new Plugin();
-    plugin.settings = { ...Plugin._internals.DEFAULT_SETTINGS, catalogPath: "Library/Podcasts.md", imageFolder: "Library/image", dailyIntegration: true, dailyFolder: "Journal", dailyProperty: "listening" };
+    plugin.settings = scenario(Plugin._internals.validateSettings, Plugin._internals.DEFAULT_SETTINGS, { logPath: "Library/Podcasts.md", imageFolder: "Library/image", dailyIntegration: true, dailyFolder: "Journal", dailyProperty: "listening" });
     const path = "Journal/2026-11-03.md";
     fixture.files.set(path, { path, basename: "2026-11-03", extension: "md" }); fixture.frontmatter.set(path, { other: "保留" });
     plugin.app = fixture.app; plugin.queue = Promise.resolve();
@@ -359,7 +338,7 @@ test("新安装不因私人目录存在而切换设置，保留诊断记录", as
         const Plugin = load(); const fixture = appFixture(base);
         if (!legacy) fixture.files.delete("追踪/播客.md");
         const plugin = new Plugin(); plugin.app = fixture.app;
-        let data = { coverReport: { repaired: 1 } };
+        let data = { schemaVersion: 1, coverReport: { repaired: 1 } };
         plugin.loadData = async () => data;
         plugin.saveData = async value => { data = value; };
         plugin.addCommand = () => {}; plugin.addSettingTab = () => {};
@@ -368,16 +347,16 @@ test("新安装不因私人目录存在而切换设置，保留诊断记录", as
         assert.equal(plugin.config.dailyIntegration, false);
         assert.equal(plugin.config.catalogPath, "Podcasts.md");
         assert.equal(data.coverReport.repaired, 1);
-        assert.equal(data.settingsVersion, 1);
+        assert.equal(data.schemaVersion, 1);
     }
 });
 
 test("配置校验拒绝库外路径与破坏单行记录的模板", () => {
     const { validateSettings } = load()._internals;
-    for (const catalogPath of ["../private.md", "D:/outside.md", "/outside.md", "notes.txt"]) assert.throws(() => validateSettings({ catalogPath }));
-    assert.throws(() => validateSettings({ rowTemplate: "{{title}}" }));
-    assert.throws(() => validateSettings({ rowTemplate: "- {{link}}\nextra" }));
-    assert.throws(() => validateSettings({ rowTemplate: "- {{link}} {{unknown}}" }));
+    const defaults = load()._internals.DEFAULT_SETTINGS;
+    const rule = defaults.writeRules.find(rule => rule.id === 'catalog');
+    for (const pathTemplate of ['../private.md', 'D:/outside.md', '/outside.md', 'notes.txt']) assert.throws(() => validateSettings({writeRules: [{...rule, pathTemplate}]}));
+    for (const template of ['{{title}}', '- {{link}}\nextra', '- {{link}} {{unknown}}']) assert.throws(() => validateSettings({writeRules: [{...rule, template}]}));
     assert.throws(() => validateSettings({ dailyProperty: "__proto__" }));
 });
 
@@ -385,9 +364,9 @@ test("配置校验拒绝库外路径与破坏单行记录的模板", () => {
 test("持久化设置按实际类型校验，忽略未知键并保留默认值", () => {
     const { validateSettings, DEFAULT_SETTINGS } = load()._internals;
     assert.equal(validateSettings(null).catalogPath, DEFAULT_SETTINGS.catalogPath);
-    assert.equal(validateSettings({ extra: true }).extra, undefined);
+    assert.throws(() => validateSettings({ extra: true }), /extra/);
     assert.throws(() => validateSettings({ downloadCovers: "false" }), /downloadCovers/);
-    assert.throws(() => validateSettings({ catalogPath: 42 }), /catalogPath/);
+    assert.throws(() => validateSettings({ videoCatalogPath: 42 }), /videoCatalogPath/);
     assert.equal(validateSettings({ downloadCovers: false }).downloadCovers, false);
 });
 
@@ -405,7 +384,7 @@ test("异常的第三方 JSON 结构回退到公开元信息", () => {
 test("非 Error 异常保留原因，封面失败仍保存记录", async () => {
     const Plugin = load(async () => { throw "network unavailable"; });
     const fixture = appFixture(base);
-    const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.LEGACY_SETTINGS }; plugin.app = fixture.app;
+    const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.FIXTURE_SETTINGS }; plugin.app = fixture.app;
     const result = await plugin.capture(item);
     assert(result.coverError.includes("network unavailable"));
     assert(fixture.contents.get("追踪/播客.md").includes(item.title));
@@ -481,32 +460,6 @@ test("Apple 有效目录名称在网页壳页下仍可保存，非法封面被�
     assert.equal(result.cover, "");
 });
 
-test("补全 Apple 错误播放器标题时保留日期、块标识、手写摘抄和自定义名称", async () => {
-    const Plugin = load(async options => {
-        if (options.url.startsWith("https://itunes.apple.com/")) return { status: 200, text: JSON.stringify(appleLookup()) };
-        return { status: 200, arrayBuffer: Uint8Array.from([255, 216, 255, 217]).buffer };
-    });
-    const { episodeUrl, entryLine } = Plugin._internals;
-    const apple = { ...item, ...episodeUrl(appleUrl), title: "Apple 播客网页播放器" };
-    const row = entryLine(apple, "");
-    const fixture = appFixture(base.replace("#### Entries", "#### Entries\n\n" + row));
-    const service = new Plugin(); service.app = fixture.app; service.settings = { ...Plugin._internals.LEGACY_SETTINGS };
-    await service.repairCovers(true);
-    const updated = fixture.contents.get("追踪/播客.md");
-    assert(!updated.includes("Apple 播客网页播放器"));
-    assert(updated.includes("无人知晓 · E46 我们从未看见彼此"));
-    assert(updated.includes("2026-11-03"));
-    assert(updated.includes("^apple-1000785771591"));
-    assert(updated.endsWith("手写摘抄与 [[已有笔记]]\n"));
-    const own = { ...apple, title: "我的手写名称" };
-    const ownRow = entryLine(own, "");
-    const ownFixture = appFixture(base.replace("#### Entries", "#### Entries\n\n" + ownRow));
-    service.app = ownFixture.app;
-    await service.repairCovers(true);
-    assert(ownFixture.contents.get("追踪/播客.md").includes("我的手写名称"));
-});
-
-
 test('YouTube links share an identity; Bilibili parts retain independent identities', () => {
     const { episodeUrl, entryIdentity, safeCover } = load()._internals;
     for (const url of ['https://youtu.be/dQw4w9WgXcQ?si=tracking', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=45', 'https://m.youtube.com/shorts/dQw4w9WgXcQ']) {
@@ -538,4 +491,12 @@ test('Bilibili Open Graph fields remain usable without authenticated metadata', 
     const info = metadata('<meta property="og:title" content="Video_哔哩哔哩_bilibili"><meta name="author" content="Channel"><meta property="og:image" content="//i0.hdslb.com/bfs/archive/a.jpg">', {provider: 'bilibili'});
     assert.equal(info.title, 'Channel · Video'); assert.equal(info.show, 'Channel');
     assert.equal(info.cover, 'https://i0.hdslb.com/bfs/archive/a.jpg');
+});
+
+
+test('podcast parsing has no old work-state or leading-date fallback', () => {
+    const {stateOf, recordDate} = load()._internals;
+    assert.equal(stateOf('<!-- douban-state: done -->'), undefined);
+    assert.equal(recordDate('- 2026-11-03 [Episode](<https://example.com>)'), '');
+    assert.equal(recordDate('<!-- podcast-date: 2026-11-03 -->'), '2026-11-03');
 });

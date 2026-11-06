@@ -1,13 +1,31 @@
 import type { CaptureService } from './service';
 import type { NoteRefreshEntry } from './note-refresh';
 import type { WriteRule } from './types';
-import { blockId, entryIdentity, entryLine, isListeningState } from './core';
-import { renderEpisodeNote, renderTemplateBody, withCoverWidth, type NoteValues } from './note-format';
+import { blockId, episodeUrl, validDate, entryIdentity, entryLine, isListeningState } from './core';
+import { noteProperties, noteValues, renderEpisodeNote, renderTemplateBody, withCoverWidth, type NoteValues } from './note-format';
 import { entryBlock, entryMarkers } from './append-output';
-import { presetRules, ruleTemplate } from './write-rules';
-import { legacyValues, properties } from './record-values';
+import { ruleTemplate } from './write-rules';
 import { isMarkdownFile } from './storage';
 import { errorMessage } from './validation';
+
+function capturedValues(podcast: CaptureService, id: string, source: string): NoteValues {
+    const saved = podcast.notes.values(id);
+    if (!saved?.url || !saved.title) throw new Error(`Missing captured metadata for ${id}. Old notes are not reconstructed from body text or log headings.`);
+    const props = noteProperties(source);
+    const text = (key: string, fallback = ''): string => typeof props[key] === 'string' ? props[key] : fallback;
+    const episode = episodeUrl(saved.url);
+    const show = text('show', saved.show);
+    const title = text('title', saved.title);
+    const state = text('state', saved.state);
+    if (!isListeningState(state)) throw new Error(`Invalid captured state for ${id}.`);
+    const listened = text('listened', saved.listened);
+    const published = text('published', saved.published);
+    if (state === '听过' && !validDate(listened)) throw new Error(`Missing completed date for ${id}.`);
+    if (published && !validDate(published)) throw new Error(`Invalid publication date for ${id}.`);
+    return noteValues({ ...episode, title: show ? show + ' · ' + title : title, show, episodeTitle: title,
+        state, date: listened, published, description: text('description', saved.description) },
+        id, text('coverPath', saved.coverpath), text('currentDate', saved.currentdate), podcast.config.playbackIntegration);
+}
 
 function missing(entry: NoteRefreshEntry, template: string, values: NoteValues): void {
     for (const match of template.matchAll(/\{\{([^{}]+)\}\}/g)) {
@@ -18,7 +36,7 @@ function missing(entry: NoteRefreshEntry, template: string, values: NoteValues):
 
 export async function prepareNoteRefresh(podcast: CaptureService): Promise<NoteRefreshEntry[]> {
     await podcast.queue;
-    const rules = podcast.config.writeRules ?? presetRules(podcast.config);
+    const rules = podcast.config.writeRules;
     const templates = new Map<string, string>();
     for (const rule of rules) {
         try {
@@ -33,13 +51,11 @@ export async function prepareNoteRefresh(podcast: CaptureService): Promise<NoteR
         const id: unknown = podcast.app.metadataCache?.getFileCache(file)?.frontmatter?.podcast_capture_id;
         if (typeof id === 'string') paths.add(file.path);
     }
-    let log = '';
     for (const path of podcast.catalogPaths) {
         const catalog = vault.getAbstractFileByPath(path) ?? null;
         try {
             if (isMarkdownFile(catalog)) {
                 const text = await vault.read(catalog);
-                log += text + '\n';
                 if (rules.some(rule => rule.id === 'catalog') && text.split(/\r?\n/).some(line => line.startsWith('- ') && entryIdentity(line))) paths.add(path);
             }
         } catch (error) { throw new Error(`读取参考清单失败：${path}\n${errorMessage(error)}\n未修改任何笔记。`); }
@@ -61,14 +77,15 @@ export async function prepareNoteRefresh(podcast: CaptureService): Promise<NoteR
             if (!isMarkdownFile(file)) throw new Error('文件已移动、删除或不再是 Markdown 文件。');
             entry.original = await vault.read(file); entry.replacement = entry.original;
             stage = '恢复单集信息';
-            const props = properties(entry.original);
+            const props = noteProperties(entry.original);
             if (typeof props.podcast_capture_id === 'string' && !podcast.isCatalog(path)) {
                 entry.id = props.podcast_capture_id;
                 if (!/^(douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?)$/.test(entry.id)) throw new Error('podcast_capture_id 缺失或无效，已跳过。');
-                const ruleId = typeof props.podcast_capture_rule === 'string' ? props.podcast_capture_rule : 'notes';
+                if (typeof props.podcast_capture_rule !== 'string') throw new Error('Missing explicit podcast_capture_rule.');
+                const ruleId = props.podcast_capture_rule;
                 const rule = getRule(ruleId); entry.ruleId = ruleId;
                 const template = templates.get(ruleId) ?? '';
-                entry.values = withCoverWidth(legacyValues(entry.original, entry.id, log, podcast.notes.values(entry.id), podcast.config.playbackIntegration), rule.coverWidth);
+                entry.values = withCoverWidth(capturedValues(podcast, entry.id, entry.original), rule.coverWidth);
                 missing(entry, template, entry.values);
                 stage = '渲染新模板';
                 entry.replacement = renderEpisodeNote(template, entry.values, ruleId);
@@ -84,7 +101,7 @@ export async function prepareNoteRefresh(podcast: CaptureService): Promise<NoteR
                     const id = blockId(identity);
                     if (ids.has(id)) throw new Error(`集中清单存在重复单集：${id}`);
                     ids.add(id);
-                    const values = legacyValues(line, id, log, podcast.notes.values(id), podcast.config.playbackIntegration); missing(entry, template, values);
+                    const values = capturedValues(podcast, id, line); missing(entry, template, values);
                     const item = { ...identity, title: values.fulltitle || identity.title, show: values.show, episodeTitle: values.title,
                         published: values.published, description: values.description, date: values.listened || '', state: isListeningState(values.state) ? values.state : '在听' };
                     let row = entryLine(item, values.coverpath || '', { ...podcast.config, writeRules: [{ ...rule, template }] }, values.currentdate || '');
@@ -99,7 +116,7 @@ export async function prepareNoteRefresh(podcast: CaptureService): Promise<NoteR
                     const rule = getRule(ruleId), template = templates.get(ruleId) ?? '';
                     const block = entryBlock(entry.original, ruleId, id);
                     if (!block) throw new Error(`单集区域缺失：${ruleId}/${id}`);
-                    const values = withCoverWidth(legacyValues(block, id, log, podcast.notes.values(id), podcast.config.playbackIntegration), rule.coverWidth);
+                    const values = withCoverWidth(capturedValues(podcast, id, block), rule.coverWidth);
                     missing(entry, template, values);
                     const markers = entryMarkers(ruleId, id);
                     const replacement = `${markers.start}\n${renderTemplateBody(template, values).trim()}\n\n^${id}-${ruleId}\n${markers.end}`;

@@ -10,24 +10,16 @@ export function episodeSource(line: string, path: string): RecommendationSource 
 
 const workMarker = '<!-- podcast-work -->';
 
-function episodeWorksBlock(lines: string[], index: number): { start: number; end: number; entries: string[]; legacy: boolean } {
+function episodeWorksBlock(lines: string[], index: number): { start: number; end: number; entries: string[] } {
     const start = index + 1;
-    if (lines[start]?.trim() === '<!-- podcast-works:start -->') {
-        let end = start + 1;
-        while (end < lines.length && lines[end]?.trim() !== '<!-- podcast-works:end -->') {
-            if (lines[end]?.startsWith('- ')) throw new Error('播客关联区域缺少结束标记，原记录已保留。');
-            end++;
-        }
-        if (end >= lines.length) throw new Error('播客关联区域缺少结束标记，原记录已保留。');
-        return { start, end: end + 1, entries: lines.slice(start + 1, end).map(line => line.trim().replace(/^- /, '')).filter(Boolean), legacy: true };
-    }
+    if (lines[index]?.includes('<!-- podcast-works:') || lines[start]?.trim().startsWith('<!-- podcast-works:')) throw new Error('Unsupported association format. Expected nested podcast-work rows.');
     let end = start;
     const entries: string[] = [];
     while (lines[end]?.startsWith('  - ') && lines[end]?.trimEnd().endsWith(workMarker)) {
         entries.push((lines[end] ?? '').trim().slice(2, -workMarker.length).trim());
         end++;
     }
-    return { start, end, entries, legacy: false };
+    return { start, end, entries };
 }
 
 function workRows(entries: string[]): string[] {
@@ -40,34 +32,16 @@ function workRows(entries: string[]): string[] {
     return [...unique.values()].map(entry => '  - ' + entry + ' ' + workMarker);
 }
 
-/** Keep associations as ordinary nested Markdown; management markers stay inline. */
-export function normalizeEpisodeWorks(text: string): string {
-    const lines = text.split(/\r?\n/);
-    for (let index = 0; index < lines.length; index++) {
-        const line = lines[index] ?? '';
-        if (!episodeSource(line, '')) continue;
-        const inline = /<!-- podcast-works:start -->.*?<!-- podcast-works:end -->/.exec(line)?.[0];
-        const block = episodeWorksBlock(lines, index);
-        if (!inline && !block.legacy) continue;
-        const entries = inline ? inline.replace('<!-- podcast-works:start -->', '').replace('<!-- podcast-works:end -->', '')
-            .replace(/^\s*·\s*推荐\s*/, '').trim().split(/\s+·\s+(?=\[\[)/).filter(Boolean) : [];
-        lines[index] = line.replace(inline ?? '', '').replace(/ +(?=\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?)\s*$)/, ' ');
-        lines.splice(block.start, block.end - block.start, ...workRows([...block.entries, ...entries]));
-    }
-    return lines.join('\n');
-}
-
 export function linkEpisodeWork(text: string, source: RecommendationSource, work: RecommendationWork, reason = ''): string {
     const path = vaultPath(work.path, '.md').replace(/\.md$/i, '');
     if (['[', ']', '|', '#'].some(character => path.includes(character))) throw new Error('作品清单路径不支持块链接。');
     const key = '[[' + path + '#^douban-' + recommendationUrl(work.url, work.kind).id + '|';
     const link = key + work.title.replaceAll('[', ' ').replaceAll(']', ' ').replace(/[|\r\n]/g, ' ').replaceAll('<', '&lt;').replaceAll('>', '&gt;').trim() + ']]';
-    const normalized = normalizeEpisodeWorks(text);
-    const lines = normalized.split(/\r?\n/);
+    const lines = text.split(/\r?\n/);
     const index = lines.findIndex(line => episodeSource(line, source.path)?.blockId === source.blockId);
     if (index < 0) throw new Error('来源播客已变化，请重新选择。');
     const block = episodeWorksBlock(lines, index);
-    if (block.entries.some(entry => entry.includes(key))) return normalized;
+    if (block.entries.some(entry => entry.includes(key))) return text;
     const note = reason.trim() ? '（' + markdownText(reason) + '）' : '';
     lines.splice(block.start, block.end - block.start, ...workRows([...block.entries, link + note]));
     return lines.join('\n');

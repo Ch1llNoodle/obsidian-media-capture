@@ -39,9 +39,9 @@ All outputs use the same episode metadata and template variables. Each write rul
 | Preset | Destination | Content |
 | --- | --- | --- |
 | 集中清单 | Append under Entries in `Podcasts.md` for podcasts or `Videos.md` for videos | One list row |
-| 每条一篇 | Create `Podcasts/{{show}}/{{title}}.md` | An episode note |
+| 每条一篇 | Create `Media/{{show}}/{{title}}.md` | An episode note |
 | 清单与独立笔记 | Run the two rules above | A row and a note |
-| 按节目／频道追加 | Append under Episodes in `Podcasts/{{show}}.md` | Multiple episode sections in one show file |
+| 按节目／频道追加 | Append under Episodes in `Media/{{show}}.md` | Multiple episode sections in one show file |
 
 In settings, apply a preset or edit individual rules: name, enabled state, write method, folder, path template, target heading, template file, inline content, and cover width. Rules can be added or removed, up to 20. Applying a preset replaces rule configuration and keeps existing files. In the capture dialog, **使用已启用规则** runs the configured rules; a named preset overrides the selection for that capture.
 
@@ -89,7 +89,7 @@ tags: [podcast]
 
 **创建媒体笔记** opens the capture dialog with the per-episode preset. **写笔记** beside a log row preselects that episode; **打开笔记** reopens its primary episode note. The log also keeps a link to the first additional output, including a show file when selected. Reading mode and the editor provide row actions without hotkeys. Work associations and log-based tracking still use the concentrated log rule; arbitrary output files are not automatically included by external trackers.
 
-Created files contain `podcast_capture_id`. Additional create rules also use `podcast_capture_rule` to distinguish outputs for the same episode. Existing primary notes keep their original identifier. Append indexes follow file renames; if a tracked file or its region disappears, saving reports the missing target rather than recreating it elsewhere. Keep data.json with the vault for cross-device continuity.
+Every created file contains both `podcast_capture_id` and `podcast_capture_rule`. Output indexes use the single `ruleId::recordId` key format. Append indexes follow file renames; if a tracked file or its region disappears, saving reports the missing target rather than recreating it elsewhere. Keep data.json with the vault for cross-device continuity.
 
 #### Apply templates to existing records
 
@@ -99,7 +99,7 @@ Create outputs are regenerated in full, including properties and handwritten sec
 
 Before replacing a file, the plugin saves and verifies a timestamped text backup beside it with the `.podcast-capture-backup` extension. Results provide **查看备份** inside Obsidian; copy the original text back to restore it. Keep backups until no longer needed.
 
-Stored metadata retains original dates and descriptions; explicit properties in a note take precedence. Older notes recover available information from their local link, heading, properties, and log. Missing optional fields are shown before updating. Missing essential links, duplicate identities, removed rules, and damaged region markers produce errors. No network requests are made during template updates.
+Stored capture metadata retains dates and descriptions; explicit properties in current notes can override it. Template updates require this metadata and do not reconstruct old notes from links, headings or log text. Missing optional fields are shown before updating. Missing essential links, duplicate identities, removed rules, and damaged region markers produce errors. No network requests are made during template updates.
 
 Reports identify each file, failed stage, reason, update status, and backup path. Files changed after preview are skipped. Backup failure prevents replacement; other selected files can still finish. Identical content creates no new backup. Closing a running update dialog does not cancel queued work.
 
@@ -126,11 +126,11 @@ Custom sync tools must preserve the span between `podcast-sources:start` and `po
 | Setting | Default | Behavior |
 | --- | --- | --- |
 | Write rules | Concentrated log enabled | Presets or independently configured append/create rules |
-| Cover folder | `image/podcasts` | Shared local cover directory |
+| Cover folder | `image/media` | Shared local cover directory |
 | Download covers | Enabled | Downloads missing covers when capturing or repairing |
 | Repair on startup | Disabled | Repairs concentrated-log covers after layout is ready |
 | Daily integration | Disabled | Links listened episodes to exactly one existing dated note |
-| Daily folder / property | `Daily` / `podcasts` | Searches subfolders; preserves other properties |
+| Daily folder / property | `Daily` / `media` | Searches subfolders; preserves other properties |
 | Collection paths | Files under `Recommendations/`: `Books.md`, `Movies.md`, `Series.md`, `Music.md`, `Games.md`, `Theater.md` | Existing wanted-work collections |
 
 Daily integration creates no daily notes. When the concentrated log rule runs, its block link is used; otherwise the first additional output supplies the link, including an episode anchor in a show file. A note created from an existing log row keeps the existing activity source. Changing rule paths affects new outputs and does not move existing files.
@@ -145,15 +145,15 @@ The plugin appends a state comment, a date comment for listened entries, and an 
 
 Episodes from the same platform are matched by episode ID. Across platforms, records are reused only when the full `show · episode` title matches after case, whitespace, and Unicode normalization. A completed record keeps its original date. Recording a repeat listen on another date requires daily integration and exactly one existing note for that date; the original log row is retained.
 
-#### Integration and migration
+#### Data format and vault integration
 
 Daily sections, activity summaries, completion styling and personal collection presentation belong to vault scripts or configuration. The plugin exposes optional paths, templates, daily fields and workspace events; it does not hardcode personal directories or diary titles or rewrite work labels based on completion. Existing handwritten formatting is preserved.
 
 The output is ordinary Markdown. Dataview and other tracking plugins are optional. After saving, the plugin emits `podcast-capture:updated` with `path`, `blockId`, `state`, and `date`. Note captures also include `notePath` and `output`; `blockId` is empty when no log row exists. `CaptureUpdatedEvent` in `src/types.ts` defines the payload. Log-only tracking integrations do not automatically count standalone notes.
 
-Saved settings take precedence; installations without settings use generic defaults. The plugin does not probe personal directories or enable daily integration automatically. Legacy `douban-state` comments and block identifiers remain readable.
+Version 0.9 accepts only the current data schema (`schemaVersion: 1`) and `writeRules`. Retired flat settings, old state/date parsing, unscoped output indexes and old inline association blocks are not migrated. Unknown settings and unsupported data formats produce explicit errors without rewriting the saved data.
 
-Settings from 0.6.x resolve to equivalent rules in memory, retaining paths, templates, and selected outputs. Editing rules saves the unified `writeRules` configuration. Legacy `captureMode`, `rowTemplate`, and note fields remain compatibility inputs; the settings UI edits rules directly. Earlier row-template `date` and `title` variables map to `listened` and `fullTitle`, preserving their existing meaning. Deployments never replace personal data.json.
+Before upgrading an existing installation, back up data.json and the affected notes. Start with fresh settings or explicitly convert the data outside the plugin; synchronize the converted configuration and records to other devices before loading 0.9. No migration script ships with the plugin. Template refresh requires captured metadata; missing metadata is reported per file.
 
 #### Development and validation
 

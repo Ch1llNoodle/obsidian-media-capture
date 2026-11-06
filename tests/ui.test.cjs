@@ -30,7 +30,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     const events = new Map();
     const modals = [];
     const files = new Map([['Podcasts.md', { path: 'Podcasts.md', extension: 'md' }]]);
-    const content = new Map([['Podcasts.md', '- [节目 · 单集](<https://www.douban.com/podcast_episode/123>) ^douban-123\n- [另一个节目 · 单集](<https://podcasts.apple.com/us/podcast/id12?i=456>) ^apple-456'], ['Recommendations/Movies.md', '- [电影](<https://movie.douban.com/subject/100/>) <!-- douban-state: 想看 --> ^douban-100\n- [已完成](<https://movie.douban.com/subject/200/>) <!-- douban-state: 看过 --> ^douban-200\n- [正在看](<https://movie.douban.com/subject/300/>) <!-- douban-state: 在看 --> ^douban-300']]);
+    const content = new Map([['Podcasts.md', '- [节目 · 单集](<https://www.douban.com/podcast_episode/123>) <!-- podcast-state: 在听 --> ^douban-123\n- [另一个节目 · 单集](<https://podcasts.apple.com/us/podcast/id12?i=456>) <!-- podcast-state: 在听 --> ^apple-456'], ['Recommendations/Movies.md', '- [电影](<https://movie.douban.com/subject/100/>) <!-- douban-state: 想看 --> ^douban-100\n- [已完成](<https://movie.douban.com/subject/200/>) <!-- douban-state: 看过 --> ^douban-200\n- [正在看](<https://movie.douban.com/subject/300/>) <!-- douban-state: 在看 --> ^douban-300']]);
     files.set('Recommendations/Movies.md', { path: 'Recommendations/Movies.md', extension: 'md' });
     const app = { vault: {
         on: () => ({}),
@@ -49,7 +49,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     } };
     class Plugin {
         constructor() { this.app = app; }
-        async loadData() { return { settings: { downloadCovers: false } }; }
+        async loadData() { return { schemaVersion: 1, settings: { downloadCovers: false } }; }
         async saveData() {}
         addSettingTab(tab) { this.settingsTab = tab; }
         addCommand(command) { commands.push(command); }
@@ -203,7 +203,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     assert.equal(modals.at(-1).outputInput.value, 'note');
     const noteDialog = modals.at(-1);
     await noteDialog.save();
-    assert(files.has('Podcasts/另一个节目/单集.md'));
+    assert(files.has('Media/另一个节目/单集.md'));
     plugin.settingsTab.display();
     const noteSettings = all(plugin.settingsTab.containerEl).find(node => node['data-rule-id'] === 'notes');
     const nameInput = all(noteSettings).find(node => node.name === '名称').children.find(node => node.tag === 'input');
@@ -216,25 +216,26 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     const templateSetting = all(noteSettings).find(node => node.name === 'Markdown 模板文件');
     templateSetting.children.find(node => node.text === '选择').click();
     const picker = modals.at(-1);
-    assert(picker.getItems().some(file => file.path === 'Podcasts/另一个节目/单集.md'));
-    picker.onChooseItem(files.get('Podcasts/另一个节目/单集.md'));
+    assert(picker.getItems().some(file => file.path === 'Media/另一个节目/单集.md'));
+    picker.onChooseItem(files.get('Media/另一个节目/单集.md'));
     await new Promise(resolve => setImmediate(resolve));
-    assert.equal(plugin.service.config.noteTemplateFile, 'Podcasts/另一个节目/单集.md');
+    assert.equal(plugin.service.config.writeRules.find(rule => rule.id === 'notes').templateFile, 'Media/另一个节目/单集.md');
     await plugin.service.saveSettings({ ...plugin.service.config, writeRules: plugin.service.config.writeRules.map(rule => rule.id === 'notes' ? { ...rule, templateFile: '', template: 'Changed {{title}}' } : rule) });
     commands.find(command => command.id === 'apply-note-template').callback();
     await new Promise(resolve => setImmediate(resolve));
     const refresh = modals.at(-1);
-    assert.equal(refresh.selected.size, 2);
+    assert.equal(refresh.selected.size, 1);
+    assert(refresh.entries.find(entry => entry.path === "Podcasts.md").error.includes("Missing captured metadata"));
     const checkboxes = all(refresh.contentEl).filter(node => node.type === 'checkbox');
     for (const checkbox of checkboxes) { checkbox.checked = false; checkbox.change(); }
     assert.equal(refresh.applyButton.disabled, true);
-    const entryRow = refresh.list.children.find(node => all(node).some(child => child.text === 'Podcasts/另一个节目/单集.md'));
+    const entryRow = refresh.list.children.find(node => all(node).some(child => child.text === 'Media/另一个节目/单集.md'));
     const checkbox = all(entryRow).find(node => node.type === 'checkbox');
     checkbox.checked = true; checkbox.change();
     assert.equal(refresh.applyButton.disabled, false);
-    const originalNote = content.get('Podcasts/另一个节目/单集.md');
+    const originalNote = content.get('Media/另一个节目/单集.md');
     await refresh.apply();
-    assert(content.get('Podcasts/另一个节目/单集.md').includes('Changed 单集'));
+    assert(content.get('Media/另一个节目/单集.md').includes('Changed 单集'));
     assert(all(refresh.contentEl).some(node => node.tag === 'textarea' && node.value.includes('已更新')));
     all(refresh.contentEl).find(node => node.tag === 'button' && node.text === '查看备份').click();
     await new Promise(resolve => setImmediate(resolve));

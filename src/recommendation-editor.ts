@@ -60,7 +60,7 @@ export function recommendationEditor(service: RecommendationService): ViewPlugin
                     seen.add(line.from);
                     const source = catalog ? episodeSource(line.text, path) : null;
                     if (livePreview && (!catalog || source || /^ {2}- .*<!-- podcast-work -->\s*$/.test(line.text))) {
-                        const metadata = catalog ? /\s*<!--\s*(?:(?:podcast-state|podcast-date|douban-state):[^>]*|podcast-work|podcast-note)\s*-->|\s+\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?)\s*$/g
+                        const metadata = catalog ? /\s*<!--\s*(?:(?:podcast-state|podcast-date):[^>]*|podcast-work|podcast-note)\s*-->|\s+\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?)\s*$/g
                             : /<!-- podcast-entry:[a-z][a-z0-9-]*:(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?):(?:start|end) -->|^\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?)-[a-z][a-z0-9-]*\s*$/g;
                         for (const match of line.text.matchAll(metadata)) {
                             ranges.push(Decoration.replace({}).range(line.from + match.index, line.from + match.index + match[0].length));

@@ -4,7 +4,6 @@ import type { CaptureItem } from './types';
 import { splitEpisodeTitle, relativeNotePath } from './note-format';
 import { cacheCover } from './covers';
 import { coverUrl } from './metadata-helpers';
-import { isApplePlayerTitle } from './apple';
 import { record, errorMessage } from './validation';
 import { isMarkdownFile } from './storage';
 
@@ -33,7 +32,6 @@ export async function captureCover(service: CaptureService, item: CaptureItem, i
                 try {
                     const info = await service.fetchMetadata(item.url);
                     source = info.cover;
-                    if (item.provider === 'apple' && isApplePlayerTitle(item.title)) item.title = info.title;
                 } catch (cause) { throw new Error('获取单集页面失败：' + errorMessage(cause)); }
             }
             if (!source) throw new Error('页面未提供可识别的封面');

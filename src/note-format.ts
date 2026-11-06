@@ -1,11 +1,11 @@
 import { parseYaml, stringifyYaml } from 'obsidian';
-import type { CaptureItem, CaptureMode, CaptureSettingsData } from './types';
+import type { CaptureItem, CapturePreset } from './types';
 import { mediaValues } from './media';
 import { isRecord } from './validation';
 
 export const DEFAULT_NOTE_TEMPLATE = '### {{title}}\n\n{{show}}\n\n{{cover}}\n\n[打开来源](<{{url}}>)\n\n{{mediaLink}}\n\n#### Notes\n\n\n#### Quotes\n';
-export const captureModes: Record<CaptureMode, string> = { custom: '使用已启用规则', log: '预设：集中清单', note: '预设：每条一篇', both: '预设：清单与独立笔记', show: '预设：按节目／频道追加' };
-export function isCaptureMode(value: unknown): value is CaptureMode { return typeof value === 'string' && Object.keys(captureModes).includes(value); }
+export const capturePresets: Record<CapturePreset, string> = { custom: '使用已启用规则', log: '预设：集中清单', note: '预设：每条一篇', both: '预设：清单与独立笔记', show: '预设：按节目／频道追加' };
+export function isCapturePreset(value: unknown): value is CapturePreset { return typeof value === 'string' && Object.keys(capturePresets).includes(value); }
 
 export function relativeNotePath(value: string, allowEmpty = false): string {
     const path = value.trim().replace(/\\/g, '/');
@@ -30,18 +30,6 @@ export function validateNoteTemplate(template: string, path = false): void {
     }
 }
 
-export function validateNoteSettings(settings: CaptureSettingsData): void {
-    settings.noteFolder = relativeNotePath(settings.noteFolder, true);
-    settings.notePathTemplate = settings.notePathTemplate.trim().replace(/\\/g, '/');
-    relativeNotePath(settings.notePathTemplate.replace(/\{\{[^{}]+\}\}/g, 'variable'));
-    validateNoteTemplate(settings.notePathTemplate, true);
-    if (!settings.notePathTemplate.toLowerCase().endsWith('.md')) throw new Error('单集路径模板必须以 .md 结尾。');
-    settings.noteTemplateFile = relativeNotePath(settings.noteTemplateFile, true);
-    if (settings.noteTemplateFile && !settings.noteTemplateFile.toLowerCase().endsWith('.md')) throw new Error('请选择 Markdown 模板文件。');
-    if (!settings.noteTemplate.trim()) throw new Error('独立笔记模板不能为空。');
-    validateNoteTemplate(settings.noteTemplate);
-}
-
 export function splitEpisodeTitle(title: string): { show: string; episodeTitle: string } {
     const index = title.indexOf(' · ');
     return index > 0 ? { show: title.slice(0, index).trim(), episodeTitle: title.slice(index + 3).trim() }
@@ -58,12 +46,13 @@ function safeName(value: string): string {
 
 export type NoteValues = Record<string, string>;
 export function noteValues(item: CaptureItem, id: string, coverPath: string, currentDate: string, playback = false): NoteValues {
+    if (!item.provider) throw new Error('Missing canonical provider.');
     const split = splitEpisodeTitle(item.title);
     return { ...mediaValues(item, playback), show: (item.show ?? split.show).replace(/\s+/g, ' ').trim(), title: (item.episodeTitle ?? split.episodeTitle).replace(/\s+/g, ' ').trim(), fulltitle: item.title,
         link: `[${markdown(item.title)}](<${item.url}>)`, url: item.url,
         cover: coverPath ? `![|120](<${coverPath}>)` : '', coverpath: coverPath, published: item.published ?? '',
         listened: item.state === '听过' ? item.date : '', currentdate: currentDate, date: currentDate,
-        description: item.description ?? '', state: item.state, provider: item.provider ?? 'douban', id };
+        description: item.description ?? '', state: item.state, provider: item.provider, id };
 }
 
 function valueOf(token: string, values: NoteValues): string {
@@ -74,13 +63,13 @@ function valueOf(token: string, values: NoteValues): string {
     return format.replace(/YYYY|MM|DD/g, tag => ({ YYYY: year, MM: month, DD: day })[tag] ?? '');
 }
 
-export function episodeNotePath(settings: Pick<CaptureSettingsData, 'noteFolder' | 'notePathTemplate'>, values: NoteValues): string {
-    validateNoteTemplate(settings.notePathTemplate, true);
-    const rendered = settings.notePathTemplate.replace(/\{\{([^{}]+)\}\}/g, (_match: string, token: string) => {
+export function episodeNotePath(folder: string, pathTemplate: string, values: NoteValues): string {
+    validateNoteTemplate(pathTemplate, true);
+    const rendered = pathTemplate.replace(/\{\{([^{}]+)\}\}/g, (_match: string, token: string) => {
         const value = valueOf(token, values);
         return safeName(value || (token.trim().toLowerCase() === 'show' ? 'Unsorted' : 'Untitled'));
     });
-    const result = relativeNotePath([settings.noteFolder, rendered].filter(Boolean).join('/'));
+    const result = relativeNotePath([folder, rendered].filter(Boolean).join('/'));
     if (!result.toLowerCase().endsWith('.md')) throw new Error('生成的笔记路径不是 Markdown 文件。');
     return result;
 }
@@ -142,8 +131,16 @@ export function renderEpisodeNote(template: string, values: NoteValues, ruleId =
         body = template.slice(frontmatter[0].length);
     }
     properties.podcast_capture_id = values.id;
-    if (ruleId !== 'notes') properties.podcast_capture_rule = ruleId;
-    else delete properties.podcast_capture_rule;
+    properties.podcast_capture_rule = ruleId;
     const content = renderTemplateBody(body, values);
     return `---\n${stringifyYaml(properties).trimEnd()}\n---\n\n${content.trim()}\n`;
+}
+
+export function noteProperties(source: string): Record<string, unknown> {
+    const header = /^---\r?\n((?:[\s\S]*?\r?\n)?)---(?:\r?\n|$)/.exec(source)?.[1];
+    if (header === undefined) return {};
+    const parsed: unknown = parseYaml(header);
+    if (parsed == null) return {};
+    if (!isRecord(parsed)) throw new Error('Note properties must be a YAML mapping.');
+    return parsed;
 }

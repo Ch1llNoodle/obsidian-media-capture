@@ -2,8 +2,8 @@ import { Modal, Notice } from 'obsidian';
 import { videoUrl } from './media';
 import { STATES, isListeningState, validDate, localDate, episodeUrl } from './core';
 import type { CaptureService } from './service';
-import type { CaptureItem, CaptureMode, Episode, EpisodeMetadata } from './types';
-import { captureModes, isCaptureMode, noteValues, splitEpisodeTitle } from './note-format';
+import type { CaptureItem, CapturePreset, Episode, EpisodeMetadata } from './types';
+import { capturePresets, isCapturePreset, noteValues, splitEpisodeTitle } from './note-format';
 import { rulePath, rulesFor } from './write-rules';
 import { errorMessage } from './validation';
 import { isMarkdownFile } from './storage';
@@ -23,7 +23,7 @@ export class CaptureModal extends Modal {
     private preview!: HTMLParagraphElement;
     private message!: HTMLParagraphElement;
 
-    constructor(private readonly plugin: CaptureService, private readonly preset?: { item: CaptureItem; output: CaptureMode }) { super(plugin.app); }
+    constructor(private readonly plugin: CaptureService, private readonly preset?: { item: CaptureItem; output: CapturePreset }) { super(plugin.app); }
 
     override onOpen(): void {
         this.contentEl.addClass('podcast-capture');
@@ -48,8 +48,8 @@ export class CaptureModal extends Modal {
         for (const state of STATES) this.stateInput.createEl('option', { text: state, value: state });
         this.stateInput.value = '听过';
         this.outputInput = choice('写入预设');
-        for (const [value, text] of Object.entries(captureModes)) this.outputInput.createEl('option', { value, text });
-        this.outputInput.value = this.preset?.output ?? this.plugin.config.captureMode;
+        for (const [value, text] of Object.entries(capturePresets)) this.outputInput.createEl('option', { value, text });
+        this.outputInput.value = this.preset?.output ?? 'custom';
         this.dateInput = field('记录日期', 'date');
         const active = this.app.workspace.getActiveFile();
         this.dateInput.value = this.plugin.config.dailyIntegration && active?.path.startsWith(this.plugin.config.dailyFolder + '/') && validDate(active.basename) ? active.basename : localDate();
@@ -98,7 +98,7 @@ export class CaptureModal extends Modal {
         const title = split.show === show ? split.episodeTitle : this.titleInput.value.trim();
         const state = this.stateInput.value;
         const output = this.outputInput.value;
-        if (!isListeningState(state) || !isCaptureMode(output)) throw new Error('请选择有效的状态和保存方式。');
+        if (!isListeningState(state) || !isCapturePreset(output)) throw new Error('请选择有效的状态和保存方式。');
         return { ...episode, title: show ? show + ' · ' + title : title, show, episodeTitle: title,
             date: this.dateInput.value, state, output, published: this.publishedInput.value,
             description: this.descriptionInput.value, cover: this.loaded?.blockId === episode.blockId ? this.loaded.cover : '' };
