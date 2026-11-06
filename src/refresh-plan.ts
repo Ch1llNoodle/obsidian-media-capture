@@ -58,7 +58,7 @@ export async function prepareNoteRefresh(podcast: PodcastService): Promise<NoteR
             const props = properties(entry.original);
             if (typeof props.podcast_capture_id === 'string' && path !== podcast.config.catalogPath) {
                 entry.id = props.podcast_capture_id;
-                if (!/^(douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+)$/.test(entry.id)) throw new Error('podcast_capture_id 缺失或无效，已跳过。');
+                if (!/^(douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?)$/.test(entry.id)) throw new Error('podcast_capture_id 缺失或无效，已跳过。');
                 const ruleId = typeof props.podcast_capture_rule === 'string' ? props.podcast_capture_rule : 'notes';
                 const rule = getRule(ruleId); entry.ruleId = ruleId;
                 const template = templates.get(ruleId) ?? '';
@@ -88,7 +88,7 @@ export async function prepareNoteRefresh(podcast: PodcastService): Promise<NoteR
                 }
                 entry.replacement = lines.join('\n');
             } else {
-                for (const match of entry.original.matchAll(/<!-- podcast-entry:([a-z][a-z0-9-]*):(douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+):start -->/g)) {
+                for (const match of entry.original.matchAll(/<!-- podcast-entry:([a-z][a-z0-9-]*):(douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?):start -->/g)) {
                     const ruleId = match[1] ?? '', id = match[2] ?? '';
                     const rule = getRule(ruleId), template = templates.get(ruleId) ?? '';
                     const block = entryBlock(entry.original, ruleId, id);

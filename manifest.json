@@ -1,9 +1,9 @@
 {
   "id": "podcast-capture",
-  "name": "Podcast Capture",
-  "version": "0.7.0",
+  "name": "Media Capture",
+  "version": "0.8.0",
   "minAppVersion": "1.5.0",
-  "description": "Capture podcast episodes using Markdown templates and configurable write rules.",
+  "description": "Capture podcasts and videos with Markdown templates and configurable write rules.",
   "author": "Ch1llNoodle",
   "isDesktopOnly": false
 }

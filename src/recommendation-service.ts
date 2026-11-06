@@ -44,7 +44,7 @@ export class RecommendationService {
             });
             try {
                 const catalog = this.podcast.app.vault.getAbstractFileByPath(this.podcast.config.catalogPath);
-                if (!isMarkdownFile(catalog)) throw new Error('播客记录文件不存在。');
+                if (!isMarkdownFile(catalog)) throw new Error('媒体记录文件不存在。');
                 await this.podcast.app.vault.process(catalog, text => linkEpisodeWork(text, source, item, reason));
             } catch (error) { throw new Error(`作品侧关联已保存，但播客行更新失败：${errorMessage(error)}。可再次保存补全。`); }
         });

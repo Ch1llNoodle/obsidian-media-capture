@@ -26,8 +26,10 @@ export class EpisodeNotes {
     matchId(item: CaptureItem): string | undefined {
         const exact = blockId(item);
         if (this.metadata.has(exact)) return exact;
+        if (item.provider === 'youtube' || item.provider === 'bilibili') return undefined;
         if (!item.title.includes(' · ')) return undefined;
         for (const [id, values] of this.metadata) {
+            if (values.provider === 'youtube' || values.provider === 'bilibili') continue;
             const title = values.fulltitle || (values.show ? values.show + ' · ' : '') + (values.title || '');
             if (titleKey(title) === titleKey(item.title)) return id;
         }
@@ -40,7 +42,7 @@ export class EpisodeNotes {
         if (config && (path.toLowerCase() === config || path.toLowerCase().startsWith(config + '/'))) throw new Error('单集笔记和模板不能使用笔记库配置目录。');
         const settings = this.podcast.config;
         const reserved = [...(allowCatalog ? [] : [settings.catalogPath]), ...(['bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const).map(key => settings[key])];
-        if (reserved.some(value => value.toLowerCase() === path.toLowerCase())) throw new Error('单集笔记不能覆盖播客记录或作品清单。');
+        if (reserved.some(value => value.toLowerCase() === path.toLowerCase())) throw new Error('单集笔记不能覆盖媒体记录或作品清单。');
     }
 
     initialize(value: unknown, metadata?: unknown): void {
@@ -52,7 +54,7 @@ export class EpisodeNotes {
             if (values.id === id) this.metadata.set(id, values);
         }
         for (const [id, path] of Object.entries(record(value))) {
-            if (!/^(?:[a-z][a-z0-9-]*::)?(douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+)$/.test(id) || typeof path !== 'string') continue;
+            if (!/^(?:[a-z][a-z0-9-]*::)?(douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?)$/.test(id) || typeof path !== 'string') continue;
             try { this.index.set(id, relativeNotePath(path)); } catch { /* Ignore invalid persisted entries. */ }
         }
     }
@@ -72,7 +74,7 @@ export class EpisodeNotes {
             } else if (path.startsWith(oldPath + '/')) {
                 this.index.set(id, file.path + path.slice(oldPath.length)); changed = true;
             }
-            if (changed) void this.persist().catch((error: unknown) => console.error('Podcast Capture: 笔记索引保存失败', error));
+            if (changed) void this.persist().catch((error: unknown) => console.error('Media Capture: 笔记索引保存失败', error));
         }));
     }
 

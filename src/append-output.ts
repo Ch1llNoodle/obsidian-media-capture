@@ -42,7 +42,7 @@ export class AppendOutputs {
         if (!Array.isArray(value)) return;
         for (const entry of value as unknown[]) {
             if (!isRecord(entry) || typeof entry.ruleId !== 'string' || !/^[a-z][a-z0-9-]{0,39}$/.test(entry.ruleId)
-                || typeof entry.id !== 'string' || !/^(douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+)$/.test(entry.id)
+                || typeof entry.id !== 'string' || !/^(douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?)$/.test(entry.id)
                 || typeof entry.path !== 'string' || typeof entry.content !== 'string' || typeof entry.date !== 'string' || !isListeningState(entry.state)) continue;
             try { const path = relativeNotePath(entry.path); this.entries.push({ ruleId: entry.ruleId, id: entry.id, path, content: entry.content, state: entry.state, date: entry.date }); this.paths.add(path); }
             catch { /* Invalid persisted paths are never used for writes. */ }
@@ -58,7 +58,7 @@ export class AppendOutputs {
                 else if (entry.path.startsWith(oldPath + '/')) { entry.path = file.path + entry.path.slice(oldPath.length); changed = true; }
             }
             if (changed) this.paths = new Set(this.entries.map(entry => entry.path));
-            if (changed && !this.podcast.unloaded) void this.persist().catch((error: unknown) => console.error('Podcast Capture: 追加记录索引保存失败', error));
+            if (changed && !this.podcast.unloaded) void this.persist().catch((error: unknown) => console.error('Media Capture: 追加记录索引保存失败', error));
         }));
     }
     async remember(entry: StoredEntry): Promise<void> {

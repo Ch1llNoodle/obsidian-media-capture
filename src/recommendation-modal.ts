@@ -39,7 +39,7 @@ export class RecommendationModal extends Modal {
             const [works, sources] = await Promise.all([this.service.works(), this.service.sources()]);
             if (this.closed) return;
             this.source = sources.find(source => source.path === this.selected.path && source.blockId === this.selected.blockId);
-            if (!this.source) throw new Error('来源播客已变化，请从播客条目重新打开。');
+            if (!this.source) throw new Error('来源播客已变化，请从媒体条目重新打开。');
             sourceLabel.setText(this.source.title);
             this.works = works;
             this.works.forEach((work, index) => {
@@ -53,7 +53,7 @@ export class RecommendationModal extends Modal {
     private async save(): Promise<void> {
         const item = this.workInput.value === '' ? undefined : this.works[Number(this.workInput.value)];
         if (!item) throw new Error('请选择作品。');
-        if (!this.source) throw new Error('来源播客已变化，请从播客条目重新打开。');
+        if (!this.source) throw new Error('来源播客已变化，请从媒体条目重新打开。');
         await this.service.link(item, this.source, this.reasonInput.value);
         if (this.closed) return;
         new Notice('已保存关联');

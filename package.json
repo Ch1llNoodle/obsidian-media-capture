@@ -1,11 +1,11 @@
 {
-  "name": "podcast-capture",
-  "version": "0.7.0",
-  "description": "Capture podcast episodes using Markdown templates and configurable write rules.",
+  "name": "media-capture",
+  "version": "0.8.0",
+  "description": "Capture podcasts and videos with Markdown templates and configurable write rules.",
   "author": "Ch1llNoodle",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Ch1llNoodle/obsidian-podcast-capture.git"
+    "url": "git+https://github.com/Ch1llNoodle/obsidian-media-capture.git"
   },
   "main": "release/podcast-capture/main.js",
   "type": "module",

@@ -18,7 +18,10 @@ export function metadata(html: string, episode: Pick<Episode, "provider"> & Part
     let show = "";
     let published = publicationDate(metas.get('article:published_time'));
     let description = plain(metas.get('og:description') || metas.get('description') || metas.get('twitter:description'));
-    if (episode.provider === "xiaoyuzhou") {
+    if (episode.provider === 'bilibili') {
+        title = title.replace(/(?:_哔哩哔哩_bilibili|\s*[-|]\s*bilibili).*$/i, '');
+        show = plain(metas.get('author'));
+    } else if (episode.provider === "xiaoyuzhou") {
         const script = html.match(/<script\b(?=[^>]*\bid=["']__NEXT_DATA__["'])[^>]*>([\s\S]*?)<\/script>/i)?.[1];
         if (script) {
             try {

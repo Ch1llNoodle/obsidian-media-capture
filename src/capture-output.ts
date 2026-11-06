@@ -116,7 +116,7 @@ export async function saveCapture(service: PodcastService, input: CaptureItem): 
         return { hasCover: !!cover.path, coverPath: cover.path, coverError: cover.error, coverSource: cover.source,
             ...(note ? { notePath: note.path, noteCreated: note.created } : {}),
             message: (note ? saved.map(result => result.kind === 'catalog' ? '清单已保存' : result.created ? `已保存到${result.name}` : `已找到已有${result.name}`).join(' · ')
-                : completed ? '已保留原记录' : '已添加到播客记录') + (item.state === '听过' ? ` · ${item.date}` : ` · ${item.state}`) + (cover.error ? `（封面未获取到：${cover.error}）` : '') };
+                : completed ? '已保留原记录' : '已添加到媒体记录') + (item.state === '听过' ? ` · ${item.date}` : ` · ${item.state}`) + (cover.error ? `（封面未获取到：${cover.error}）` : '') };
     } catch (error) {
         const prefix = saved.some(result => result.kind !== 'catalog') ? '单集笔记已保存，' : saved.some(result => result.kind === 'catalog') ? '清单已保存，' : '';
         const detail = saved.length ? '\n已保存：' + saved.map(result => result.name + ' → ' + result.path).join('；') + '。再次保存可复用。' : '';

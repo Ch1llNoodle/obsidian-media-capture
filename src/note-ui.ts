@@ -20,11 +20,11 @@ export class NoteTemplatePicker extends FuzzySuggestModal<TFile> {
 }
 
 export async function openEpisodeNote(podcast: PodcastService, source: Pick<RecommendationSource, 'path' | 'blockId'>): Promise<void> {
-    if (podcast.unloaded || source.path !== podcast.config.catalogPath) throw new Error('请从播客记录选择单集。');
+    if (podcast.unloaded || source.path !== podcast.config.catalogPath) throw new Error('请从媒体记录选择单集。');
     const existing = await podcast.notes.find(source.blockId);
     if (existing) { await podcast.app.workspace.getLeaf(false).openFile(existing); return; }
     const file = podcast.app.vault.getAbstractFileByPath(source.path);
-    if (!isMarkdownFile(file)) throw new Error('找不到播客记录文件。');
+    if (!isMarkdownFile(file)) throw new Error('找不到媒体记录文件。');
     const line = (await podcast.app.vault.read(file)).split(/\r?\n/).find(line => line.trimEnd().endsWith('^' + source.blockId));
     const identity = line ? entryIdentity(line) : null;
     if (!identity || !line) throw new Error('单集记录已变化，请重新选择。');

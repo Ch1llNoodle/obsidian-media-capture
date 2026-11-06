@@ -520,3 +520,35 @@ test('several output rules fetch metadata and download the shared cover only onc
         for (const p of ['Podcasts.md', 'Podcasts/节目/单集.md', 'Podcasts/节目.md']) assert(f.contents.get(p).includes(result.coverPath), p);
     } finally { imageResponse = null; }
 });
+
+
+test('video capture reuses write rules, diary links and identity after reload', async () => {
+    const f = fixture({captureMode: 'show', dailyIntegration: true}); await f.service.initialize();
+    const video = {...sandbox.module.exports.episodeUrl('https://www.bilibili.com/video/BV1xx411c7mD?p=2'), title: 'Channel · Video', show: 'Channel', episodeTitle: 'Video', state: '听过', date: '2026-11-06'};
+    f.add('Daily/2026-11-06.md', 'Diary');
+    const result = await f.service.capture(video);
+    assert(f.contents.get(result.notePath).includes('^bilibili-BV1xx411c7mD-p2-show'));
+    assert(f.properties.get('Daily/2026-11-06.md').podcasts[0].includes('bilibili-BV1xx411c7mD-p2-show'));
+    await f.service.initialize(); await f.service.capture(video);
+    assert.equal((f.contents.get(result.notePath).match(/:start -->/g) ?? []).length, 1);
+    assert.equal(f.data().outputEntries.length, 1);
+});
+
+test('media template URIs encode video URLs and stay empty for podcast landing pages', () => {
+    const video = {...item, url: 'https://www.bilibili.com/video/BV1xx411c7mD?p=2'};
+    const values = noteValues(video, 'bilibili-BV1xx411c7mD-p2', '', '2026-11-06');
+    const uri = new URL(values.mediaurl);
+    assert.equal(uri.protocol, 'obsidian:'); assert.equal(uri.hostname, 'mx-open');
+    assert.equal(uri.searchParams.get('url'), video.url);
+    assert.equal(values.kind, 'video'); assert.equal(values.consumed, item.date);
+    assert(renderEpisodeNote('{{mediaLink}}', values).includes('[在 Media Extended 中打开](<obsidian://mx-open?url='));
+    const podcast = noteValues(item, 'douban-123', '', '2026-11-06');
+    assert.equal(podcast.mediaurl, ''); assert.equal(podcast.medialink, '');
+});
+
+test('different video IDs with identical titles do not merge', async () => {
+    const f = fixture({captureMode: 'both'}); await f.service.initialize();
+    for (const id of ['dQw4w9WgXcQ', 'UF8uR6Z6KLc']) await f.service.capture({...item, ...sandbox.module.exports.episodeUrl('https://youtu.be/' + id)});
+    assert.equal((f.contents.get('Podcasts.md').match(/\^youtube-/g) ?? []).length, 2);
+    assert.equal(Object.keys(f.data().noteIndex).length, 2);
+});

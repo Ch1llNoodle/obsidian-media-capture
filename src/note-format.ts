@@ -1,8 +1,9 @@
 import { parseYaml, stringifyYaml } from 'obsidian';
 import type { CaptureItem, CaptureMode, CaptureSettingsData } from './types';
+import { mediaValues } from './media';
 import { isRecord } from './validation';
 
-export const DEFAULT_NOTE_TEMPLATE = '### {{title}}\n\n{{show}}\n\n{{cover}}\n\n[打开单集](<{{url}}>)\n\n#### Notes\n\n\n#### Quotes\n';
+export const DEFAULT_NOTE_TEMPLATE = '### {{title}}\n\n{{show}}\n\n{{cover}}\n\n[打开来源](<{{url}}>)\n\n{{mediaLink}}\n\n#### Notes\n\n\n#### Quotes\n';
 export const captureModes: Record<CaptureMode, string> = { custom: '使用已启用规则', log: '预设：集中清单', note: '预设：每集一篇', both: '预设：清单与单集笔记', show: '预设：按节目追加' };
 export function isCaptureMode(value: unknown): value is CaptureMode { return typeof value === 'string' && Object.keys(captureModes).includes(value); }
 
@@ -16,8 +17,8 @@ export function relativeNotePath(value: string, allowEmpty = false): string {
     return path;
 }
 
-const variables = new Set(['show', 'title', 'fulltitle', 'link', 'url', 'cover', 'coverpath', 'published', 'listened', 'currentdate', 'date', 'description', 'state', 'provider', 'id']);
-const pathVariables = new Set(['show', 'title', 'published', 'listened', 'currentdate', 'date', 'provider', 'id']);
+const variables = new Set(['show', 'title', 'fulltitle', 'link', 'url', 'cover', 'coverpath', 'published', 'listened', 'currentdate', 'date', 'description', 'state', 'provider', 'id', 'mediaurl', 'medialink', 'consumed', 'kind']);
+const pathVariables = new Set(['show', 'title', 'published', 'listened', 'currentdate', 'date', 'provider', 'id', 'consumed', 'kind']);
 export function validateNoteTemplate(template: string, path = false): void {
     if (/\{\{|\}\}/.test(template.replace(/\{\{[^{}]+\}\}/g, ''))) throw new Error('模板变量的双花括号不完整。');
     for (const match of template.matchAll(/\{\{([^{}]+)\}\}/g)) {
@@ -58,7 +59,7 @@ function safeName(value: string): string {
 export type NoteValues = Record<string, string>;
 export function noteValues(item: CaptureItem, id: string, coverPath: string, currentDate: string): NoteValues {
     const split = splitEpisodeTitle(item.title);
-    return { show: (item.show ?? split.show).replace(/\s+/g, ' ').trim(), title: (item.episodeTitle ?? split.episodeTitle).replace(/\s+/g, ' ').trim(), fulltitle: item.title,
+    return { ...mediaValues(item), show: (item.show ?? split.show).replace(/\s+/g, ' ').trim(), title: (item.episodeTitle ?? split.episodeTitle).replace(/\s+/g, ' ').trim(), fulltitle: item.title,
         link: `[${markdown(item.title)}](<${item.url}>)`, url: item.url,
         cover: coverPath ? `![|120](<${coverPath}>)` : '', coverpath: coverPath, published: item.published ?? '',
         listened: item.state === '听过' ? item.date : '', currentdate: currentDate, date: currentDate,
@@ -92,7 +93,7 @@ export function renderTemplateBody(template: string, values: NoteValues): string
     validateNoteTemplate(template);
     return template.replace(/\{\{([^{}]+)\}\}/g, (_match: string, token: string) => {
         const value = valueOf(token, values);
-        return ['url', 'cover', 'link'].includes(token.trim().toLowerCase()) ? value : markdown(value);
+        return ['url', 'cover', 'link', 'mediaurl', 'medialink'].includes(token.trim().toLowerCase()) ? value : markdown(value);
     });
 }
 

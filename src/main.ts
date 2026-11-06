@@ -17,11 +17,11 @@ export default class PodcastCapture extends Plugin {
         this.addSettingTab(new CaptureSettings(this.app, this.service));
         registerRecommendationUI(this, this.service);
         this.addCommand({
-            id: 'add-podcast', name: '添加播客',
+            id: 'add-podcast', name: '采集媒体',
             callback: () => new CaptureModal(this.service).open(),
         });
         this.addCommand({
-            id: 'create-episode-note', name: '创建单集笔记',
+            id: 'create-episode-note', name: '创建媒体笔记',
             callback: () => new CaptureModal(this.service, { output: 'note', item: {
                 id: '', url: '', title: '', state: '听过', date: '',
             } }).open(),
@@ -31,7 +31,7 @@ export default class PodcastCapture extends Plugin {
             callback: () => new NoteRefreshModal(this.service).open(),
         });
         this.addCommand({
-            id: 'open-podcasts', name: '打开播客记录',
+            id: 'open-podcasts', name: '打开媒体记录',
             callback: async () => {
                 const file = await this.service.ensureCatalog();
                 await this.app.workspace.getLeaf(false).openFile(file);

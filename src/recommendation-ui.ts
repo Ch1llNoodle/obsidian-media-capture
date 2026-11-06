@@ -3,6 +3,7 @@ import type { PodcastService } from './service';
 import type { RecommendationSource } from './types';
 import { RecommendationModal } from './recommendation-modal';
 import { RecommendationService } from './recommendation-service';
+import { mediaValues } from './media';
 import { episodeUrl } from './core';
 import { errorMessage, record } from './validation';
 import { recommendationEditor } from './recommendation-editor';
@@ -16,7 +17,7 @@ declare module 'obsidian' {
 
 class EpisodeButtons extends MarkdownRenderChild {
     private disposed = false;
-    private readonly buttons: HTMLButtonElement[] = [];
+    private readonly buttons: HTMLElement[] = [];
     constructor(container: HTMLElement, private readonly service: RecommendationService) { super(container); }
     override onload(): void {
         void this.attach().catch((error: unknown) => { if (!this.disposed) new Notice(errorMessage(error)); });
@@ -43,6 +44,12 @@ class EpisodeButtons extends MarkdownRenderChild {
             if (nested) row.insertBefore(note, nested);
             this.registerDomEvent(note, 'click', () => { void openEpisodeNote(this.service.podcast, selected).catch((error: unknown) => new Notice(errorMessage(error))); });
             this.buttons.push(note);
+            const media = mediaValues({ url: link.href, state: '在听', date: '' });
+            if (media.mediaurl) {
+                const play = row.createEl('a', { text: '打开媒体', cls: 'podcast-note-button', attr: { href: media.mediaurl } });
+                if (nested) row.insertBefore(play, nested);
+                this.buttons.push(play);
+            }
         }
     }
     override onunload(): void { this.disposed = true; this.buttons.forEach(button => button.remove()); }
@@ -52,11 +59,11 @@ export function registerRecommendationUI(plugin: Plugin, podcast: PodcastService
     const service = new RecommendationService(podcast);
     plugin.registerEditorExtension(recommendationEditor(service));
     plugin.app.workspace.onLayoutReady(() => { void service.refreshEpisodeLinks().catch((error: unknown) => new Notice(errorMessage(error))); });
-    plugin.addCommand({ id: 'add-recommendation', name: '打开播客关联入口', callback: async () => {
+    plugin.addCommand({ id: 'add-recommendation', name: '打开媒体关联入口', callback: async () => {
         try {
             const file = await podcast.ensureCatalog();
             await plugin.app.workspace.getLeaf(false).openFile(file);
-            new Notice('在播客条目旁选择“添加关联”。');
+            new Notice('在媒体条目旁选择“添加关联”。');
         } catch (error) { new Notice(errorMessage(error)); }
     } });
     plugin.registerMarkdownPostProcessor((element, context) => {
@@ -65,7 +72,7 @@ export function registerRecommendationUI(plugin: Plugin, podcast: PodcastService
     plugin.registerEvent(plugin.app.workspace.on('podcast-capture:recommend', source => {
         const data = record(source);
         if (data.path !== podcast.config.catalogPath || typeof data.blockId !== 'string') {
-            new Notice('播客来源无效，请从记录页选择。');
+            new Notice('媒体来源无效，请从记录页选择。');
             return;
         }
         new RecommendationModal(service, { path: data.path, blockId: data.blockId }).open();

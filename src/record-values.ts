@@ -1,6 +1,7 @@
 import { parseYaml } from 'obsidian';
 import { entryIdentity, episodeUrl, isListeningState, recordDate, stateOf, validDate } from './core';
 import { noteValues, splitEpisodeTitle, type NoteValues } from './note-format';
+import { mediaValues } from './media';
 import { record } from './validation';
 
 export function properties(text: string): Record<string, unknown> {
@@ -34,7 +35,7 @@ export function legacyValues(source: string, id: string, log: string, saved: Not
     const created = date(props.currentDate) || date(props.date) || saved.currentdate || '';
     const show = text(props.show) || saved.show || split.show;
     const fulltitle = show ? show + ' · ' + title : title;
-    return { id, url: episode.url, title, show, fulltitle,
+    return { ...mediaValues({ url: episode.url, state: isListeningState(state) ? state : '在听', date: listened }), id, url: episode.url, title, show, fulltitle,
         link: noteValues({ ...episode, title: fulltitle, state: isListeningState(state) ? state : '在听', date: listened }, id, coverPath, created).link ?? '',
         published: date(props.published) || saved.published || '', listened: isListeningState(state) && state !== '听过' ? '' : listened,
         currentdate: created, date: created, description: text(props.description) || saved.description || '', state, provider: episode.provider,

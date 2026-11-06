@@ -26,6 +26,7 @@ export class CaptureSettings extends PluginSettingTab {
             try { await this.plugin.saveSettings({ ...this.plugin.config, [key]: value }); }
             catch (error) { new Notice(errorMessage(error)); }
         }));
+        new Setting(container).setName('播放器联动').setDesc('视频清单提供“打开媒体”入口；需另行启用 Media Extended v4。模板支持 {{mediaLink}}、{{mediaUrl}}。Bilibili 播放需配置其桌面 Web Viewer，采集保存可独立使用。');
         new Setting(container).setName("封面").setHeading();
         text("imageFolder", "封面目录", "所有写入规则共用的本地封面目录。");
         toggle("downloadCovers", "保存本地封面", "关闭后只保存文字与链接，不下载封面。");

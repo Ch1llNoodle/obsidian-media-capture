@@ -3,6 +3,7 @@ import { DEFAULT_SETTINGS, LEGACY_SETTINGS, isListeningState, validateSettings, 
 import { ensureFolder, isMarkdownFile } from "./storage";
 
 import type { CaptureSettingsData, CaptureItem, CaptureResult, CoverFailure, CoverRepairResult, EpisodeMetadata, SavedDataPatch } from "./types";
+import { coverUrl } from "./metadata-helpers";
 import { record, errorMessage } from "./validation";
 import { fetchAppleLookup } from "./apple";
 import { AppendOutputs } from "./append-output";
@@ -36,7 +37,7 @@ export class PodcastService {
     saveData(data: Record<string, unknown>): Promise<void> { return this.plugin.saveData(data); }
     repairOnReady(): void {
         if (!this.unloaded && this.config.repairOnStartup && this.config.downloadCovers) {
-            void this.repairCovers(true).catch(error => console.error("Podcast Capture: 封面补全失败", errorMessage(error)));
+            void this.repairCovers(true).catch(error => console.error("Media Capture: 封面补全失败", errorMessage(error)));
         }
     }
     updateData(patch: SavedDataPatch): Promise<void> {
@@ -54,6 +55,18 @@ export class PodcastService {
     }
     async fetchMetadata(url: string): Promise<EpisodeMetadata> {
         const episode = episodeUrl(url);
+        if (episode.provider === 'youtube') {
+            const endpoint = 'https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(episode.url);
+            try {
+                const response = await requestUrl({ url: endpoint, throw: false });
+                if (response.status !== 200) throw new Error(`YouTube oEmbed 返回 HTTP ${response.status}`);
+                const data = record(response.json);
+                if (typeof data.title !== 'string' || !data.title.trim()) throw new Error('YouTube 未返回视频标题');
+                const show = typeof data.author_name === 'string' ? data.author_name : '';
+                return { title: show ? show + ' · ' + data.title : data.title, episodeTitle: data.title, show,
+                    cover: coverUrl(data.thumbnail_url) };
+            } catch (error) { throw new Error('获取 YouTube 信息失败：' + errorMessage(error) + '。可手动填写标题后保存。'); }
+        }
         let lookup: EpisodeMetadata | undefined;
         let lookupError = "";
         if (episode.provider === "apple") {
@@ -81,7 +94,7 @@ export class PodcastService {
             if (folder) await ensureFolder(this.app.vault, folder);
             file = await this.app.vault.create(path, `### Podcasts\n\n#### ${this.config.entryHeading}\n\n`);
         }
-        if (!isMarkdownFile(file)) throw new Error("播客记录路径不是 Markdown 文件。");
+        if (!isMarkdownFile(file)) throw new Error("媒体记录路径不是 Markdown 文件。");
         return file;
     }
     capture(item: CaptureItem): Promise<CaptureResult> {
@@ -96,7 +109,7 @@ export class PodcastService {
         const source = await this.app.vault.read(file);
         const missing = source.split(/\r?\n/).filter(line => line.startsWith("- ") && !/!\[(?:cover)?\|\d+\]\(</.test(line))
             .map(line => ({ line, identity: entryIdentity(line) })).filter(entry => entry.identity);
-        if (!missing.length) { if (!silent) new Notice("播客封面已齐全。"); return; }
+        if (!missing.length) { if (!silent) new Notice("媒体封面已齐全。"); return; }
         let repaired = 0;
         const failures: CoverFailure[] = [];
         for (const { line, identity } of missing) {
@@ -112,7 +125,7 @@ export class PodcastService {
         if (typeof this.saveData === "function") {
             await this.updateData({ coverReport: { checkedAt: new Date().toISOString(), repaired, failures } });
         }
-        if (!silent || repaired) new Notice(`已补全 ${repaired} 个播客封面${repaired < missing.length ? `，${missing.length - repaired} 个暂未获取到` : ""}。`);
+        if (!silent || repaired) new Notice(`已补全 ${repaired} 个媒体封面${repaired < missing.length ? `，${missing.length - repaired} 个暂未获取到` : ""}。`);
         if (!silent && failures.length) {
             const modal = new Modal(this.app);
             modal.contentEl.createEl("h2", { text: "封面未补全的原因" });

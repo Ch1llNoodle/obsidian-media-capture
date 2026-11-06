@@ -26,7 +26,7 @@ export function safeCover(value: unknown): string {
     try {
         if (typeof value !== "string") return "";
         const url = new URL(value.startsWith("//") ? "https:" + value : value);
-        const hosts = ["doubanio.com", "xyzcdn.net", "mzstatic.com"];
+        const hosts = ["doubanio.com", "xyzcdn.net", "mzstatic.com", "ytimg.com", "hdslb.com"];
         if (url.protocol === "https:" && hosts.some(host => url.hostname === host || url.hostname.endsWith("." + host)) && !url.port && !url.username && !url.password) return url.href;
     } catch { /* Invalid image URLs are ignored so other cover candidates can be tried. */ }
     return "";

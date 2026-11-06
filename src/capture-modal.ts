@@ -1,4 +1,5 @@
 import { Modal, Notice } from 'obsidian';
+import { videoUrl } from './media';
 import { STATES, isListeningState, validDate, localDate, episodeUrl } from './core';
 import type { PodcastService } from './service';
 import type { CaptureItem, CaptureMode, Episode, EpisodeMetadata } from './types';
@@ -26,17 +27,17 @@ export class CaptureModal extends Modal {
 
     override onOpen(): void {
         this.contentEl.addClass('podcast-capture');
-        this.contentEl.createEl('h2', { text: this.preset ? '单集笔记' : '添加播客' });
+        this.contentEl.createEl('h2', { text: this.preset ? '媒体笔记' : '采集媒体' });
         const field = (label: string, type = 'text', parent: HTMLElement = this.contentEl): HTMLInputElement => {
             const wrapper = parent.createEl('label', { cls: 'podcast-capture-field' });
             wrapper.createSpan({ text: label });
             return wrapper.createEl('input', { type });
         };
-        this.urlInput = field('单集分享链接');
-        this.urlInput.placeholder = '粘贴单集分享链接';
-        this.contentEl.createEl('button', { text: '获取单集信息' }).addEventListener('click', () => { void this.fetchInfo(); });
-        this.showInput = field('节目（可留空）');
-        this.titleInput = field('单集标题');
+        this.urlInput = field('播客或视频分享链接');
+        this.urlInput.placeholder = '粘贴播客或视频分享链接';
+        this.contentEl.createEl('button', { text: '获取媒体信息' }).addEventListener('click', () => { void this.fetchInfo(); });
+        this.showInput = field('节目／频道（可留空）');
+        this.titleInput = field('标题');
         const row = this.contentEl.createDiv({ cls: 'podcast-capture-row' });
         const choice = (name: string): HTMLSelectElement => {
             const wrapper = row.createEl('label', { cls: 'podcast-capture-field' });
@@ -49,14 +50,14 @@ export class CaptureModal extends Modal {
         this.outputInput = choice('写入预设');
         for (const [value, text] of Object.entries(captureModes)) this.outputInput.createEl('option', { value, text });
         this.outputInput.value = this.preset?.output ?? this.plugin.config.captureMode;
-        this.dateInput = field('收听日期', 'date');
+        this.dateInput = field('记录日期', 'date');
         const active = this.app.workspace.getActiveFile();
         this.dateInput.value = this.plugin.config.dailyIntegration && active?.path.startsWith(this.plugin.config.dailyFolder + '/') && validDate(active.basename) ? active.basename : localDate();
         this.noteFields = this.contentEl.createEl('details', { cls: 'podcast-note-fields' });
-        this.noteFields.createEl('summary', { text: '更多单集信息' });
+        this.noteFields.createEl('summary', { text: '更多媒体信息' });
         this.publishedInput = field('发布日期（可留空）', 'date', this.noteFields);
         const description = this.noteFields.createEl('label', { cls: 'podcast-capture-field' });
-        description.createSpan({ text: '单集描述（可留空）' });
+        description.createSpan({ text: '描述（可留空）' });
         this.descriptionInput = description.createEl('textarea');
         this.descriptionInput.rows = 4;
         this.preview = this.contentEl.createEl('p', { cls: 'podcast-capture-message' });
@@ -106,6 +107,8 @@ export class CaptureModal extends Modal {
     private updatePreview(): void {
         try {
             const item = this.item();
+            const video = !!videoUrl(new URL(item.url));
+            for (const option of Array.from(this.stateInput.querySelectorAll<HTMLOptionElement>('option'))) option.text = video ? ({ '听过': '看过', '在听': '在看', '想听': '想看' }[option.value] ?? option.value) : option.value;
             const values = noteValues(item, episodeUrl(item.url).blockId, '', localDate());
             const rules = rulesFor(this.plugin.config, item.output);
             this.preview.setText(rules.length ? '新记录目标：\n' + rules.map(rule => rule.name + ' → ' + rulePath(rule, values)).join('\n') : '没有启用的写入规则。');
@@ -125,7 +128,7 @@ export class CaptureModal extends Modal {
             this.publishedInput.value = this.loaded.published ?? '';
             this.descriptionInput.value = this.loaded.description ?? '';
             this.updatePreview();
-            this.message.setText(this.loaded.cover ? '已获取单集信息。' : '已获取单集信息，暂未找到封面。');
+            this.message.setText(this.loaded.cover ? '已获取媒体信息。' : '已获取媒体信息，暂未找到封面。');
         } catch (error) { this.message.setText(errorMessage(error)); }
         finally { this.setBusy(false); }
     }
@@ -136,7 +139,7 @@ export class CaptureModal extends Modal {
         this.setBusy(true);
         this.message.setText('保存中…');
         try {
-            if (!this.titleInput.value.trim()) throw new Error('请填写单集标题。');
+            if (!this.titleInput.value.trim()) throw new Error('请填写标题。');
             const result = await this.plugin.capture(this.item());
             new Notice(result.message);
             if (result.notePath) {

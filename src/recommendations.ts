@@ -4,7 +4,7 @@ import { entryIdentity, markdownText, vaultPath } from './core';
 export function episodeSource(line: string, path: string): RecommendationSource | null {
     if (!line.startsWith('- ')) return null;
     const item = entryIdentity(line);
-    const blockId = /\^((?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+))\s*$/.exec(line)?.[1];
+    const blockId = /\^((?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?))\s*$/.exec(line)?.[1];
     return item && blockId ? { path, blockId, title: item.title } : null;
 }
 
@@ -51,7 +51,7 @@ export function normalizeEpisodeWorks(text: string): string {
         if (!inline && !block.legacy) continue;
         const entries = inline ? inline.replace('<!-- podcast-works:start -->', '').replace('<!-- podcast-works:end -->', '')
             .replace(/^\s*·\s*推荐\s*/, '').trim().split(/\s+·\s+(?=\[\[)/).filter(Boolean) : [];
-        lines[index] = line.replace(inline ?? '', '').replace(/ +(?=\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+)\s*$)/, ' ');
+        lines[index] = line.replace(inline ?? '', '').replace(/ +(?=\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?)\s*$)/, ' ');
         lines.splice(block.start, block.end - block.start, ...workRows([...block.entries, ...entries]));
     }
     return lines.join('\n');
@@ -105,8 +105,8 @@ export function recommendationUrl(input: string, preferred: RecommendationKind):
 
 function sourceLink(source: RecommendationSource): string {
     const path = vaultPath(source.path, '.md').replace(/\.md$/i, '');
-    if (['[', ']', '|', '#'].some(character => path.includes(character)) || !/^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+)$/.test(source.blockId)) {
-        throw new Error('播客来源路径或块标识无效。');
+    if (['[', ']', '|', '#'].some(character => path.includes(character)) || !/^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?)$/.test(source.blockId)) {
+        throw new Error('媒体来源路径或块标识无效。');
     }
     const label = source.title.replaceAll('[', ' ').replaceAll(']', ' ').replaceAll('|', ' ').replace(/[\r\n]/g, ' ').replaceAll('<', '&lt;').replaceAll('>', '&gt;').trim();
     return `[[${path}#^${source.blockId}|${label}]]`;

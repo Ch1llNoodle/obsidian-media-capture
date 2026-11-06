@@ -1,28 +1,38 @@
-### Podcast Capture
+### Media Capture
 
 [简体中文](README.zh-CN.md) · English
 
-Podcast Capture applies Markdown templates to episode information from Douban, Xiaoyuzhou, and Apple Podcasts. Configurable rules append content to existing files or create new files, supporting one-line logs, one file per episode, and one file per show. The default remains one line per episode. Daily integration and links to work wishlists are optional. The interface currently uses Chinese.
+Media Capture applies Markdown templates to podcast and video information from Douban, Xiaoyuzhou, Apple Podcasts, YouTube, and Bilibili. Configurable rules append content to existing files or create new files, supporting one-line logs, one file per episode, and one file per show. The default remains one line per episode. Daily integration and links to work wishlists are optional. The interface currently uses Chinese.
 
 #### Installation
 
-For iPhone and desktop testing, install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Obsidian's community plugins, then add `Ch1llNoodle/obsidian-podcast-capture` as a beta plugin. Choose a published release or prerelease and enable Podcast Capture. BRAT installs and updates the release files inside Obsidian.
+For iPhone and desktop testing, install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Obsidian's community plugins, then add `Ch1llNoodle/obsidian-media-capture` as a beta plugin. Choose a published release or prerelease and enable Media Capture. BRAT installs and updates the release files inside Obsidian.
 
-Obsidian 1.5.0 or later is required. Place `main.js`, `manifest.json`, and `styles.css` in `<Vault>/.obsidian/plugins/podcast-capture/`, then enable **Podcast Capture** under **Settings → Community plugins**. Source builds place these files in `release/podcast-capture/`.
+Obsidian 1.5.0 or later is required. Place `main.js`, `manifest.json`, and `styles.css` in `<Vault>/.obsidian/plugins/podcast-capture/`, then enable **Media Capture** under **Settings → Community plugins**. Source builds place these files in `release/podcast-capture/`.
 
 When updating, replace those three files and reload the plugin. Keep the existing `data.json`, which stores rule settings, output indexes, captured metadata, and the latest cover repair report.
 
-#### Capture an episode
+#### Capture media
 
-1. Open the command palette and run **Podcast Capture: 添加播客** (add podcast).
-2. Paste an episode share link and select **获取单集信息** (fetch episode information).
+1. Open the command palette and run **Media Capture: 采集媒体** (add podcast).
+2. Paste a podcast or video share link and select **获取媒体信息** (fetch episode information).
 3. Confirm the show, episode title, listening date, state, and write preset, then select **保存** (save).
 
 States are `听过` (listened), `在听` (in progress), and `想听` (wishlist). Only listened entries receive a listening date. The date is entered manually; the plugin does not import playback history. With daily integration enabled, opening the dialog from a dated note in the configured daily folder uses that note's date.
 
 For Apple Podcasts, share an individual episode. A show URL without an `i` episode parameter is rejected. If metadata cannot be fetched, enter the title manually. A failed cover download does not prevent saving.
 
-**打开播客记录** opens the configured log. **补全缺失封面** retries missing covers and reports the failure stage; when an image URL is available, the report links to the original image.
+**打开媒体记录** opens the configured log. **补全缺失封面** retries missing covers and reports the failure stage; when an image URL is available, the report links to the original image.
+
+#### Video capture and Media Extended
+
+Supports YouTube watch, shorts, live, embed and `youtu.be` links, and Bilibili `/video/BV…` or `/video/av…` URLs. Open `b23.tv` short links first and copy the full address. Bilibili parts (`p=2`) retain separate identities. Tracking parameters and start times are removed: capture identifies a whole video or part. YouTube metadata uses public oEmbed; Bilibili uses public webpage metadata. Missing fields can be entered manually. Video status labels are 看过／在看／想看; stored state values remain compatible with existing records.
+
+Install and enable [Media Extended v4](https://github.com/aidenlx/media-extended) separately. Video rows in the concentrated log provide **打开媒体** (open media) links in reading view and Live Preview, using its public [mx-open URI protocol](https://mx.aidenlx.site/docs/v4/reference/uri-protocol). Templates accept `{{mediaLink}}` (a Markdown link) and `{{mediaUrl}}` (its URI). Both are empty for podcast landing pages, which are not audio streams. Original platform links remain usable without Media Extended. Capture does not install or configure the player or call its private APIs.
+
+Playback and timestamps belong to Media Extended. Bilibili requires its desktop Web Viewer and main daemon setup. Capture saves Markdown independently. Actual playback, button layout and mobile video capture remain pending device verification.
+
+The display name is Media Capture. The released ID `podcast-capture`, command IDs, stored fields and markers remain stable, retaining existing settings and records.
 
 #### Templates and write rules
 
@@ -47,6 +57,8 @@ Select a vault Markdown file for a rule, or leave the file path empty to use its
 | --- | --- |
 | `{{show}}`, `{{title}}` | Show and episode title |
 | `{{fullTitle}}`, `{{link}}` | Combined show/title text, or its Markdown episode link |
+| `{{mediaLink}}`, `{{mediaUrl}}` | Media Extended video link or URI; empty for podcast pages |
+| `{{kind}}`, `{{consumed}}` | `video` or `podcast`, and completed viewing/listening date |
 | `{{url}}` | Canonical platform episode URL |
 | `{{cover}}`, `{{coverPath}}` | Local Markdown image at the rule's width, or its vault path; empty without a cover |
 | `{{published}}` | Publication date supplied by the platform |
@@ -165,13 +177,13 @@ Pushing a tag that matches the manifest and package versions runs the release wo
 
 Keep the source repository separate from the installed plugin directory. If the source is inside a vault, ignore that directory in the outer vault Git repository while keeping the installed plugin and its settings in the vault backup. The `release/podcast-capture/` directory contains generated installation files; the vault installation remains under `.obsidian/plugins/podcast-capture/`.
 
-Copy `.deploy.example.json` to `.deploy.local.json` and set `vaultPath` to the absolute path of an existing vault. Run `npm run deploy` to build and copy the runtime files, then reload Podcast Capture in Obsidian. `npm run deploy -- --vault /absolute/path/to/vault` overrides the local configuration; `PODCAST_CAPTURE_VAULT` is also supported. Resolution order is command argument, environment variable, then local configuration.
+Copy `.deploy.example.json` to `.deploy.local.json` and set `vaultPath` to the absolute path of an existing vault. Run `npm run deploy` to build and copy the runtime files, then reload Media Capture in Obsidian. `npm run deploy -- --vault /absolute/path/to/vault` overrides the local configuration; `PODCAST_CAPTURE_VAULT` is also supported. Resolution order is command argument, environment variable, then local configuration.
 
 Deployment copies only main.js, manifest.json, and the optional styles.css. It preserves data.json and other installation files, checks the plugin ID and staged version, and rejects deployment into a source repository or through symbolic-link installation directories. Local deployment configuration and release output are excluded from Git. `npm run dev` watches the source and updates the staged files; it does not deploy automatically.
 
 #### Network access and mobile support
 
-Douban and Xiaoyuzhou metadata requests go to the selected episode's public page. Apple Podcasts first uses the public iTunes Lookup API at `itunes.apple.com`, matching the exact episode ID and storefront from the shared link, then falls back to the episode webpage. No Apple login or token is used. Catalog results are limited to 200 episodes per show; an older episode may need the webpage fallback or a manually entered title. Cover downloads are restricted to HTTPS hosts under `doubanio.com`, `xyzcdn.net`, and `mzstatic.com`. Saving may fetch a missing cover even when the title was entered manually; disabling cover downloads prevents those image requests. Manual repair and optional startup repair also fetch episode pages when needed. Linking works and episodes reads configured local lists only and makes no network requests.
+YouTube metadata requests use `www.youtube.com/oembed`; Bilibili requests use its public video pages. Douban and Xiaoyuzhou metadata requests go to the selected episode's public page. Apple Podcasts first uses the public iTunes Lookup API at `itunes.apple.com`, matching the exact episode ID and storefront from the shared link, then falls back to the episode webpage. No Apple login or token is used. Catalog results are limited to 200 episodes per show; an older episode may need the webpage fallback or a manually entered title. Cover downloads are restricted to HTTPS hosts under `doubanio.com`, `xyzcdn.net`, `mzstatic.com`, `ytimg.com`, and `hdslb.com`. Saving may fetch a missing cover even when the title was entered manually; disabling cover downloads prevents those image requests. Manual repair and optional startup repair also fetch episode pages when needed. Linking works and episodes reads configured local lists only and makes no network requests.
 
 Runtime code uses Obsidian APIs and standard Web APIs, with no Node.js or Electron dependency. Android and iOS loading is enabled in the manifest; real-device compatibility remains unverified. The plugin does not read platform credentials or playback history and does not include telemetry. Platform or network failures appear in the dialog or cover repair report.
 

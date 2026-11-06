@@ -1,28 +1,38 @@
-### Podcast Capture
+### Media Capture
 
 简体中文 · [English](README.md)
 
-Podcast Capture 将豆瓣、小宇宙和 Apple Podcasts 的单集信息代入 Markdown 模板，通过写入规则追加到已有文件或新建文件，支持一行清单、每集一篇和每档节目一篇。默认每集一行，日记联动与作品清单关联均为可选功能。插件界面目前使用中文。
+Media Capture 将豆瓣、小宇宙、Apple Podcasts 的播客信息及 YouTube、Bilibili 的视频信息代入 Markdown 模板，通过写入规则追加到已有文件或新建文件，支持一行清单、每集一篇和每档节目一篇。默认每集一行，日记联动与作品清单关联均为可选功能。插件界面目前使用中文。
 
 #### 安装
 
-在 iPhone 或电脑上测试时，从 Obsidian 社区插件安装并启用 [BRAT](https://github.com/TfTHacker/obsidian42-brat)，添加测试插件仓库 `Ch1llNoodle/obsidian-podcast-capture`，选择已发布版本或预发布版本，然后启用 Podcast Capture。BRAT 在 Obsidian 内完成文件安装和后续更新。
+在 iPhone 或电脑上测试时，从 Obsidian 社区插件安装并启用 [BRAT](https://github.com/TfTHacker/obsidian42-brat)，添加测试插件仓库 `Ch1llNoodle/obsidian-media-capture`，选择已发布版本或预发布版本，然后启用 Media Capture。BRAT 在 Obsidian 内完成文件安装和后续更新。
 
-插件要求 Obsidian 1.5.0 或更高版本。将 `main.js`、`manifest.json`、`styles.css` 放入 `<笔记库>/.obsidian/plugins/podcast-capture/`，在 **设置 → 第三方插件**中启用 **Podcast Capture**。从源码构建时，三个文件生成于 `release/podcast-capture/`。
+插件要求 Obsidian 1.5.0 或更高版本。将 `main.js`、`manifest.json`、`styles.css` 放入 `<笔记库>/.obsidian/plugins/podcast-capture/`，在 **设置 → 第三方插件**中启用 **Media Capture**。从源码构建时，三个文件生成于 `release/podcast-capture/`。
 
 更新时替换这三个文件，重新加载插件。保留原有 `data.json`，其中保存规则设置、输出索引、采集元信息和最近一次封面补全报告。
 
-#### 添加单集
+#### 采集媒体
 
-1. 打开命令面板，运行 **Podcast Capture: 添加播客**。
-2. 粘贴单集分享链接，选择**获取单集信息**。
-3. 确认节目、单集标题、收听日期、状态和写入预设，选择**保存**。
+1. 打开命令面板，运行 **Media Capture: 采集媒体**。
+2. 粘贴播客或视频分享链接，选择**获取媒体信息**。
+3. 确认节目／频道、标题、记录日期、状态和写入预设，选择**保存**。
 
 状态包括 `听过`、`在听`、`想听`，只有听过条目保存收听日期。日期由使用者填写，插件不读取播放历史。启用日记联动后，从配置目录中的日期日记打开添加窗口，默认采用该篇日记的日期。
 
 Apple Podcasts 使用单集分享链接；缺少 `i` 单集参数的节目主页不能作为单集记录。网页信息获取失败时，可手动填写名称；封面下载失败不阻止记录保存。
 
-**打开播客记录**打开配置的记录文件。**补全缺失封面**重新获取缺失图片，并报告失败阶段；已取得图片地址时，报告提供原图链接。
+**打开媒体记录**打开配置的记录文件。**补全缺失封面**重新获取缺失图片，并报告失败阶段；已取得图片地址时，报告提供原图链接。
+
+#### 视频采集与 Media Extended
+
+支持 YouTube watch、shorts、live、embed 和 `youtu.be` 链接，以及 Bilibili `/video/BV…`、`/video/av…` 完整链接。`b23.tv` 短链需打开后复制完整视频地址。Bilibili 分 P 参数（如 `p=2`）保留为独立记录；推广参数和起播时间会移除，采集对象是整个视频或分 P。YouTube 通过公开 oEmbed 接口取得标题与频道，Bilibili 使用公开网页元信息，缺失内容可手动填写。视频界面显示“看过／在看／想看”，文件中的状态标记保留旧值以兼容已有记录。
+
+另行安装并启用 [Media Extended v4](https://github.com/aidenlx/media-extended) 后，集中清单中的视频在阅读视图、实时预览均有**打开媒体**入口，通过公开的 [mx-open 协议](https://mx.aidenlx.site/docs/v4/reference/uri-protocol)交给它播放。模板可用 `{{mediaLink}}` 插入完整 Markdown 链接，或用 `{{mediaUrl}}` 插入协议地址。播客平台页不是音频直链，这两个变量在播客记录中为空。未安装 Media Extended 时仍可使用原平台链接，采集与保存独立可用。插件不自动安装、配置播放器，也不调用其私有接口。
+
+播放与时间戳笔记由 Media Extended 提供。Bilibili 使用它仅限桌面的 Web Viewer，需完成其 main daemon 配置。Capture 的 Markdown 保存独立可用。桌面实际播放、按钮布局和手机视频采集尚待设备验证。
+
+公开名称为 Media Capture，已发布插件 ID `podcast-capture`、命令标识、属性名和管理标记保持稳定，已有配置与记录保留。
 
 #### 模板与写入规则
 
@@ -47,6 +57,8 @@ Apple Podcasts 使用单集分享链接；缺少 `i` 单集参数的节目主页
 | --- | --- |
 | `{{show}}`、`{{title}}` | 节目名与单集标题 |
 | `{{fullTitle}}`、`{{link}}` | 合并后的“节目 · 单集”文本，或对应的 Markdown 单集链接 |
+| `{{mediaLink}}`、`{{mediaUrl}}` | Media Extended 视频链接或协议地址；播客平台页为空 |
+| `{{kind}}`、`{{consumed}}` | `video` 或 `podcast`，以及完成状态下选择的记录日期 |
 | `{{url}}` | 规范化的平台单集链接 |
 | `{{cover}}`、`{{coverPath}}` | 按规则宽度显示的本地 Markdown 图片，或其库内路径；没有封面时为空 |
 | `{{published}}` | 平台提供的发布日期 |
@@ -97,7 +109,7 @@ tags: [podcast]
 
 先在豆瓣标记想读、想看等状态，通过自己的豆瓣同步工具将作品导入 Markdown 清单。在设置中把书籍、电影、电视剧、音乐、游戏和舞台剧路径指向已有清单；默认路径位于 `Recommendations/`，插件只读取已存在的文件。
 
-在播客记录的编辑模式或阅读模式中选择单集旁的**添加关联**。窗口固定使用该单集作为来源，从作品下拉框选择想读、想看、想听或想玩的作品，填写可选摘记，再选择**保存关联**。窗口不提供搜索框或来源播客选择框，进行中、已完成及未标记状态的作品不列入选项。**打开播客关联入口**命令打开播客记录页。
+在播客记录的编辑模式或阅读模式中选择单集旁的**添加关联**。窗口固定使用该单集作为来源，从作品下拉框选择想读、想看、想听或想玩的作品，填写可选摘记，再选择**保存关联**。窗口不提供搜索框或来源播客选择框，进行中、已完成及未标记状态的作品不列入选项。**打开播客关联入口**命令打开媒体记录页。
 
 作品行追加来源单集的块链接和摘记，关联作品的链接及摘记在对应播客下方按缩进子列表显示，不加“推荐”标签，内部管理标记使用行内注释，不再单占两行。实时预览只在播客记录中隐藏状态、作品管理注释和单集块标识；源码模式保留原始 Markdown。作品清单的显示由 Obsidian 样式或其他工具独立管理。阅读视图对子列表单独设置换行与缩进，保留名称、日期、状态及封面。同一来源重复保存不会重复追加，多个来源保存在同一作品行。关联过程完全在本地进行，不搜索豆瓣、不请求作品详情、不下载作品封面，也不创建作品文件、待看条目或日记属性。保存前重新检查作品及来源是否仍存在。两篇笔记分别更新；第二次写入失败时明确提示已保存的一侧，再次保存可以补全且不会重复。插件在工作区就绪后从已有作品侧关联补回播客行链接，后来已完成的作品也会继续显示。
 
@@ -171,7 +183,7 @@ npm run lint
 
 #### 网络访问与移动端
 
-豆瓣和小宇宙的元信息请求发送至单集公开页面。Apple Podcasts 优先使用 `itunes.apple.com` 的公开 iTunes Lookup API，按分享链接中的单集编号和地区精确匹配，再回退单集网页，不使用 Apple 登录态或令牌。节目目录每次最多查询 200 集，较早单集可能需要网页回退或手动填写名称。封面仅从 `doubanio.com`、`xyzcdn.net`、`mzstatic.com` 及其子域通过 HTTPS 下载。即使手动填写名称，保存时也可能请求缺失封面；关闭本地封面下载后，不再发起图片下载请求。手动补图和可选的启动补图也会按需请求单集页面。作品与播客的关联仅访问已配置的本地清单，不发起网络请求。
+YouTube 元信息通过 `www.youtube.com/oembed` 获取，Bilibili 请求公开视频页。豆瓣和小宇宙的元信息请求发送至单集公开页面。Apple Podcasts 优先使用 `itunes.apple.com` 的公开 iTunes Lookup API，按分享链接中的单集编号和地区精确匹配，再回退单集网页，不使用 Apple 登录态或令牌。节目目录每次最多查询 200 集，较早单集可能需要网页回退或手动填写名称。封面仅从 `doubanio.com`、`xyzcdn.net`、`mzstatic.com`、`ytimg.com`、`hdslb.com` 及其子域通过 HTTPS 下载。即使手动填写名称，保存时也可能请求缺失封面；关闭本地封面下载后，不再发起图片下载请求。手动补图和可选的启动补图也会按需请求单集页面。作品与播客的关联仅访问已配置的本地清单，不发起网络请求。
 
 运行代码使用 Obsidian API 和标准 Web API，不依赖 Node.js 或 Electron。manifest 允许 Android、iOS 加载，尚未完成真机兼容性验证。插件不读取平台登录凭据或播放历史，不包含遥测。平台或网络错误会显示在添加窗口或补图报告中。
 

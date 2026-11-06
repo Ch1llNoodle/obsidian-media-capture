@@ -1,4 +1,4 @@
-export type Provider = 'douban' | 'xiaoyuzhou' | 'apple';
+export type Provider = 'douban' | 'xiaoyuzhou' | 'apple' | 'youtube' | 'bilibili';
 export type ListeningState = '听过' | '在听' | '想听';
 export type CaptureMode = 'log' | 'note' | 'both' | 'show' | 'custom';
 export interface WriteRule {

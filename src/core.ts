@@ -1,4 +1,5 @@
 import type { CaptureItem, CaptureSettingsData, CatalogUpdate, EntryIdentity, Episode, ListeningState } from "./types";
+import { videoUrl } from "./media";
 import { record } from "./validation";
 import { decode } from "./metadata-helpers";
 import { isApplePlayerTitle } from "./apple";
@@ -50,7 +51,7 @@ function validateSettings(settings: unknown): CaptureSettingsData {
     result.imageFolder = vaultPath(result.imageFolder);
     for (const key of ["bookPath", "moviePath", "teleplayPath", "musicPath", "gamePath", "theaterPath"] as const) {
         result[key] = vaultPath(result[key], ".md");
-        if (result[key] === result.catalogPath) throw new Error("作品清单不能使用播客记录文件。");
+        if (result[key] === result.catalogPath) throw new Error("作品清单不能使用媒体记录文件。");
     }
     result.dailyFolder = vaultPath(result.dailyFolder);
     result.entryHeading = String(result.entryHeading).trim();
@@ -67,7 +68,7 @@ function validateSettings(settings: unknown): CaptureSettingsData {
         if (catalog) { result.catalogPath = [catalog.folder, catalog.pathTemplate].filter(Boolean).join('/'); result.entryHeading = catalog.heading; }
         const notes = result.writeRules.find(rule => rule.id === 'notes');
         if (notes?.mode === 'create') { result.noteFolder = notes.folder; result.notePathTemplate = notes.pathTemplate; result.noteTemplateFile = notes.templateFile; result.noteTemplate = notes.template; }
-        for (const key of ['bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const) if (result[key] === result.catalogPath) throw new Error('作品清单不能使用播客记录文件。');
+        for (const key of ['bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const) if (result[key] === result.catalogPath) throw new Error('作品清单不能使用媒体记录文件。');
     }
     return result;
 }
@@ -93,6 +94,8 @@ function episodeUrl(input: string): Episode {
         catch { continue; }
         if (url.username || url.password || url.port) continue;
         const host = url.hostname.toLowerCase();
+        const video = videoUrl(url);
+        if (video) return video;
         let match: RegExpExecArray | null;
         if (["douban.com", "www.douban.com"].includes(host) && (match = /^\/podcast_episode\/(\d+)\/?$/.exec(url.pathname))) {
             return { provider: "douban", id: match[1] ?? "", blockId: `douban-${match[1]}`, url: `https://www.douban.com/podcast_episode/${match[1]}` };
@@ -111,7 +114,7 @@ function episodeUrl(input: string): Episode {
             if (show) throw new Error("这是 Apple Podcasts 的节目主页，请在某一集的分享菜单中复制单集链接。");
         }
     }
-    throw new Error("请粘贴豆瓣、小宇宙或 Apple Podcasts 的单集分享链接。");
+    throw new Error("请粘贴豆瓣、小宇宙、Apple Podcasts 单集，或 YouTube、Bilibili 视频链接。Bilibili 请使用含 BV 或 av 编号的完整视频链接。");
 }
 
 function blockId(item: EntryIdentity): string { return item.blockId ?? `${item.provider ?? "douban"}-${item.id}`; }
@@ -141,10 +144,11 @@ function findEntry(source: string, item: EntryIdentity | string): string | undef
         return identity && blockId(identity) === blockId(candidate);
     });
     if (exact) return exact;
+    if (candidate.provider === "youtube" || candidate.provider === "bilibili") return undefined;
     if (!candidate.title?.includes(" · ")) return undefined;
     return lines.find(line => {
         const identity = entryIdentity(line);
-        return identity && titleKey(identity.title) === titleKey(candidate.title ?? "");
+        return identity && identity.provider !== "youtube" && identity.provider !== "bilibili" && titleKey(identity.title) === titleKey(candidate.title ?? "");
     });
 }
 

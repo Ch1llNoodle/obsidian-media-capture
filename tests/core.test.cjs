@@ -207,7 +207,7 @@ test("三平台自动获取使用公开网页或目录，无需账号信息", as
     assert(calls.every(call => !call.headers?.Cookie && !call.headers?.Authorization));
 });
 
-test("追踪视图识别三平台记录，旧豆瓣链接和跨日手写选择继续有效", { skip: !process.env.PODCAST_TRACKER_TEST_PATH }, async () => {
+test("追踪视图识别播客与视频，旧豆瓣链接和跨日手写选择继续有效", { skip: !process.env.PODCAST_TRACKER_TEST_PATH }, async () => {
     const { entryLine, episodeUrl } = load()._internals;
     const source = fs.readFileSync(process.env.PODCAST_TRACKER_TEST_PATH, "utf8");
     const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
@@ -219,13 +219,14 @@ test("追踪视图识别三平台记录，旧豆瓣链接和跨日手写选择�
     }
     const xyz = { ...item, ...episodeUrl(xyzUrl), title: "小宇宙节目 · 单集" };
     const apple = { ...item, ...episodeUrl(appleUrl), title: "苹果节目 · 单集" };
-    const sources = { "追踪/播客.md": [entryLine(item, ""), entryLine(xyz, ""), entryLine(apple, "")].join("\n") };
+    const video = { ...item, ...episodeUrl("https://youtu.be/dQw4w9WgXcQ"), title: "视频频道 · 视频" };
+    const sources = { "追踪/播客.md": [entryLine(item, ""), entryLine(xyz, ""), entryLine(apple, ""), entryLine(video, "")].join("\n") };
     const page = { file: { name: "2026-11-04", path: "daily/2026/2026-11/2026-11-04.md" }, 播客: [`[[追踪/播客#^${apple.blockId}|${apple.title}]]`] };
     const dv = { luxon: { DateTime }, pages: () => [page], io: { load: async name => sources[name] || "" }, blockLink: (path, subpath, embed, display) => ({ path, subpath, display }) };
     const prefix = source.slice(0, source.indexOf('if (input?.mode === "catalog")'));
     const data = await new AsyncFunction("dv", prefix + ";return {mediaCatalog, dayData, matchesRecord, periodSummary};")(dv);
-    assert.equal(data.mediaCatalog.size, 3);
-    assert.equal(data.dayData("2026-11-03").listening.length, 3);
+    assert.equal(data.mediaCatalog.size, 4);
+    assert.equal(data.dayData("2026-11-03").listening.length, 4);
     assert(data.periodSummary(["2026-11-03"]).includes("播客 1 天"));
     const records = [...data.mediaCatalog.values()];
     assert(data.matchesRecord("[[追踪/播客#^douban-509937|旧链接]]", records.find(record => record.blockId === "douban-509937")));
@@ -503,4 +504,38 @@ test("补全 Apple 错误播放器标题时保留日期、块标识、手写摘�
     service.app = ownFixture.app;
     await service.repairCovers(true);
     assert(ownFixture.contents.get("追踪/播客.md").includes("我的手写名称"));
+});
+
+
+test('YouTube links share an identity; Bilibili parts retain independent identities', () => {
+    const { episodeUrl, entryIdentity, safeCover } = load()._internals;
+    for (const url of ['https://youtu.be/dQw4w9WgXcQ?si=tracking', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=45', 'https://m.youtube.com/shorts/dQw4w9WgXcQ']) {
+        assert.equal(episodeUrl(url).blockId, 'youtube-dQw4w9WgXcQ');
+        assert.equal(episodeUrl(url).url, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    }
+    assert.equal(episodeUrl('https://www.bilibili.com/video/BV1xx411c7mD?p=2&spm_id_from=123').blockId, 'bilibili-BV1xx411c7mD-p2');
+    assert.equal(episodeUrl('https://www.bilibili.com/video/av123?p=1').url, 'https://www.bilibili.com/video/av123');
+    for (const url of ['https://youtube.com.evil.test/watch?v=dQw4w9WgXcQ', 'https://youtu.be/short', 'https://bilibili.com/video/BV1xx411c7mD?p=-1', 'https://youtube.com/playlist?list=test', 'https://b23.tv/abc']) assert.throws(() => episodeUrl(url));
+    assert.equal(entryIdentity('- [Video](<https://youtu.be/dQw4w9WgXcQ>) ^youtube-dQw4w9WgXcQ').provider, 'youtube');
+    assert.equal(safeCover('https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg').startsWith('https:'), true);
+    assert.equal(safeCover('https://i0.hdslb.com/bfs/archive/abc.jpg').startsWith('https:'), true);
+    assert.equal(safeCover('https://hdslb.com.evil.test/a.jpg'), '');
+});
+
+test('YouTube oEmbed returns title and channel; failures include HTTP status', async () => {
+    const Plugin = load(async ({url}) => {
+        assert(url.startsWith('https://www.youtube.com/oembed?'));
+        return {status: 200, json: {title: 'Video', author_name: 'Channel', thumbnail_url: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg'}};
+    });
+    const info = await new Plugin().fetchMetadata('https://youtu.be/dQw4w9WgXcQ');
+    assert.equal(info.title, 'Channel · Video'); assert.equal(info.episodeTitle, 'Video');
+    const Failed = load(async () => ({status: 403}));
+    await assert.rejects(new Failed().fetchMetadata('https://youtu.be/dQw4w9WgXcQ'), /HTTP 403/);
+});
+
+test('Bilibili Open Graph fields remain usable without authenticated metadata', () => {
+    const {metadata} = load()._internals;
+    const info = metadata('<meta property="og:title" content="Video_哔哩哔哩_bilibili"><meta name="author" content="Channel"><meta property="og:image" content="//i0.hdslb.com/bfs/archive/a.jpg">', {provider: 'bilibili'});
+    assert.equal(info.title, 'Channel · Video'); assert.equal(info.show, 'Channel');
+    assert.equal(info.cover, 'https://i0.hdslb.com/bfs/archive/a.jpg');
 });
