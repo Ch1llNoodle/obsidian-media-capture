@@ -20,7 +20,7 @@ export class NoteTemplatePicker extends FuzzySuggestModal<TFile> {
 }
 
 export async function openEpisodeNote(podcast: PodcastService, source: Pick<RecommendationSource, 'path' | 'blockId'>): Promise<void> {
-    if (podcast.unloaded || source.path !== podcast.config.catalogPath) throw new Error('请从媒体记录选择单集。');
+    if (podcast.unloaded || !podcast.isCatalog(source.path)) throw new Error('请从媒体记录选择单集。');
     const existing = await podcast.notes.find(source.blockId);
     if (existing) { await podcast.app.workspace.getLeaf(false).openFile(existing); return; }
     const file = podcast.app.vault.getAbstractFileByPath(source.path);

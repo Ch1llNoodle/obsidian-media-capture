@@ -24,15 +24,13 @@ For Apple Podcasts, share an individual episode. A show URL without an `i` episo
 
 **打开媒体记录** opens the configured log. **补全缺失封面** retries missing covers and reports the failure stage; when an image URL is available, the report links to the original image.
 
-#### Video capture and Media Extended
+#### Video records and optional playback
 
-Supports YouTube watch, shorts, live, embed and `youtu.be` links, and Bilibili `/video/BV…` or `/video/av…` URLs. Open `b23.tv` short links first and copy the full address. Bilibili parts (`p=2`) retain separate identities. Tracking parameters and start times are removed: capture identifies a whole video or part. YouTube metadata uses public oEmbed; Bilibili uses public webpage metadata. Missing fields can be entered manually. Video status labels are 看过／在看／想看; stored state values remain compatible with existing records.
+Video rows use a separate configured log: `Videos.md` for new installations, or a sibling `视频.md` for existing Chinese log paths. Both logs share the row template and heading. Independent notes and show/channel append outputs continue using their own rules.
 
-Install and enable [Media Extended v4](https://github.com/aidenlx/media-extended) separately. Video rows in the concentrated log provide **打开媒体** (open media) links in reading view and Live Preview, using its public [mx-open URI protocol](https://mx.aidenlx.site/docs/v4/reference/uri-protocol). Templates accept `{{mediaLink}}` (a Markdown link) and `{{mediaUrl}}` (its URI). Both are empty for podcast landing pages, which are not audio streams. Original platform links remain usable without Media Extended. Capture does not install or configure the player or call its private APIs.
+YouTube watch, shorts, live, embed and youtu.be links and full Bilibili BV/av links are supported. Bilibili parts remain separate records. Open short links first to copy the full address. Tracking parameters and start times are removed. Missing metadata can be entered manually.
 
-Playback and timestamps belong to Media Extended. Bilibili requires its desktop Web Viewer and main daemon setup. Capture saves Markdown independently. Actual playback, button layout and mobile video capture remain pending device verification.
-
-The display name is Media Capture. The released ID `podcast-capture`, command IDs, stored fields and markers remain stable, retaining existing settings and records.
+Play in Obsidian is disabled by default. Configure a compatible player supporting `obsidian://mx-open`, then opt in. Video rows gain a playback action and templates can generate `{{mediaLink}}` and `{{mediaUrl}}`. Disabled playback leaves these variables empty for new or explicitly refreshed content; platform links remain available. Podcast landing pages do not receive playback links. Playback and timestamps belong to the external player. Bilibili requires a desktop web playback environment. Actual playback and mobile video capture remain pending device verification.
 
 #### Templates and write rules
 
@@ -40,10 +38,10 @@ All outputs use the same episode metadata and template variables. Each write rul
 
 | Preset | Destination | Content |
 | --- | --- | --- |
-| 集中清单 | Append under Entries in `Podcasts.md` | One list row |
-| 每集一篇 | Create `Podcasts/{{show}}/{{title}}.md` | An episode note |
-| 清单与单集笔记 | Run the two rules above | A row and a note |
-| 按节目追加 | Append under Episodes in `Podcasts/{{show}}.md` | Multiple episode sections in one show file |
+| 集中清单 | Append under Entries in `Podcasts.md` for podcasts or `Videos.md` for videos | One list row |
+| 每条一篇 | Create `Podcasts/{{show}}/{{title}}.md` | An episode note |
+| 清单与独立笔记 | Run the two rules above | A row and a note |
+| 按节目／频道追加 | Append under Episodes in `Podcasts/{{show}}.md` | Multiple episode sections in one show file |
 
 In settings, apply a preset or edit individual rules: name, enabled state, write method, folder, path template, target heading, template file, inline content, and cover width. Rules can be added or removed, up to 20. Applying a preset replaces rule configuration and keeps existing files. In the capture dialog, **使用已启用规则** runs the configured rules; a named preset overrides the selection for that capture.
 
@@ -57,7 +55,7 @@ Select a vault Markdown file for a rule, or leave the file path empty to use its
 | --- | --- |
 | `{{show}}`, `{{title}}` | Show and episode title |
 | `{{fullTitle}}`, `{{link}}` | Combined show/title text, or its Markdown episode link |
-| `{{mediaLink}}`, `{{mediaUrl}}` | Media Extended video link or URI; empty for podcast pages |
+| `{{mediaLink}}`, `{{mediaUrl}}` | compatible player video link or URI; empty for podcast pages |
 | `{{kind}}`, `{{consumed}}` | `video` or `podcast`, and completed viewing/listening date |
 | `{{url}}` | Canonical platform episode URL |
 | `{{cover}}`, `{{coverPath}}` | Local Markdown image at the rule's width, or its vault path; empty without a cover |
@@ -89,7 +87,7 @@ tags: [podcast]
 #### Quotes
 ```
 
-**创建单集笔记** opens the capture dialog with the per-episode preset. **写笔记** beside a log row preselects that episode; **打开笔记** reopens its primary episode note. The log also keeps a link to the first additional output, including a show file when selected. Reading mode and the editor provide row actions without hotkeys. Work associations and log-based tracking still use the concentrated log rule; arbitrary output files are not automatically included by external trackers.
+**创建媒体笔记** opens the capture dialog with the per-episode preset. **写笔记** beside a log row preselects that episode; **打开笔记** reopens its primary episode note. The log also keeps a link to the first additional output, including a show file when selected. Reading mode and the editor provide row actions without hotkeys. Work associations and log-based tracking still use the concentrated log rule; arbitrary output files are not automatically included by external trackers.
 
 Created files contain `podcast_capture_id`. Additional create rules also use `podcast_capture_rule` to distinguish outputs for the same episode. Existing primary notes keep their original identifier. Append indexes follow file renames; if a tracked file or its region disappears, saving reports the missing target rather than recreating it elsewhere. Keep data.json with the vault for cross-device continuity.
 
@@ -109,7 +107,7 @@ Reports identify each file, failed stage, reason, update status, and backup path
 
 Mark a work as wanted on Douban, then import it into a Markdown collection with your own Douban sync tool. Set the six collection paths to your existing books, movies, series, music, games, and theater lists. Defaults are under `Recommendations/`; this plugin reads existing files only.
 
-In the podcast log (editing or reading mode), select **添加关联** beside an episode. That episode is fixed as the source. Choose a wanted work from the dropdown, optionally enter an excerpt, and select **保存关联**. Only works marked 想读, 想看, 想听, or 想玩 for their respective media types are offered; in-progress, completed, and unmarked works are excluded. There are no search fields or source-episode selector. The **打开播客关联入口** command opens the podcast log.
+In the podcast log (editing or reading mode), select **添加关联** beside an episode. That episode is fixed as the source. Choose a wanted work from the dropdown, optionally enter an excerpt, and select **保存关联**. Only works marked 想读, 想看, 想听, or 想玩 for their respective media types are offered; in-progress, completed, and unmarked works are excluded. There are no search fields or source-episode selector. The **打开媒体关联入口** command opens the podcast log.
 
 The work row links to its source episode, and linked works and optional excerpts appear as indented child list items beneath the podcast, without a recommendation label. Work-management markers are inline comments rather than separate lines. Live Preview hides internal status, work markers, and block IDs in the podcast log only; source mode retains the Markdown. Media collection presentation is managed independently by Obsidian styles or other tools. Reading mode uses a scoped nested-list layout. Titles, dates, states, and covers stay intact. Multiple episodes share one work row; selecting the same episode again adds no duplicate. Linking works entirely offline: it does not search Douban, fetch subject pages, download work covers, create work notes or wishlist entries, or write daily properties. The work and source are checked again before saving. Each note is updated separately; if the second write fails, the dialog reports which side was saved. Saving again completes the missing side without duplication. After layout is ready, existing work-side associations also restore missing podcast-row links, including works that have since been completed.
 
@@ -190,3 +188,7 @@ Runtime code uses Obsidian APIs and standard Web APIs, with no Node.js or Electr
 #### License
 
 [Zero-Clause BSD](LICENSE).
+
+Video rows use a separately configured video log. Playback is opt-in; when disabled, playback actions and newly generated mediaLink/mediaUrl values are absent. Platform links remain available.
+
+Cover reuse is independent of platform and show names. Cached image URLs reuse existing files. New URLs are downloaded and compared byte-for-byte against same-sized artwork in the cover folder, including legacy episode-named files. Identical files are reused without renaming or deleting older assets; different content is retained separately. Recompressed, cropped or resized variants are not merged automatically. Sharing artwork does not merge episode identities.

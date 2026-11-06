@@ -41,7 +41,7 @@ export class EpisodeNotes {
         const config = this.podcast.app.vault.configDir?.toLowerCase();
         if (config && (path.toLowerCase() === config || path.toLowerCase().startsWith(config + '/'))) throw new Error('单集笔记和模板不能使用笔记库配置目录。');
         const settings = this.podcast.config;
-        const reserved = [...(allowCatalog ? [] : [settings.catalogPath]), ...(['bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const).map(key => settings[key])];
+        const reserved = [...(allowCatalog ? [] : this.podcast.catalogPaths), ...(['bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const).map(key => settings[key])];
         if (reserved.some(value => value.toLowerCase() === path.toLowerCase())) throw new Error('单集笔记不能覆盖媒体记录或作品清单。');
     }
 
@@ -109,7 +109,7 @@ export class EpisodeNotes {
         const existing = await this.find(id, rule.id);
         if (existing) return { item, id, path: existing.path, template: '', existing, rule };
         const template = await ruleTemplate(this.podcast, rule);
-        const values = noteValues(item, id, '', this.values(id)?.currentdate || localDate());
+        const values = noteValues(item, id, '', this.values(id)?.currentdate || localDate(), this.podcast.config.playbackIntegration);
         renderEpisodeNote(template, values, rule.id);
         let path = rulePath(rule, values);
         this.checkPath(path);
@@ -133,7 +133,7 @@ export class EpisodeNotes {
         if (existing) return { file: existing, created: false };
         if (plan.existing) throw new Error('单集笔记已被移除或标识已变化，请重新打开后重试。');
         const vault = this.podcast.app.vault;
-        const values = withCoverWidth(noteValues(plan.item, plan.id, coverPath, this.values(plan.id)?.currentdate || localDate()), plan.rule.coverWidth);
+        const values = withCoverWidth(noteValues(plan.item, plan.id, coverPath, this.values(plan.id)?.currentdate || localDate(), this.podcast.config.playbackIntegration), plan.rule.coverWidth);
         const content = renderEpisodeNote(plan.template, values, plan.rule.id);
         const folder = plan.path.includes('/') ? plan.path.slice(0, plan.path.lastIndexOf('/')) : '';
         if (folder) await ensureFolder(vault, folder);

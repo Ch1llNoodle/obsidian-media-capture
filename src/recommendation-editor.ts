@@ -39,7 +39,7 @@ class MediaAction extends WidgetType {
     override eq(other: MediaAction): boolean { return this.url === other.url; }
     override toDOM(view: EditorView): HTMLElement {
         const link = view.dom.ownerDocument.createElement('a');
-        link.textContent = '打开媒体'; link.href = this.url; link.className = 'podcast-note-button';
+        link.textContent = '在 Obsidian 中播放'; link.href = this.url; link.className = 'podcast-note-button';
         return link;
     }
     override ignoreEvent(): boolean { return true; }
@@ -48,7 +48,7 @@ class MediaAction extends WidgetType {
 export function recommendationEditor(service: RecommendationService): ViewPlugin<{ decorations: DecorationSet }> {
     const decorations = (view: EditorView): DecorationSet => {
         const path = view.state.field(editorInfoField, false)?.file?.path;
-        const catalog = path === service.podcast.config.catalogPath;
+        const catalog = service.podcast.isCatalog(path);
         if (!path || !catalog && !service.podcast.appends.hasPath(path)) return Decoration.none;
         const ranges: Range<Decoration>[] = [];
         const seen = new Set<number>();
@@ -70,7 +70,7 @@ export function recommendationEditor(service: RecommendationService): ViewPlugin
                     if (source) {
                         ranges.push(Decoration.widget({ widget: new EpisodeAction(service, source, true), side: 2 }).range(line.to));
                         const identity = entryIdentity(line.text);
-                        const media = identity ? mediaValues({ url: identity.url, state: '在听', date: '' }) : null;
+                        const media = identity ? mediaValues({ url: identity.url, state: '在听', date: '' }, service.podcast.config.playbackIntegration) : null;
                         if (media?.mediaurl) ranges.push(Decoration.widget({ widget: new MediaAction(media.mediaurl), side: 3 }).range(line.to));
                     }
                 }

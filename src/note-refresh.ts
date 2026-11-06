@@ -45,7 +45,7 @@ export function applyNoteRefresh(podcast: PodcastService, entries: readonly Note
             try {
                 if (entry.error) throw new Error(entry.error);
                 if (podcast.unloaded) throw new Error('插件已卸载，后续文件均未更新。');
-                podcast.notes.checkPath(entry.path, entry.ruleId === 'catalog' && entry.path === podcast.config.catalogPath);
+                podcast.notes.checkPath(entry.path, entry.ruleId === 'catalog' && podcast.isCatalog(entry.path));
                 const templates = podcast.config.writeRules?.map(rule => rule.templateFile) ?? [podcast.config.noteTemplateFile];
                 if (templates.some(path => path.toLowerCase() === entry.path.toLowerCase())) throw new Error('目标已被设为模板文件，请重新预览。');
                 const file = podcast.app.vault.getAbstractFileByPath(entry.path);

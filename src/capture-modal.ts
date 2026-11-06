@@ -111,7 +111,7 @@ export class CaptureModal extends Modal {
             for (const option of Array.from(this.stateInput.querySelectorAll<HTMLOptionElement>('option'))) option.text = video ? ({ '听过': '看过', '在听': '在看', '想听': '想看' }[option.value] ?? option.value) : option.value;
             const values = noteValues(item, episodeUrl(item.url).blockId, '', localDate());
             const rules = rulesFor(this.plugin.config, item.output);
-            this.preview.setText(rules.length ? '新记录目标：\n' + rules.map(rule => rule.name + ' → ' + rulePath(rule, values)).join('\n') : '没有启用的写入规则。');
+            this.preview.setText(rules.length ? '新记录目标：\n' + rules.map(rule => rule.name + ' → ' + (rule.id === 'catalog' ? this.plugin.catalogPathFor(item) : rulePath(rule, values))).join('\n') : '没有启用的写入规则。');
         } catch { this.preview.setText('填写链接和标题后显示保存路径。'); }
     }
 

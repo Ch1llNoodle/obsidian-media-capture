@@ -26,7 +26,8 @@ export class CaptureSettings extends PluginSettingTab {
             try { await this.plugin.saveSettings({ ...this.plugin.config, [key]: value }); }
             catch (error) { new Notice(errorMessage(error)); }
         }));
-        new Setting(container).setName('播放器联动').setDesc('视频清单提供“打开媒体”入口；需另行启用 Media Extended v4。模板支持 {{mediaLink}}、{{mediaUrl}}。Bilibili 播放需配置其桌面 Web Viewer，采集保存可独立使用。');
+        text('videoCatalogPath', '视频清单', '视频的一行记录单独写入此文件，复用集中清单的标题与模板。');
+        toggle('playbackIntegration', '在 Obsidian 中播放', '默认关闭。开启后显示播放入口，并启用 {{mediaLink}}、{{mediaUrl}}；需要已配置的兼容播放器。关闭时保留平台链接。');
         new Setting(container).setName("封面").setHeading();
         text("imageFolder", "封面目录", "所有写入规则共用的本地封面目录。");
         toggle("downloadCovers", "保存本地封面", "关闭后只保存文字与链接，不下载封面。");

@@ -37,7 +37,9 @@ function fixture(options = {}) {
         getAbstractFileByPath: p => files.get(p) ?? null, getMarkdownFiles: () => [...files.values()].filter(f => f.extension === 'md'),
         read: async f => contents.get(f.path), createFolder: async p => { files.set(p, { path: p }); },
         create: async (p, text) => { if (files.has(p)) throw new Error('File exists'); writes++; return add(p, text); },
-        createBinary: async (p, bytes) => add(p, bytes),
+        createBinary: async (p, bytes) => { const file = add(p, bytes); file.stat = {size: bytes.byteLength}; return file; },
+        getFiles: () => [...files.values()].filter(file => file.extension),
+        readBinary: async file => contents.get(file.path),
         process: async (f, change) => { writes++; contents.set(f.path, change(contents.get(f.path))); },
         on: (name, callback) => { events.set(name, callback); return {}; },
     }, metadataCache: { getFileCache: f => ({ frontmatter: header(f.path) }) },
@@ -536,12 +538,12 @@ test('video capture reuses write rules, diary links and identity after reload', 
 
 test('media template URIs encode video URLs and stay empty for podcast landing pages', () => {
     const video = {...item, url: 'https://www.bilibili.com/video/BV1xx411c7mD?p=2'};
-    const values = noteValues(video, 'bilibili-BV1xx411c7mD-p2', '', '2026-11-06');
+    const values = noteValues(video, 'bilibili-BV1xx411c7mD-p2', '', '2026-11-06', true);
     const uri = new URL(values.mediaurl);
     assert.equal(uri.protocol, 'obsidian:'); assert.equal(uri.hostname, 'mx-open');
     assert.equal(uri.searchParams.get('url'), video.url);
     assert.equal(values.kind, 'video'); assert.equal(values.consumed, item.date);
-    assert(renderEpisodeNote('{{mediaLink}}', values).includes('[在 Media Extended 中打开](<obsidian://mx-open?url='));
+    assert(renderEpisodeNote('{{mediaLink}}', values).includes('[在 Obsidian 中播放](<obsidian://mx-open?url='));
     const podcast = noteValues(item, 'douban-123', '', '2026-11-06');
     assert.equal(podcast.mediaurl, ''); assert.equal(podcast.medialink, '');
 });
@@ -549,6 +551,37 @@ test('media template URIs encode video URLs and stay empty for podcast landing p
 test('different video IDs with identical titles do not merge', async () => {
     const f = fixture({captureMode: 'both'}); await f.service.initialize();
     for (const id of ['dQw4w9WgXcQ', 'UF8uR6Z6KLc']) await f.service.capture({...item, ...sandbox.module.exports.episodeUrl('https://youtu.be/' + id)});
-    assert.equal((f.contents.get('Podcasts.md').match(/\^youtube-/g) ?? []).length, 2);
+    assert.equal((f.contents.get('Videos.md').match(/\^youtube-/g) ?? []).length, 2);
     assert.equal(Object.keys(f.data().noteIndex).length, 2);
+});
+
+
+test('cover assets are shared across providers and survive reload; changed artwork stays distinct', async () => {
+    const f = fixture({downloadCovers: true}); await f.service.initialize();
+    const pixels = Uint8Array.from([255,216,255,217]);
+    imageResponse = {status: 200, arrayBuffer: pixels.buffer}; imageRequests = 0;
+    const one = {...item, cover: 'https://img3.doubanio.com/mpic/shared.jpg'};
+    const two = {...item, ...sandbox.module.exports.episodeUrl('https://www.xiaoyuzhoufm.com/episode/6ae9d09e97726cd4675c34fd'), title: '节目 · 第二集', cover: 'https://image.xyzcdn.net/shared.jpg'};
+    await f.service.capture(one); await f.service.capture(two);
+    const covers = () => [...f.files.keys()].filter(path => /\.jpg$/.test(path));
+    assert.equal(covers().length, 1);
+    await f.service.initialize();
+    await f.service.capture({...two, ...sandbox.module.exports.episodeUrl('https://www.xiaoyuzhoufm.com/episode/6aec66196381f0f964c44d72'), title: '节目 · 第三集'});
+    assert.equal(imageRequests, 2); assert.equal(covers().length, 1);
+    imageResponse = {status: 200, arrayBuffer: Uint8Array.from([255,216,255,1,217]).buffer};
+    await f.service.capture({...one, ...sandbox.module.exports.episodeUrl('https://www.douban.com/podcast_episode/456'), title: '节目 · 特别集', cover: 'https://img3.doubanio.com/mpic/new.jpg'});
+    assert.equal(covers().length, 2);
+    imageResponse = null;
+});
+
+
+test('a new platform capture reuses historical artwork without renaming existing files', async () => {
+    const f = fixture({downloadCovers: true}); await f.service.initialize();
+    const bytes = Uint8Array.from([255,216,255,217]).buffer;
+    await f.plugin.app.vault.createBinary('image/podcasts/old-episode-cover.jpg', bytes);
+    imageResponse = {status: 200, arrayBuffer: bytes};
+    await f.service.capture({...item, cover: 'https://image.xyzcdn.net/new-platform-url.jpg'});
+    assert(f.contents.get('Podcasts.md').includes('image/podcasts/old-episode-cover.jpg'));
+    assert.equal([...f.files.keys()].filter(path => /\.jpg$/.test(path)).length, 1);
+    imageResponse = null;
 });

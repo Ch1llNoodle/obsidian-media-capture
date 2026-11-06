@@ -15,7 +15,7 @@ function date(value: unknown): string {
 }
 
 /** Restore metadata from 0.6.0 notes without inferring handwritten paragraphs as episode descriptions. */
-export function legacyValues(source: string, id: string, log: string, saved: NoteValues = {}): NoteValues {
+export function legacyValues(source: string, id: string, log: string, saved: NoteValues = {}, playback = false): NoteValues {
     const props = properties(source);
     const line = log.split(/\r?\n/).find(line => line.trimEnd().endsWith('^' + id));
     const entry = line ? entryIdentity(line) : null;
@@ -35,7 +35,7 @@ export function legacyValues(source: string, id: string, log: string, saved: Not
     const created = date(props.currentDate) || date(props.date) || saved.currentdate || '';
     const show = text(props.show) || saved.show || split.show;
     const fulltitle = show ? show + ' · ' + title : title;
-    return { ...mediaValues({ url: episode.url, state: isListeningState(state) ? state : '在听', date: listened }), id, url: episode.url, title, show, fulltitle,
+    return { ...mediaValues({ url: episode.url, state: isListeningState(state) ? state : '在听', date: listened }, playback), id, url: episode.url, title, show, fulltitle,
         link: noteValues({ ...episode, title: fulltitle, state: isListeningState(state) ? state : '在听', date: listened }, id, coverPath, created).link ?? '',
         published: date(props.published) || saved.published || '', listened: isListeningState(state) && state !== '听过' ? '' : listened,
         currentdate: created, date: created, description: text(props.description) || saved.description || '', state, provider: episode.provider,

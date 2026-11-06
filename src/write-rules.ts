@@ -9,9 +9,9 @@ export function presetRules(settings: Readonly<CaptureSettingsData>, preset: Cap
     const catalog: WriteRule = { id: 'catalog', name: '集中清单', enabled: preset === 'log' || preset === 'both', mode: 'append', folder: '',
         pathTemplate: settings.catalogPath, heading: settings.entryHeading, templateFile: '', coverWidth: 24,
         template: settings.rowTemplate.replace(/\{\{date\}\}/g, '{{listened}}').replace(/\{\{title\}\}/g, '{{fullTitle}}') };
-    const notes: WriteRule = { id: 'notes', name: '单集笔记', enabled: preset === 'note' || preset === 'both', mode: 'create', folder: settings.noteFolder,
+    const notes: WriteRule = { id: 'notes', name: '独立笔记', enabled: preset === 'note' || preset === 'both', mode: 'create', folder: settings.noteFolder,
         pathTemplate: settings.notePathTemplate, heading: '', templateFile: settings.noteTemplateFile, template: settings.noteTemplate, coverWidth: 120 };
-    const show: WriteRule = { ...notes, id: 'show', name: '按节目追加', enabled: preset === 'show', mode: 'append', pathTemplate: '{{show}}.md', heading: 'Episodes',
+    const show: WriteRule = { ...notes, id: 'show', name: '按节目／频道追加', enabled: preset === 'show', mode: 'append', pathTemplate: '{{show}}.md', heading: 'Episodes',
         templateFile: '', template: '### {{title}}\n\n{{link}}\n\n{{cover}}\n\n{{description}}' };
     return [catalog, notes, show].map(rule => {
         const configured = settings.writeRules?.find(value => value.id === rule.id && value.mode === rule.mode);

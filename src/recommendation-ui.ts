@@ -44,9 +44,9 @@ class EpisodeButtons extends MarkdownRenderChild {
             if (nested) row.insertBefore(note, nested);
             this.registerDomEvent(note, 'click', () => { void openEpisodeNote(this.service.podcast, selected).catch((error: unknown) => new Notice(errorMessage(error))); });
             this.buttons.push(note);
-            const media = mediaValues({ url: link.href, state: '在听', date: '' });
+            const media = mediaValues({ url: link.href, state: '在听', date: '' }, this.service.podcast.config.playbackIntegration);
             if (media.mediaurl) {
-                const play = row.createEl('a', { text: '打开媒体', cls: 'podcast-note-button', attr: { href: media.mediaurl } });
+                const play = row.createEl('a', { text: '在 Obsidian 中播放', cls: 'podcast-note-button', attr: { href: media.mediaurl } });
                 if (nested) row.insertBefore(play, nested);
                 this.buttons.push(play);
             }
@@ -58,6 +58,13 @@ class EpisodeButtons extends MarkdownRenderChild {
 export function registerRecommendationUI(plugin: Plugin, podcast: PodcastService): void {
     const service = new RecommendationService(podcast);
     plugin.registerEditorExtension(recommendationEditor(service));
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    plugin.registerEvent(plugin.app.vault.on('modify', file => {
+        if (![podcast.config.bookPath, podcast.config.moviePath, podcast.config.teleplayPath, podcast.config.musicPath, podcast.config.gamePath, podcast.config.theaterPath].includes(file.path)) return;
+        if (refreshTimer) clearTimeout(refreshTimer);
+        refreshTimer = setTimeout(() => { void service.refreshEpisodeLinks().catch((error: unknown) => new Notice(errorMessage(error))); }, 400);
+    }));
+    plugin.register(() => { if (refreshTimer) clearTimeout(refreshTimer); });
     plugin.app.workspace.onLayoutReady(() => { void service.refreshEpisodeLinks().catch((error: unknown) => new Notice(errorMessage(error))); });
     plugin.addCommand({ id: 'add-recommendation', name: '打开媒体关联入口', callback: async () => {
         try {
@@ -67,11 +74,11 @@ export function registerRecommendationUI(plugin: Plugin, podcast: PodcastService
         } catch (error) { new Notice(errorMessage(error)); }
     } });
     plugin.registerMarkdownPostProcessor((element, context) => {
-        if (context.sourcePath === podcast.config.catalogPath) context.addChild(new EpisodeButtons(element, service));
+        if (podcast.isCatalog(context.sourcePath)) context.addChild(new EpisodeButtons(element, service));
     });
     plugin.registerEvent(plugin.app.workspace.on('podcast-capture:recommend', source => {
         const data = record(source);
-        if (data.path !== podcast.config.catalogPath || typeof data.blockId !== 'string') {
+        if (typeof data.path !== 'string' || !podcast.isCatalog(data.path) || typeof data.blockId !== 'string') {
             new Notice('媒体来源无效，请从记录页选择。');
             return;
         }

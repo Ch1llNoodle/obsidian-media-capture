@@ -85,14 +85,19 @@ export class PodcastService {
             throw new Error([lookupError, errorMessage(error)].filter(Boolean).join("；"));
         }
     }
-    async ensureCatalog(): Promise<TFile> {
-        const path = this.config.catalogPath;
+    get catalogPaths(): string[] { return [this.config.catalogPath, this.config.videoCatalogPath]; }
+    isCatalog(path: string | undefined): boolean { return path !== undefined && this.catalogPaths.includes(path); }
+    catalogPathFor(item: Pick<CaptureItem, 'provider'>): string {
+        return item.provider === 'youtube' || item.provider === 'bilibili' ? this.config.videoCatalogPath : this.config.catalogPath;
+    }
+    async ensureCatalog(path = this.config.catalogPath): Promise<TFile> {
+        if (!this.isCatalog(path)) throw new Error('未配置该记录文件。');
         this.notes.checkPath(path, true);
         let file = this.app.vault.getAbstractFileByPath(path);
         if (!file) {
             const folder = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
             if (folder) await ensureFolder(this.app.vault, folder);
-            file = await this.app.vault.create(path, `### Podcasts\n\n#### ${this.config.entryHeading}\n\n`);
+            file = await this.app.vault.create(path, `### ${path === this.config.videoCatalogPath ? "Videos" : "Podcasts"}\n\n#### ${this.config.entryHeading}\n\n`);
         }
         if (!isMarkdownFile(file)) throw new Error("媒体记录路径不是 Markdown 文件。");
         return file;
@@ -104,9 +109,12 @@ export class PodcastService {
     }
     async repairCovers(silent = false): Promise<CoverRepairResult | undefined> {
         if (!this.config.downloadCovers) { if (!silent) new Notice("本地封面下载已关闭，可在插件设置中开启。"); return; }
-        const file = this.app.vault.getAbstractFileByPath(this.config.catalogPath);
-        if (!isMarkdownFile(file)) return;
-        const source = await this.app.vault.read(file);
+        const sources: string[] = [];
+        for (const path of this.catalogPaths) {
+            const file = this.app.vault.getAbstractFileByPath(path) ?? null;
+            if (isMarkdownFile(file)) sources.push(await this.app.vault.read(file));
+        }
+        const source = sources.join('\n');
         const missing = source.split(/\r?\n/).filter(line => line.startsWith("- ") && !/!\[(?:cover)?\|\d+\]\(</.test(line))
             .map(line => ({ line, identity: entryIdentity(line) })).filter(entry => entry.identity);
         if (!missing.length) { if (!silent) new Notice("媒体封面已齐全。"); return; }

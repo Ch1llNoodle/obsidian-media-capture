@@ -54,6 +54,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
         addSettingTab(tab) { this.settingsTab = tab; }
         addCommand(command) { commands.push(command); }
         registerEvent() {}
+        register() {}
         registerEditorExtension(extension) { this.editorExtension = extension; }
         registerMarkdownPostProcessor(callback) { this.processor = callback; }
     }

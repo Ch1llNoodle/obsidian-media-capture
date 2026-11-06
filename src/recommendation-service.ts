@@ -17,7 +17,7 @@ export class RecommendationService {
         const visited = new Set<string>();
         for (const kind of recommendationKinds) {
             const path = this.podcast.config[`${kind}Path`];
-            if (visited.has(path) || path === this.podcast.config.catalogPath) continue;
+            if (visited.has(path) || this.podcast.isCatalog(path)) continue;
             visited.add(path);
             const file = this.podcast.app.vault.getAbstractFileByPath(path);
             if (!isMarkdownFile(file)) continue;
@@ -32,7 +32,7 @@ export class RecommendationService {
             const source = (await this.sources()).find(source => source.path === selected.path && source.blockId === selected.blockId);
             if (!source) throw new Error('来源播客已变化，请重新选择。');
             const allowed = recommendationKinds.some(kind => this.podcast.config[`${kind}Path`] === item.path);
-            if (!allowed || item.path === this.podcast.config.catalogPath) throw new Error('请从已配置的作品清单中选择。');
+            if (!allowed || this.podcast.isCatalog(item.path)) throw new Error('请从已配置的作品清单中选择。');
             const file = this.podcast.app.vault.getAbstractFileByPath(item.path);
             if (!isMarkdownFile(file)) throw new Error('作品清单已变化，请重新选择。');
             if (this.podcast.unloaded) throw new Error('插件已卸载，请重新启用后重试。');
@@ -43,7 +43,7 @@ export class RecommendationService {
                 return linkWorkSource(text, { ...item, cover: '' }, source, reason);
             });
             try {
-                const catalog = this.podcast.app.vault.getAbstractFileByPath(this.podcast.config.catalogPath);
+                const catalog = this.podcast.app.vault.getAbstractFileByPath(source.path);
                 if (!isMarkdownFile(catalog)) throw new Error('媒体记录文件不存在。');
                 await this.podcast.app.vault.process(catalog, text => linkEpisodeWork(text, source, item, reason));
             } catch (error) { throw new Error(`作品侧关联已保存，但播客行更新失败：${errorMessage(error)}。可再次保存补全。`); }
@@ -59,9 +59,10 @@ export class RecommendationService {
             const sources = new Map((await this.sources()).map(source => [source.blockId, source]));
             if (!sources.size) return;
             const assignments: { source: RecommendationSource; work: RecommendationWork }[] = [];
-            const prefix = this.podcast.config.catalogPath.replace(/\.md$/i, '') + '#^';
+            const prefixes = this.podcast.catalogPaths.map(path => path.replace(/\.md$/i, '') + '#^');
             const texts = new Map<string, string>();
-            for (const work of await this.catalogs()) {
+            const allWorks = await this.catalogs();
+            for (const work of allWorks) {
                 let text = texts.get(work.path);
                 if (text === undefined) {
                     const file = this.podcast.app.vault.getAbstractFileByPath(work.path);
@@ -72,37 +73,49 @@ export class RecommendationService {
                 const line = text.split(/\r?\n/)[recommendationIndex(text, work)] ?? '';
                 for (const match of recommendationSources(line).matchAll(/\[\[([^\]|]+)\|/g)) {
                     const target = match[1] ?? '';
-                    if (!target.startsWith(prefix)) continue;
+                    const prefix = prefixes.find(prefix => target.startsWith(prefix));
+                    if (!prefix) continue;
                     const source = sources.get(target.slice(prefix.length));
                     if (source) assignments.push({ source, work });
                 }
             }
             if (this.podcast.unloaded) return;
-            const file = this.podcast.app.vault.getAbstractFileByPath(this.podcast.config.catalogPath);
-            if (!isMarkdownFile(file)) return;
-            const transform = (text: string): string => {
-                text = normalizeEpisodeWorks(text);
-                const existing = new Set(text.split(/\r?\n/).map(line => episodeSource(line, file.path)?.blockId));
-                for (const { source, work } of assignments) if (existing.has(source.blockId)) text = linkEpisodeWork(text, source, work);
-                return text;
-            };
-            const before = await this.podcast.app.vault.read(file);
-            if (transform(before) !== before) await this.podcast.app.vault.process(file, transform);
+            for (const path of this.podcast.catalogPaths) {
+                const file = this.podcast.app.vault.getAbstractFileByPath(path);
+                if (!isMarkdownFile(file)) continue;
+                const transform = (text: string): string => {
+                    text = normalizeEpisodeWorks(text);
+                    const existing = new Set(text.split(/\r?\n/).map(line => episodeSource(line, file.path)?.blockId));
+                    for (const { source, work } of assignments) if (source.path === path && existing.has(source.blockId)) text = linkEpisodeWork(text, source, work);
+                    const states = new Map(allWorks.map(work => [work.path.replace(/\.md$/i, '') + '#^douban-' + work.id, work.state]));
+                    text = text.split(/\r?\n/).map(line => {
+                        if (!line.trimEnd().endsWith('<!-- podcast-work -->')) return line;
+                        return line.replace(/(?:<u>|~~)?(\[\[([^|\]]+)\|[^\]]+\]\])(?:<\/u>|~~)?/g, (_match: string, link: string, target: string) => {
+                            const state = states.get(target);
+                            return state && ['读过', '看过', '听过', '玩过'].includes(state) ? '~~' + link + '~~' : link;
+                        });
+                    }).join('\n');
+                    return text;
+                };
+                const before = await this.podcast.app.vault.read(file);
+                if (transform(before) !== before) await this.podcast.app.vault.process(file, transform);
+            }
         });
         this.podcast.queue = task.catch(() => {});
         return task;
     }
 
     async sources(): Promise<RecommendationSource[]> {
-        const file = this.podcast.app.vault.getAbstractFileByPath(this.podcast.config.catalogPath);
-        if (!isMarkdownFile(file)) return [];
-        const text = await this.podcast.app.vault.read(file);
         const result = new Map<string, RecommendationSource>();
-        for (const line of text.split(/\r?\n/).filter(line => line.startsWith('- '))) {
-            const source = episodeSource(line, file.path);
-            if (source) result.set(source.blockId, source);
+        for (const path of this.podcast.catalogPaths) {
+            const file = this.podcast.app.vault.getAbstractFileByPath(path);
+            if (!isMarkdownFile(file)) continue;
+            const text = await this.podcast.app.vault.read(file);
+            for (const line of text.split(/\r?\n/).filter(line => line.startsWith('- '))) {
+                const source = episodeSource(line, file.path);
+                if (source) result.set(source.blockId, source);
+            }
         }
         return [...result.values()];
     }
-
 }

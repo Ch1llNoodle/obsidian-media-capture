@@ -20,7 +20,7 @@ export function renderRuleSettings(container: HTMLElement, podcast: PodcastServi
     };
     let preset: CaptureMode = 'log';
     new Setting(container).setName('常用预设').setDesc('应用预设会替换下面的规则配置，已有文件保留。')
-        .addDropdown(component => component.addOptions({ log: '集中清单', note: '每集一篇', both: '清单与单集笔记', show: '按节目追加' }).setValue(preset).onChange(value => {
+        .addDropdown(component => component.addOptions({ log: '集中清单', note: '每条一篇', both: '清单与独立笔记', show: '按节目／频道追加' }).setValue(preset).onChange(value => {
             if (value === 'log' || value === 'note' || value === 'both' || value === 'show') preset = value;
         })).addButton(button => button.setButtonText('应用预设').onClick(() => run(mutate(() => presetRules(podcast.config, preset)), true)));
     for (const rule of rules) {
@@ -41,7 +41,7 @@ export function renderRuleSettings(container: HTMLElement, podcast: PodcastServi
             });
         });
         field('folder', '目录', '库内相对目录，留空使用库根目录。');
-        field('pathTemplate', '文件路径模板', '目录内的 Markdown 路径。例如 Podcasts.md、{{show}}.md、{{show}}/{{title}}.md。');
+        field('pathTemplate', '文件路径模板', '目录内的 Markdown 路径。例如 Records.md、{{show}}.md、{{show}}/{{title}}.md。');
         if (rule.mode === 'append') field('heading', '追加位置', '目标标题，留空追加到文件末尾。集中清单需要保留目标标题。');
         field('templateFile', 'Markdown 模板文件', '留空使用下面的内容模板。追加规则使用正文模板，新建规则可以包含属性。')
             .addButton(button => button.setButtonText('选择').onClick(() => new NoteTemplatePicker(podcast, refresh, path => change(rule.id, { templateFile: path })).open()));

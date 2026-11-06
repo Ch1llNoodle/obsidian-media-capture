@@ -23,10 +23,10 @@ export function videoUrl(url: URL): Episode | null {
 }
 
 /** Media Extended v4 public URI protocol; podcast landing pages are not playable streams. */
-export function mediaValues(item: Pick<CaptureItem, 'url' | 'state' | 'date'>): Record<string, string> {
+export function mediaValues(item: Pick<CaptureItem, 'url' | 'state' | 'date'>, enabled = false): Record<string, string> {
     let video = false;
     try { video = !!videoUrl(new URL(item.url)); } catch { /* Non-video metadata remains usable. */ }
-    const mediaurl = video ? 'obsidian://mx-open?url=' + encodeURIComponent(item.url) : '';
-    return { mediaurl, medialink: mediaurl ? '[在 Media Extended 中打开](<' + mediaurl + '>)' : '',
+    const mediaurl = video && enabled ? 'obsidian://mx-open?url=' + encodeURIComponent(item.url) : '';
+    return { mediaurl, medialink: mediaurl ? '[在 Obsidian 中播放](<' + mediaurl + '>)' : '',
         kind: video ? 'video' : 'podcast', consumed: item.state === '听过' ? item.date : '' };
 }

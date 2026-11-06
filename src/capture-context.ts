@@ -4,6 +4,7 @@ import type { CaptureItem } from './types';
 import { cacheCover } from './covers';
 import { coverUrl } from './metadata-helpers';
 import { isApplePlayerTitle } from './apple';
+import { record } from './validation';
 import { errorMessage } from './validation';
 
 export function dailyNotes(service: PodcastService, item: CaptureItem): TFile[] {
@@ -35,7 +36,16 @@ export async function captureCover(service: PodcastService, item: CaptureItem, i
                 } catch (cause) { throw new Error('获取单集页面失败：' + errorMessage(cause)); }
             }
             if (!source) throw new Error('页面未提供可识别的封面');
-            path = await cacheCover(service.app, source, service.config.imageFolder, `podcast-${id}`);
+            const cache = record(record(await service.loadData()).coverCache);
+            const cached = cache[source];
+            if (typeof cached === 'string' && cached.startsWith(service.config.imageFolder + '/') && service.app.vault.getAbstractFileByPath(cached)) path = cached;
+            else {
+                path = await cacheCover(service.app, source, service.config.imageFolder, `podcast-${id}`);
+                const entries: Record<string, string> = {};
+                for (const [key, value] of Object.entries(cache)) if (typeof value === 'string') entries[key] = value;
+                entries[source] = path;
+                await service.updateData({ coverCache: entries });
+            }
         } catch (cause) { path = ''; error = errorMessage(cause); }
     }
     return { path, source, error };

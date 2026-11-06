@@ -50,6 +50,8 @@ export interface CaptureSettingsData {
     noteTemplateFile: string;
     noteTemplate: string;
     catalogPath: string;
+    videoCatalogPath: string;
+    playbackIntegration: boolean;
     entryHeading: string;
     imageFolder: string;
     rowTemplate: string;
@@ -140,6 +142,7 @@ export interface CoverReport extends CoverRepairResult {
 }
 
 export interface SavedDataPatch {
+    coverCache?: Record<string, string>;
     settings?: CaptureSettingsData;
     settingsVersion?: number;
     coverReport?: CoverReport;

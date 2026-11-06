@@ -14,7 +14,10 @@ type Plan = { kind: 'catalog'; rule: WriteRule; path: string } | { kind: 'create
 export async function saveCapture(service: PodcastService, input: CaptureItem): Promise<CaptureResult> {
     const mode = input.repairOnly ? 'log' : input.output ?? service.config.captureMode;
     if (!isCaptureMode(mode)) throw new Error('请选择有效的写入预设。');
-    const rules = rulesFor(service.config, mode);
+    const parsed = episodeUrl(input.url);
+    const catalogPath = service.catalogPathFor(parsed);
+    const settings = { ...service.config, catalogPath };
+    const rules = rulesFor(settings, mode);
     if (!rules.length) throw new Error('没有启用的写入规则，请在设置中启用至少一条。');
     const item: CaptureItem = { ...input, ...episodeUrl(input.url) };
     if (service.unloaded) throw new Error('插件已卸载，请重新启用后重试。');
@@ -23,7 +26,7 @@ export async function saveCapture(service: PodcastService, input: CaptureItem): 
     if (item.published && !validDate(item.published)) throw new Error('发布日期无效。');
     const split = splitEpisodeTitle(item.title);
     item.show ??= split.show; item.episodeTitle ??= split.episodeTitle;
-    const catalog = service.app.vault.getAbstractFileByPath(service.config.catalogPath) ?? null;
+    const catalog = service.app.vault.getAbstractFileByPath(catalogPath) ?? null;
     const source = isMarkdownFile(catalog) ? await service.app.vault.read(catalog) : '';
     const previous = findEntry(source, item);
     const identity = previous ? entryIdentity(previous) : null;
@@ -45,12 +48,12 @@ export async function saveCapture(service: PodcastService, input: CaptureItem): 
         try {
             let plan: Plan;
             if (rule.id === 'catalog') {
-                service.notes.checkPath(service.config.catalogPath, true);
+                service.notes.checkPath(catalogPath, true);
                 const template = await ruleTemplate(service, rule);
                 if (!template.startsWith('- ') || /[\r\n]/.test(template) || !template.includes('{{link}}')) throw new Error('集中清单需要含 {{link}} 的单行列表模板。');
                 rule.template = template;
-                if (source) updateCatalog(source, recordItem, '', { ...service.config, writeRules: [rule] }, createdDate);
-                plan = { kind: 'catalog', rule, path: service.config.catalogPath };
+                if (source) updateCatalog(source, recordItem, '', { ...settings, writeRules: [rule] }, createdDate);
+                plan = { kind: 'catalog', rule, path: catalogPath };
             } else if (rule.mode === 'create') {
                 const prepared = await service.notes.prepare(recordItem, id, rule);
                 plan = { kind: 'create', rule, path: prepared.path, plan: prepared };
@@ -77,8 +80,8 @@ export async function saveCapture(service: PodcastService, input: CaptureItem): 
             stage = `写入规则「${plan.rule.name}」：${plan.path}`;
             if (service.unloaded) throw new Error('插件已卸载，请重新启用后重试。');
             if (plan.kind === 'catalog') {
-                const file = await service.ensureCatalog();
-                await service.app.vault.process(file, text => updateCatalog(text, recordItem, cover.path, { ...service.config, writeRules: [plan.rule] }, createdDate).text);
+                const file = await service.ensureCatalog(catalogPath);
+                await service.app.vault.process(file, text => updateCatalog(text, recordItem, cover.path, { ...settings, writeRules: [plan.rule] }, createdDate).text);
                 saved.push({ path: file.path, anchor: id, kind: plan.kind, created: !previous, name: plan.rule.name });
             } else if (plan.kind === 'create') {
                 const result = await service.notes.save(plan.plan, cover.path);
@@ -92,7 +95,7 @@ export async function saveCapture(service: PodcastService, input: CaptureItem): 
         const note = saved.find(result => result.kind !== 'catalog');
         if (note && (logged || previous)) {
             stage = '更新清单中的笔记链接';
-            const file = service.app.vault.getAbstractFileByPath(service.config.catalogPath) ?? null;
+            const file = service.app.vault.getAbstractFileByPath(catalogPath) ?? null;
             if (isMarkdownFile(file)) await service.app.vault.process(file, text => attachEpisodeNote(text, id, note.path, note.anchor));
         }
         const target = logged ?? (!previous ? note : undefined);
@@ -106,7 +109,7 @@ export async function saveCapture(service: PodcastService, input: CaptureItem): 
             stage = '保存单集信息';
             const state = stored?.state === '听过' ? '听过' : item.state;
             const date = stored?.state === '听过' && stored.listened ? stored.listened : completed && oldDate ? oldDate : item.date;
-            const values = noteValues({ ...item, state, date }, id, cover.path, stored?.currentdate || localDate());
+            const values = noteValues({ ...item, state, date }, id, cover.path, stored?.currentdate || localDate(), service.config.playbackIntegration);
             await service.notes.remember(id, { ...values, description: values.description || stored?.description || '', published: values.published || stored?.published || '' });
         }
         const primary = logged ?? note;

@@ -110,7 +110,7 @@ test("本地封面只保存经过校验的图片，既有封面复用", async ()
     const Plugin = load(async () => { requests++; return { status: 200, arrayBuffer: Uint8Array.from([255, 216, 255, 217]).buffer }; });
     const fixture = appFixture(base); const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.LEGACY_SETTINGS }; plugin.app = fixture.app; plugin.queue = Promise.resolve();
     await plugin.capture(item);
-    assert(fixture.files.has("追踪/image/podcast-douban-509937.jpg"));
+    assert([...fixture.files.keys()].some(path => /^追踪\/image\/cover-[a-f0-9]+-\d+\.jpg$/.test(path)));
     await plugin.capture(item);
     assert.equal(requests, 1);
 });
@@ -255,7 +255,7 @@ test("旧状态标记兼容，已听过条目补图时保留原日期、标题�
     const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.LEGACY_SETTINGS }; plugin.app = fixture.app; plugin.queue = Promise.resolve();
     await plugin.repairCovers(true);
     const result = fixture.contents.get("追踪/播客.md");
-    assert(result.includes("![|24](<追踪/image/podcast-xiaoyuzhou-6ae9d09e97726cd4675c34fd.jpg>)"));
+    assert(/!\[\|24\]\(<追踪\/image\/cover-[a-f0-9]+-\d+\.jpg>\)/.test(result));
     assert(result.includes("- 2026-11-03"));
     assert(result.includes(item.title));
     assert(!result.includes("新标题"));
@@ -348,7 +348,7 @@ test("日记联动按配置目录与属性写入，封面按配置目录保存",
     fixture.files.set(path, { path, basename: "2026-11-03", extension: "md" }); fixture.frontmatter.set(path, { other: "保留" });
     plugin.app = fixture.app; plugin.queue = Promise.resolve();
     await plugin.capture(item);
-    assert(fixture.files.has("Library/image/podcast-douban-509937.jpg"));
+    assert([...fixture.files.keys()].some(path => /^Library\/image\/cover-[a-f0-9]+-\d+\.jpg$/.test(path)));
     assert.equal(fixture.frontmatter.get(path).listening[0], `[[Library/Podcasts#^douban-509937|${item.title}]]`);
     assert.equal(fixture.frontmatter.get(path).other, "保留");
     assert.equal(fixture.frontmatter.get("daily/2026/2026-11/2026-11-03.md").播客.length, 0);

@@ -4,7 +4,7 @@ import { mediaValues } from './media';
 import { isRecord } from './validation';
 
 export const DEFAULT_NOTE_TEMPLATE = '### {{title}}\n\n{{show}}\n\n{{cover}}\n\n[打开来源](<{{url}}>)\n\n{{mediaLink}}\n\n#### Notes\n\n\n#### Quotes\n';
-export const captureModes: Record<CaptureMode, string> = { custom: '使用已启用规则', log: '预设：集中清单', note: '预设：每集一篇', both: '预设：清单与单集笔记', show: '预设：按节目追加' };
+export const captureModes: Record<CaptureMode, string> = { custom: '使用已启用规则', log: '预设：集中清单', note: '预设：每条一篇', both: '预设：清单与独立笔记', show: '预设：按节目／频道追加' };
 export function isCaptureMode(value: unknown): value is CaptureMode { return typeof value === 'string' && Object.keys(captureModes).includes(value); }
 
 export function relativeNotePath(value: string, allowEmpty = false): string {
@@ -38,7 +38,7 @@ export function validateNoteSettings(settings: CaptureSettingsData): void {
     if (!settings.notePathTemplate.toLowerCase().endsWith('.md')) throw new Error('单集路径模板必须以 .md 结尾。');
     settings.noteTemplateFile = relativeNotePath(settings.noteTemplateFile, true);
     if (settings.noteTemplateFile && !settings.noteTemplateFile.toLowerCase().endsWith('.md')) throw new Error('请选择 Markdown 模板文件。');
-    if (!settings.noteTemplate.trim()) throw new Error('单集笔记模板不能为空。');
+    if (!settings.noteTemplate.trim()) throw new Error('独立笔记模板不能为空。');
     validateNoteTemplate(settings.noteTemplate);
 }
 
@@ -57,9 +57,9 @@ function safeName(value: string): string {
 }
 
 export type NoteValues = Record<string, string>;
-export function noteValues(item: CaptureItem, id: string, coverPath: string, currentDate: string): NoteValues {
+export function noteValues(item: CaptureItem, id: string, coverPath: string, currentDate: string, playback = false): NoteValues {
     const split = splitEpisodeTitle(item.title);
-    return { ...mediaValues(item), show: (item.show ?? split.show).replace(/\s+/g, ' ').trim(), title: (item.episodeTitle ?? split.episodeTitle).replace(/\s+/g, ' ').trim(), fulltitle: item.title,
+    return { ...mediaValues(item, playback), show: (item.show ?? split.show).replace(/\s+/g, ' ').trim(), title: (item.episodeTitle ?? split.episodeTitle).replace(/\s+/g, ' ').trim(), fulltitle: item.title,
         link: `[${markdown(item.title)}](<${item.url}>)`, url: item.url,
         cover: coverPath ? `![|120](<${coverPath}>)` : '', coverpath: coverPath, published: item.published ?? '',
         listened: item.state === '听过' ? item.date : '', currentdate: currentDate, date: currentDate,

@@ -17,9 +17,9 @@ export function entryBlock(source: string, ruleId: string, id: string): string |
     if (start < 0 || end < start || source.indexOf(markers.start, start + 1) >= 0 || source.indexOf(markers.end, end + 1) >= 0) throw new Error(`单集区域标记缺失或重复：${ruleId}/${id}`);
     return source.slice(start, end + markers.end.length);
 }
-export function renderEntry(rule: WriteRule, template: string, item: CaptureItem, id: string, cover: string, createdDate = localDate()): string {
+export function renderEntry(rule: WriteRule, template: string, item: CaptureItem, id: string, cover: string, createdDate = localDate(), playback = false): string {
     const markers = entryMarkers(rule.id, id);
-    const values = withCoverWidth(noteValues(item, id, cover, createdDate), rule.coverWidth);
+    const values = withCoverWidth(noteValues(item, id, cover, createdDate, playback), rule.coverWidth);
     return `${markers.start}\n${renderTemplateBody(template, values).trim()}\n\n^${id}-${rule.id}\n${markers.end}`;
 }
 export function insertEntry(source: string, heading: string, content: string): string {
@@ -95,7 +95,7 @@ export class AppendOutputs {
             file = await vault.create(plan.path, `### ${item.show || 'Podcasts'}\n\n${rule.heading ? '#### ' + rule.heading + '\n\n' : ''}`);
         }
         if (!isMarkdownFile(file)) throw new Error(`目标不是 Markdown 文件：${plan.path}`);
-        let content = renderEntry(rule, plan.template, item, id, cover, this.podcast.notes.values(id)?.currentdate || localDate());
+        let content = renderEntry(rule, plan.template, item, id, cover, this.podcast.notes.values(id)?.currentdate || localDate(), this.podcast.config.playbackIntegration);
         let created = false;
         await vault.process(file, source => {
             const current = entryBlock(source, rule.id, id);

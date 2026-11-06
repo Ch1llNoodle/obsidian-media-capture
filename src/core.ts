@@ -8,7 +8,7 @@ import { presetRules, validateRules } from './write-rules';
 export { decode, plain, safeCover, coverUrl } from "./metadata-helpers";
 export { metadata } from "./metadata";
 
-const DEFAULT_SETTINGS: Readonly<CaptureSettingsData> = Object.freeze({ captureMode: "log", noteFolder: "Podcasts", notePathTemplate: "{{show}}/{{title}}.md", noteTemplateFile: "", noteTemplate: DEFAULT_NOTE_TEMPLATE, catalogPath: "Podcasts.md", entryHeading: "Entries", imageFolder: "image/podcasts", rowTemplate: "- {{date}} {{cover}} {{link}}", downloadCovers: true, repairOnStartup: false, dailyIntegration: false, dailyFolder: "Daily", dailyProperty: "podcasts", bookPath: "Recommendations/Books.md", moviePath: "Recommendations/Movies.md", teleplayPath: "Recommendations/Series.md", musicPath: "Recommendations/Music.md", gamePath: "Recommendations/Games.md", theaterPath: "Recommendations/Theater.md" });
+const DEFAULT_SETTINGS: Readonly<CaptureSettingsData> = Object.freeze({ captureMode: "log", videoCatalogPath: "Videos.md", playbackIntegration: false, noteFolder: "Podcasts", notePathTemplate: "{{show}}/{{title}}.md", noteTemplateFile: "", noteTemplate: DEFAULT_NOTE_TEMPLATE, catalogPath: "Podcasts.md", entryHeading: "Entries", imageFolder: "image/podcasts", rowTemplate: "- {{date}} {{cover}} {{link}}", downloadCovers: true, repairOnStartup: false, dailyIntegration: false, dailyFolder: "Daily", dailyProperty: "podcasts", bookPath: "Recommendations/Books.md", moviePath: "Recommendations/Movies.md", teleplayPath: "Recommendations/Series.md", musicPath: "Recommendations/Music.md", gamePath: "Recommendations/Games.md", theaterPath: "Recommendations/Theater.md" });
 // Only used to migrate installations created before settings were available.
 const LEGACY_SETTINGS: Readonly<CaptureSettingsData> = Object.freeze({ ...DEFAULT_SETTINGS, catalogPath: "追踪/播客.md", imageFolder: "追踪/image", repairOnStartup: true, dailyIntegration: true, dailyFolder: "daily", dailyProperty: "播客" });
 const STATES: readonly ListeningState[] = ["听过", "在听", "想听"];
@@ -28,14 +28,14 @@ function vaultPath(value: unknown, extension = ""): string {
 function validateSettings(settings: unknown): CaptureSettingsData {
     const supplied = record(settings);
     const result = { ...DEFAULT_SETTINGS };
-    for (const key of ["noteFolder", "notePathTemplate", "noteTemplateFile", "noteTemplate", "catalogPath", "imageFolder", "dailyFolder", "entryHeading", "dailyProperty", "rowTemplate", "bookPath", "moviePath", "teleplayPath", "musicPath", "gamePath", "theaterPath"] as const) {
+    for (const key of ["noteFolder", "notePathTemplate", "noteTemplateFile", "noteTemplate", "catalogPath", "videoCatalogPath", "imageFolder", "dailyFolder", "entryHeading", "dailyProperty", "rowTemplate", "bookPath", "moviePath", "teleplayPath", "musicPath", "gamePath", "theaterPath"] as const) {
         const value = supplied[key];
         if (value !== undefined) {
             if (typeof value !== "string") throw new Error(`设置 ${key} 必须是文本。`);
             result[key] = value;
         }
     }
-    for (const key of ["downloadCovers", "repairOnStartup", "dailyIntegration"] as const) {
+    for (const key of ["downloadCovers", "repairOnStartup", "dailyIntegration", "playbackIntegration"] as const) {
         const value = supplied[key];
         if (value !== undefined) {
             if (typeof value !== "boolean") throw new Error(`设置 ${key} 必须是布尔值。`);
@@ -70,6 +70,13 @@ function validateSettings(settings: unknown): CaptureSettingsData {
         if (notes?.mode === 'create') { result.noteFolder = notes.folder; result.notePathTemplate = notes.pathTemplate; result.noteTemplateFile = notes.templateFile; result.noteTemplate = notes.template; }
         for (const key of ['bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const) if (result[key] === result.catalogPath) throw new Error('作品清单不能使用媒体记录文件。');
     }
+    if (supplied.videoCatalogPath === undefined) {
+        const folder = result.catalogPath.includes('/') ? result.catalogPath.slice(0, result.catalogPath.lastIndexOf('/') + 1) : '';
+        result.videoCatalogPath = folder + (Array.from(result.catalogPath).some(character => character.charCodeAt(0) > 127) ? '视频.md' : 'Videos.md');
+    }
+    result.videoCatalogPath = vaultPath(result.videoCatalogPath, '.md');
+    if (result.videoCatalogPath.toLowerCase() === result.catalogPath.toLowerCase()) throw new Error('播客与视频清单必须使用不同文件。');
+    for (const key of ['bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const) if (result[key].toLowerCase() === result.videoCatalogPath.toLowerCase()) throw new Error('视频清单不能使用作品清单文件。');
     return result;
 }
 
@@ -155,7 +162,7 @@ function findEntry(source: string, item: EntryIdentity | string): string | undef
 function entryLine(item: CaptureItem, cover: string, settings: Readonly<CaptureSettingsData> = DEFAULT_SETTINGS, createdDate = localDate()): string {
     const rule = settings.writeRules?.find(rule => rule.id === 'catalog') ?? presetRules(settings, 'log').find(rule => rule.id === 'catalog');
     if (!rule) throw new Error('集中清单写入规则缺失。');
-    const values = withCoverWidth(noteValues(item, blockId(item), cover, createdDate), rule.coverWidth);
+    const values = withCoverWidth(noteValues(item, blockId(item), cover, createdDate, settings.playbackIntegration), rule.coverWidth);
     const row = renderTemplateBody(rule.template, values).trimEnd();
     const date = values.listened ? ` <!-- podcast-date: ${values.listened} -->` : "";
     return `${row} <!-- podcast-state: ${item.state} -->${date} ^${blockId(item)}`;
