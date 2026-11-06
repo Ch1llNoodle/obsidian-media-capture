@@ -26,10 +26,10 @@ export class CaptureModal extends Modal {
     constructor(private readonly plugin: CaptureService, private readonly preset?: { item: CaptureItem; output: CapturePreset }) { super(plugin.app); }
 
     override onOpen(): void {
-        this.contentEl.addClass('podcast-capture');
+        this.contentEl.addClass('media-capture');
         this.contentEl.createEl('h2', { text: this.preset ? '媒体笔记' : '采集媒体' });
         const field = (label: string, type = 'text', parent: HTMLElement = this.contentEl): HTMLInputElement => {
-            const wrapper = parent.createEl('label', { cls: 'podcast-capture-field' });
+            const wrapper = parent.createEl('label', { cls: 'media-capture-field' });
             wrapper.createSpan({ text: label });
             return wrapper.createEl('input', { type });
         };
@@ -38,9 +38,9 @@ export class CaptureModal extends Modal {
         this.contentEl.createEl('button', { text: '获取媒体信息' }).addEventListener('click', () => { void this.fetchInfo(); });
         this.showInput = field('节目／频道（可留空）');
         this.titleInput = field('标题');
-        const row = this.contentEl.createDiv({ cls: 'podcast-capture-row' });
+        const row = this.contentEl.createDiv({ cls: 'media-capture-row' });
         const choice = (name: string): HTMLSelectElement => {
-            const wrapper = row.createEl('label', { cls: 'podcast-capture-field' });
+            const wrapper = row.createEl('label', { cls: 'media-capture-field' });
             wrapper.createSpan({ text: name });
             return wrapper.createEl('select');
         };
@@ -53,16 +53,16 @@ export class CaptureModal extends Modal {
         this.dateInput = field('记录日期', 'date');
         const active = this.app.workspace.getActiveFile();
         this.dateInput.value = this.plugin.config.dailyIntegration && active?.path.startsWith(this.plugin.config.dailyFolder + '/') && validDate(active.basename) ? active.basename : localDate();
-        this.noteFields = this.contentEl.createEl('details', { cls: 'podcast-note-fields' });
+        this.noteFields = this.contentEl.createEl('details', { cls: 'media-note-fields' });
         this.noteFields.createEl('summary', { text: '更多媒体信息' });
         this.publishedInput = field('发布日期（可留空）', 'date', this.noteFields);
-        const description = this.noteFields.createEl('label', { cls: 'podcast-capture-field' });
+        const description = this.noteFields.createEl('label', { cls: 'media-capture-field' });
         description.createSpan({ text: '描述（可留空）' });
         this.descriptionInput = description.createEl('textarea');
         this.descriptionInput.rows = 4;
-        this.preview = this.contentEl.createEl('p', { cls: 'podcast-capture-message' });
-        this.message = this.contentEl.createEl('p', { cls: 'podcast-capture-message', attr: { role: 'status', 'aria-live': 'polite' } });
-        const actions = this.contentEl.createDiv({ cls: 'podcast-capture-actions' });
+        this.preview = this.contentEl.createEl('p', { cls: 'media-capture-message' });
+        this.message = this.contentEl.createEl('p', { cls: 'media-capture-message', attr: { role: 'status', 'aria-live': 'polite' } });
+        const actions = this.contentEl.createDiv({ cls: 'media-capture-actions' });
         actions.createEl('button', { text: '取消' }).addEventListener('click', () => this.close());
         actions.createEl('button', { text: '保存', cls: 'mod-cta' }).addEventListener('click', () => { void this.save(); });
         for (const control of [this.showInput, this.titleInput, this.dateInput, this.publishedInput]) control.addEventListener('input', () => this.updatePreview());

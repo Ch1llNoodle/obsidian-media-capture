@@ -8,11 +8,11 @@ export function episodeSource(line: string, path: string): RecommendationSource 
     return item && blockId ? { path, blockId, title: item.title } : null;
 }
 
-const workMarker = '<!-- podcast-work -->';
+const workMarker = '<!-- media-work -->';
 
 function episodeWorksBlock(lines: string[], index: number): { start: number; end: number; entries: string[] } {
     const start = index + 1;
-    if (lines[index]?.includes('<!-- podcast-works:') || lines[start]?.trim().startsWith('<!-- podcast-works:')) throw new Error('Unsupported association format. Expected nested podcast-work rows.');
+    if (lines[index]?.includes('<!-- media-works:') || lines[start]?.trim().startsWith('<!-- media-works:')) throw new Error('Unsupported association format. Expected nested media-work rows.');
     let end = start;
     const entries: string[] = [];
     while (lines[end]?.startsWith('  - ') && lines[end]?.trimEnd().endsWith(workMarker)) {
@@ -25,7 +25,7 @@ function episodeWorksBlock(lines: string[], index: number): { start: number; end
 function workRows(entries: string[]): string[] {
     const unique = new Map<string, string>();
     for (const entry of entries) {
-        const clean = entry.replace(/\s*<!-- podcast-work -->$/, '');
+        const clean = entry.replace(/\s*<!-- media-work -->$/, '');
         const key = /^\[\[([^|]+)\|/.exec(clean)?.[1] ?? clean;
         if (!unique.has(key)) unique.set(key, clean);
     }
@@ -88,7 +88,7 @@ function sourceLink(source: RecommendationSource): string {
 
 /** Only this span is merged by a collection sync; record state and date stay independent. */
 export function recommendationSources(line: string): string {
-    return /<!-- podcast-sources:start -->.*?<!-- podcast-sources:end -->/.exec(line)?.[0] ?? '';
+    return /<!-- media-sources:start -->.*?<!-- media-sources:end -->/.exec(line)?.[0] ?? '';
 }
 
 function attachSource(line: string, source: RecommendationSource, reason: string): string {
@@ -98,8 +98,8 @@ function attachSource(line: string, source: RecommendationSource, reason: string
     if (existing.includes(key)) return line;
     const note = reason.trim() ? `（${markdownText(reason)}）` : '';
     const markup = existing
-        ? existing.replace('<!-- podcast-sources:end -->', ` · ${link}${note} <!-- podcast-sources:end -->`)
-        : `<!-- podcast-sources:start --> · 来自 ${link}${note} <!-- podcast-sources:end -->`;
+        ? existing.replace('<!-- media-sources:end -->', ` · ${link}${note} <!-- media-sources:end -->`)
+        : `<!-- media-sources:start --> · 来自 ${link}${note} <!-- media-sources:end -->`;
     if (existing) return line.replace(existing, () => markup);
     const block = /\s+\^douban-\d+\s*$/.exec(line)?.[0] ?? '';
     const body = block ? line.slice(0, -block.length) : line;
@@ -142,7 +142,7 @@ export function catalogWorks(text: string, path: string, preferred: Recommendati
         if (!line.startsWith('- ')) continue;
         const type = /<!-- douban-type:\s*(\w+)\s*-->/.exec(line)?.[1];
         const kind = recommendationKinds.find(kind => kind === type) ?? preferred;
-        const body = line.split('<!-- podcast-sources:start -->')[0] ?? '';
+        const body = line.split('<!-- media-sources:start -->')[0] ?? '';
         for (const link of body.matchAll(/(?<![!\\])\[((?:\\.|[^\]])+)\]\(<?(https?:\/\/[^)>\s]+)>?\)/g)) {
             try {
                 const identity = recommendationUrl(link[2] ?? '', kind);

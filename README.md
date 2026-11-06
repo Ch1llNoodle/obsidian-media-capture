@@ -8,9 +8,11 @@ Media Capture applies Markdown templates to podcast and video information from D
 
 For iPhone and desktop testing, install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Obsidian's community plugins, then add `Ch1llNoodle/obsidian-media-capture` as a beta plugin. Choose a published release or prerelease and enable Media Capture. BRAT installs and updates the release files inside Obsidian.
 
-Obsidian 1.5.0 or later is required. Place `main.js`, `manifest.json`, and `styles.css` in `<Vault>/.obsidian/plugins/podcast-capture/`, then enable **Media Capture** under **Settings → Community plugins**. Source builds place these files in `release/podcast-capture/`.
+Obsidian 1.5.0 or later is required. Place `main.js`, `manifest.json`, and `styles.css` in `<Vault>/.obsidian/plugins/media-capture/`, then enable **Media Capture** under **Settings → Community plugins**. Source builds place these files in `release/media-capture/`.
 
 When updating, replace those three files and reload the plugin. Keep the existing `data.json`, which stores rule settings, output indexes, captured metadata, and the latest cover repair report.
+
+Version 0.10 installs under the `media-capture` identity. Existing users must install this identity and synchronize explicitly converted configuration and records before enabling it. Commands, events, properties, management markers and backups use the media namespace; there are no old-name aliases. Platform record IDs and source links remain unchanged.
 
 #### Capture media
 
@@ -47,7 +49,7 @@ In settings, apply a preset or edit individual rules: name, enabled state, write
 
 A fixed path collects episodes in one file; `{{show}}.md` groups them by show; `{{show}}/{{title}}.md` creates one file per episode when used with create mode. Empty folders use the vault root. Missing shows use Unsorted. Unsupported filename characters are replaced. Create mode reopens an identified episode file or adds an ID suffix for a foreign filename collision. Append mode reuses the target file and creates it when absent; an existing file must contain the configured heading, unless the heading is empty. Two enabled rules targeting the same file are rejected before writing.
 
-The concentrated log rule preserves a fixed path, target heading, and single-line list template containing `{{link}}` so existing daily links and work associations remain usable. Other append rules accept multiline Markdown. Their managed episode regions are delimited by `podcast-entry` comments. Keep those comments and block IDs; handwritten content outside the regions remains intact. Live Preview hides these management markers in tracked output files. A repeated capture preserves an existing completed region. A state transition stops if the region has been edited manually.
+The concentrated log rule preserves a fixed path, target heading, and single-line list template containing `{{link}}` so existing daily links and work associations remain usable. Other append rules accept multiline Markdown. Their managed episode regions are delimited by `media-entry` comments. Keep those comments and block IDs; handwritten content outside the regions remains intact. Live Preview hides these management markers in tracked output files. A repeated capture preserves an existing completed region. A state transition stops if the region has been edited manually.
 
 Select a vault Markdown file for a rule, or leave the file path empty to use its inline content. Create templates may include YAML properties; append templates contain body Markdown. Templater and JavaScript are not executed.
 
@@ -89,7 +91,7 @@ tags: [podcast]
 
 **创建媒体笔记** opens the capture dialog with the per-episode preset. **写笔记** beside a log row preselects that episode; **打开笔记** reopens its primary episode note. The log also keeps a link to the first additional output, including a show file when selected. Reading mode and the editor provide row actions without hotkeys. Work associations and log-based tracking still use the concentrated log rule; arbitrary output files are not automatically included by external trackers.
 
-Every created file contains both `podcast_capture_id` and `podcast_capture_rule`. Output indexes use the single `ruleId::recordId` key format. Append indexes follow file renames; if a tracked file or its region disappears, saving reports the missing target rather than recreating it elsewhere. Keep data.json with the vault for cross-device continuity.
+Every created file contains both `media_capture_id` and `media_capture_rule`. Output indexes use the single `ruleId::recordId` key format. Append indexes follow file renames; if a tracked file or its region disappears, saving reports the missing target rather than recreating it elsewhere. Keep data.json with the vault for cross-device continuity.
 
 #### Apply templates to existing records
 
@@ -97,7 +99,7 @@ Template edits apply to new records by default. Use **将模板应用到已有�
 
 Create outputs are regenerated in full, including properties and handwritten sections. Append outputs replace only managed rows or episode regions, retaining surrounding text, work children, and quotations. A show file containing several episodes is updated once and backed up once. File names and locations remain unchanged.
 
-Before replacing a file, the plugin saves and verifies a timestamped text backup beside it with the `.podcast-capture-backup` extension. Results provide **查看备份** inside Obsidian; copy the original text back to restore it. Keep backups until no longer needed.
+Before replacing a file, the plugin saves and verifies a timestamped text backup beside it with the `.media-capture-backup` extension. Results provide **查看备份** inside Obsidian; copy the original text back to restore it. Keep backups until no longer needed.
 
 Stored capture metadata retains dates and descriptions; explicit properties in current notes can override it. Template updates require this metadata and do not reconstruct old notes from links, headings or log text. Missing optional fields are shown before updating. Missing essential links, duplicate identities, removed rules, and damaged region markers produce errors. No network requests are made during template updates.
 
@@ -117,9 +119,9 @@ Collections use single-line Markdown list entries, for example:
 - [Work title](<https://movie.douban.com/subject/123/>) <!-- douban-state: 想看 --> <!-- douban-type: movie --> ^douban-123
 ```
 
-`douban-type` accepts `book`, `movie`, `teleplay`, `music`, `game`, and `theater`; without it, the configured collection type is used. The optional `podcast-capture:recommend` workspace event accepts `{ path, blockId }` to preselect a source episode; `supportsRecommendations` indicates support.
+`douban-type` accepts `book`, `movie`, `teleplay`, `music`, `game`, and `theater`; without it, the configured collection type is used. The optional `media-capture:recommend` workspace event accepts `{ path, blockId }` to preselect a source episode; `supportsRecommendations` indicates support.
 
-Custom sync tools must preserve the span between `podcast-sources:start` and `podcast-sources:end` when rewriting a matching work. Douban collection synchronization is handled by external tools.
+Custom sync tools must preserve the span between `media-sources:start` and `media-sources:end` when rewriting a matching work. Douban collection synchronization is handled by external tools.
 
 #### Settings
 
@@ -139,9 +141,7 @@ Daily integration creates no daily notes. When the concentrated log rule runs, i
 
 Artwork filenames use the podcast show name when available, or the record title; videos use their title. Invalid characters become underscores, and different artwork with the same name receives an eight-character suffix. Cached image URLs reuse their files. New URLs are compared byte-for-byte only with artwork referenced by configured logs, captured metadata or the URL cache. Other attachments are not enumerated, renamed or deleted. Bulk attachment maintenance belongs to the vault. Recompressed, cropped and resized variants remain separate; shared artwork does not merge episode identities.
 
-Cover repair also replaces a previously saved generic Apple web player title when exact episode metadata is available; custom titles, dates, block identifiers, and quotations are retained.
-
-The plugin appends a state comment, a date comment for listened entries, and an Obsidian block identifier. These markers support deduplication, cover repair, and daily note links. Keep them when editing records manually. Notes and quotations outside the episode row are preserved.
+The plugin appends media-state and media-date comments and an Obsidian block identifier. These markers support deduplication, cover repair, and daily note links. Keep them when editing records manually. Notes and quotations outside the episode row are preserved.
 
 Episodes from the same platform are matched by episode ID. Across platforms, records are reused only when the full `show · episode` title matches after case, whitespace, and Unicode normalization. A completed record keeps its original date. Recording a repeat listen on another date requires daily integration and exactly one existing note for that date; the original log row is retained.
 
@@ -149,11 +149,11 @@ Episodes from the same platform are matched by episode ID. Across platforms, rec
 
 Daily sections, activity summaries, completion styling and personal collection presentation belong to vault scripts or configuration. The plugin exposes optional paths, templates, daily fields and workspace events; it does not hardcode personal directories or diary titles or rewrite work labels based on completion. Existing handwritten formatting is preserved.
 
-The output is ordinary Markdown. Dataview and other tracking plugins are optional. After saving, the plugin emits `podcast-capture:updated` with `path`, `blockId`, `state`, and `date`. Note captures also include `notePath` and `output`; `blockId` is empty when no log row exists. `CaptureUpdatedEvent` in `src/types.ts` defines the payload. Log-only tracking integrations do not automatically count standalone notes.
+The output is ordinary Markdown. Dataview and other tracking plugins are optional. After saving, the plugin emits `media-capture:updated` with `path`, `blockId`, `state`, and `date`. Note captures also include `notePath` and `output`; `blockId` is empty when no log row exists. `CaptureUpdatedEvent` in `src/types.ts` defines the payload. Log-only tracking integrations do not automatically count standalone notes.
 
-Version 0.9 accepts only the current data schema (`schemaVersion: 1`) and `writeRules`. Retired flat settings, old state/date parsing, unscoped output indexes and old inline association blocks are not migrated. Unknown settings and unsupported data formats produce explicit errors without rewriting the saved data.
+Version 0.10 accepts only the current data schema (`schemaVersion: 2`) and `writeRules`. Retired flat settings, old state/date parsing, unscoped output indexes and old inline association blocks are not migrated. Unknown settings and unsupported data formats produce explicit errors without rewriting the saved data.
 
-Before upgrading an existing installation, back up data.json and the affected notes. Start with fresh settings or explicitly convert the data outside the plugin; synchronize the converted configuration and records to other devices before loading 0.9. No migration script ships with the plugin. Template refresh requires captured metadata; missing metadata is reported per file.
+Before upgrading an existing installation, back up data.json and the affected notes. Start with fresh settings or explicitly convert the data outside the plugin; synchronize the converted configuration and records to other devices before loading 0.10. No migration script ships with the plugin. Template refresh requires captured metadata; missing metadata is reported per file.
 
 #### Development and validation
 
@@ -169,7 +169,7 @@ npm test
 npm run lint
 ```
 
-The production build bundles runtime code into `release/podcast-capture/main.js` and stages the manifest and stylesheet alongside it. Tests bundle TypeScript modules with esbuild and execute them against mocked Obsidian APIs. An optional tracker compatibility test uses the script path provided by `PODCAST_TRACKER_TEST_PATH`; it is skipped when that variable is absent. `PODCAST_DOUBAN_SYNC_TEST_PATH` enables an additional integration test against a custom Douban sync view. `PODCAST_WORK_PRESENTATION_TEST_PATH` can point to an independent vault presentation script to verify completion markers and cleanup without Capture.
+The production build bundles runtime code into `release/media-capture/main.js` and stages the manifest and stylesheet alongside it. Tests bundle TypeScript modules with esbuild and execute them against mocked Obsidian APIs. An optional tracker compatibility test uses the script path provided by `MEDIA_TRACKER_TEST_PATH`; it is skipped when that variable is absent. `MEDIA_DOUBAN_SYNC_TEST_PATH` enables an additional integration test against a custom Douban sync view. `MEDIA_WORK_PRESENTATION_TEST_PATH` can point to an independent vault presentation script to verify completion markers and cleanup without Capture.
 
 Release files are `main.js`, `manifest.json`, and `styles.css`. Generated bundles, dependencies, and personal `data.json` are excluded from source control. Dependency security checks use `npm audit` separately from compilation and functional tests.
 
@@ -177,9 +177,9 @@ Pushing a tag that matches the manifest and package versions runs the release wo
 
 #### Local development and deployment
 
-Keep the source repository separate from the installed plugin directory. If the source is inside a vault, ignore that directory in the outer vault Git repository while keeping the installed plugin and its settings in the vault backup. The `release/podcast-capture/` directory contains generated installation files; the vault installation remains under `.obsidian/plugins/podcast-capture/`.
+Keep the source repository separate from the installed plugin directory. If the source is inside a vault, ignore that directory in the outer vault Git repository while keeping the installed plugin and its settings in the vault backup. The `release/media-capture/` directory contains generated installation files; the vault installation remains under `.obsidian/plugins/media-capture/`.
 
-Copy `.deploy.example.json` to `.deploy.local.json` and set `vaultPath` to the absolute path of an existing vault. Run `npm run deploy` to build and copy the runtime files, then reload Media Capture in Obsidian. `npm run deploy -- --vault /absolute/path/to/vault` overrides the local configuration; `PODCAST_CAPTURE_VAULT` is also supported. Resolution order is command argument, environment variable, then local configuration.
+Copy `.deploy.example.json` to `.deploy.local.json` and set `vaultPath` to the absolute path of an existing vault. Run `npm run deploy` to build and copy the runtime files, then reload Media Capture in Obsidian. `npm run deploy -- --vault /absolute/path/to/vault` overrides the local configuration; `MEDIA_CAPTURE_VAULT` is also supported. Resolution order is command argument, environment variable, then local configuration.
 
 Deployment copies only main.js, manifest.json, and the optional styles.css. It preserves data.json and other installation files, checks the plugin ID and staged version, and rejects deployment into a source repository or through symbolic-link installation directories. Local deployment configuration and release output are excluded from Git. `npm run dev` watches the source and updates the staged files; it does not deploy automatically.
 

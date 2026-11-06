@@ -28,7 +28,7 @@ const item = { provider: 'douban', blockId: 'douban-123', id: '123', url: 'https
 
 function fixture(options = {}) {
     const files = new Map(), contents = new Map(), properties = new Map(), events = new Map(), updated = [];
-    let data = { schemaVersion: 1, settings: validateSettings({ downloadCovers: false, ...options }), unrelated: { retained: true } };
+    let data = { schemaVersion: 2, settings: validateSettings({ downloadCovers: false, ...options }), unrelated: { retained: true } };
     let writes = 0;
     const add = (p, text) => {
         const file = { path: p, extension: p.split('.').at(-1), basename: p.split('/').at(-1).replace(/\.md$/, '') };
@@ -72,7 +72,7 @@ test('note mode creates a grouped Markdown note without creating a log', async (
     const result = await f.service.capture(item);
     assert.equal(result.notePath, 'Media/节目/单集.md');
     assert.equal(result.noteCreated, true);
-    assert.deepEqual(f.header(result.notePath), { podcast_capture_id: 'douban-123', podcast_capture_rule: 'notes' });
+    assert.deepEqual(f.header(result.notePath), { media_capture_id: 'douban-123', media_capture_rule: 'notes' });
     assert(f.contents.get(result.notePath).includes('### 单集'));
     assert(!f.files.has('Podcasts.md'));
     assert.equal(f.data().noteIndex['notes::douban-123'], result.notePath);
@@ -87,7 +87,7 @@ test('both mode creates one log row and one note under concurrent duplicate save
     assert.equal(results[0].noteCreated, true); assert.equal(results[1].noteCreated, false);
     const log = f.contents.get('Podcasts.md');
     assert.equal((log.match(/\^douban-123/g) ?? []).length, 1);
-    assert.equal((log.match(/<!-- podcast-note -->/g) ?? []).length, 1);
+    assert.equal((log.match(/<!-- media-note -->/g) ?? []).length, 1);
     assert(log.includes('[[Media/节目/单集|笔记]]'));
 });
 
@@ -115,7 +115,7 @@ test('renamed and moved notes reopen by identity and retain handwritten content'
 
 test('a restored note without a persisted index is found through metadata cache', async () => {
     const f = fixture({ preset: 'note' });
-    f.add('手动搬家/单集.md', '---\npodcast_capture_rule: notes\npodcast_capture_id: douban-123\n---\n\nmy notes');
+    f.add('手动搬家/单集.md', '---\nmedia_capture_rule: notes\nmedia_capture_id: douban-123\n---\n\nmy notes');
     await f.service.initialize();
     assert.equal((await f.service.capture(item)).notePath, '手动搬家/单集.md');
     assert(!f.files.has('Media/节目/单集.md'));
@@ -130,8 +130,8 @@ test('foreign filename collisions never overwrite an existing file', async () =>
 
 test('duplicate managed identities are reported instead of choosing arbitrarily', async () => {
     const f = fixture({ preset: 'note' });
-    f.add('a.md', '---\npodcast_capture_rule: notes\npodcast_capture_id: douban-123\n---\na');
-    f.add('b.md', '---\npodcast_capture_rule: notes\npodcast_capture_id: douban-123\n---\nb');
+    f.add('a.md', '---\nmedia_capture_rule: notes\nmedia_capture_id: douban-123\n---\na');
+    f.add('b.md', '---\nmedia_capture_rule: notes\nmedia_capture_id: douban-123\n---\nb');
     await f.service.initialize(); await assert.rejects(f.service.capture(item), /多篇/);
     assert.equal(f.writes(), 0);
 });
@@ -176,8 +176,8 @@ test('YAML substitutions preserve quotes, multiline text and types without injec
     assert.equal(props.title, 'A: "B" # injected');
     assert.equal(props.description, 'first\nadmin: true\n---\nlast');
     assert.equal(props.admin, undefined); assert.equal(props.enabled, true);
-    assert.equal(props.podcast_capture_id, 'douban-123');
-    assert(renderEpisodeNote('---\n---\n{{title}}', values).includes('podcast_capture_id: douban-123'));
+    assert.equal(props.media_capture_id, 'douban-123');
+    assert(renderEpisodeNote('---\n---\n{{title}}', values).includes('media_capture_id: douban-123'));
 });
 
 test('publication, listen and creation dates remain separate with format support', () => {
@@ -208,7 +208,7 @@ test('changing a log entry from in-progress to listened retains its note referen
     await f.service.capture({ ...item, state: '在听' });
     await f.service.capture({ ...item, output: 'log' });
     const log = f.contents.get('Podcasts.md');
-    assert(log.includes('podcast-state: 听过')); assert(log.includes('[[Media/节目/单集|笔记]]'));
+    assert(log.includes('media-state: 听过')); assert(log.includes('[[Media/节目/单集|笔记]]'));
 });
 
 test('a failed second write reports the saved side and retries without duplicating content', async () => {
@@ -307,7 +307,7 @@ test('metadata snapshots retain original dates and description after reload and 
 
 test('per-file errors include the path and stage and allow other notes to proceed', async () => {
     const f = fixture({ preset: 'note', notesTemplate: '{{title}}' });
-    f.add('Bad.md', '---\npodcast_capture_rule: notes\npodcast_capture_id: douban-456\n---\n### no link');
+    f.add('Bad.md', '---\nmedia_capture_rule: notes\nmedia_capture_id: douban-456\n---\n### no link');
     await f.service.initialize(); await f.service.capture(item);
     const plans = await prepareNoteRefresh(f.service);
     assert(plans.find(p => p.path === 'Bad.md').error.includes('恢复单集信息失败'));
@@ -399,7 +399,7 @@ test('multiple create rules reuse separate identities and template updates do no
     const primary = rules.find(rule => rule.id === 'notes');
     await f.service.saveSettings({ ...f.service.config, writeRules: [...rules, { ...primary, id: 'archive', name: 'Archive', folder: 'Archive' }] });
     await f.service.capture(item); await f.service.capture(item);
-    assert.equal(f.header('Archive/节目/单集.md').podcast_capture_rule, 'archive');
+    assert.equal(f.header('Archive/节目/单集.md').media_capture_rule, 'archive');
     assert.equal((await prepareNoteRefresh(f.service)).filter(plan => plan.error).length, 0);
     assert.equal(f.files.has('Archive/节目/单集 (douban-123).md'), false);
 });
@@ -623,7 +623,7 @@ test('old saved schema is rejected without rewriting data', async () => {
 
 test('template refresh requires stored capture metadata and does not scrape old notes', async () => {
     const f = fixture({preset: 'note'}); await f.service.initialize();
-    f.add('Old.md', '---\npodcast_capture_rule: notes\npodcast_capture_id: douban-123\n---\n### Old title\nhttps://www.douban.com/podcast_episode/123');
+    f.add('Old.md', '---\nmedia_capture_rule: notes\nmedia_capture_id: douban-123\n---\n### Old title\nhttps://www.douban.com/podcast_episode/123');
     const plans = await prepareNoteRefresh(f.service);
     assert(plans.find(plan => plan.path === 'Old.md').error.includes('Missing captured metadata'));
     assert.equal(f.writes(), 0);

@@ -132,9 +132,9 @@ test("在听与想听记录不写入完成日期或日记属性", async () => {
     assert(!fixture.contents.get("追踪/播客.md").includes("2026-11-03"));
     assert.equal(fixture.frontmatter.get("daily/2026/2026-11/2026-11-03.md").播客.length, 0);
     await plugin.capture({ ...item, state: "在听", cover: "" });
-    assert(fixture.contents.get("追踪/播客.md").includes("podcast-state: 在听"));
+    assert(fixture.contents.get("追踪/播客.md").includes("media-state: 在听"));
     await plugin.capture({ ...item, cover: "" });
-    assert(fixture.contents.get("追踪/播客.md").includes("podcast-state: 听过"));
+    assert(fixture.contents.get("追踪/播客.md").includes("media-state: 听过"));
 });
 
 const xyzUrl = "https://www.xiaoyuzhoufm.com/episode/6ae9d09e97726cd4675c34fd";
@@ -195,7 +195,7 @@ test("跨平台在听转为听过仍保留原始标识，防止历史日记断�
     const updated = updateCatalog(original, { ...item, ...episodeUrl(appleUrl) }, "").text;
     assert(updated.includes("^xiaoyuzhou-6ae9d09e97726cd4675c34fd"));
     assert(!updated.includes("^apple-"));
-    assert(updated.includes("podcast-state: 听过"));
+    assert(updated.includes("media-state: 听过"));
 });
 
 test("三平台自动获取使用公开网页或目录，无需账号信息", async () => {
@@ -208,9 +208,9 @@ test("三平台自动获取使用公开网页或目录，无需账号信息", as
     assert(calls.every(call => !call.headers?.Cookie && !call.headers?.Authorization));
 });
 
-test("追踪视图识别播客与视频，旧豆瓣链接和跨日手写选择继续有效", { skip: !process.env.PODCAST_TRACKER_TEST_PATH }, async () => {
+test("追踪视图识别播客与视频，旧豆瓣链接和跨日手写选择继续有效", { skip: !process.env.MEDIA_TRACKER_TEST_PATH }, async () => {
     const { entryLine, episodeUrl } = load()._internals;
-    const source = fs.readFileSync(process.env.PODCAST_TRACKER_TEST_PATH, "utf8");
+    const source = fs.readFileSync(process.env.MEDIA_TRACKER_TEST_PATH, "utf8");
     const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
     class DateTime {
         constructor(value) { this.value = value; this.isValid = /^\d{4}-\d{2}-\d{2}$/.test(value); }
@@ -338,7 +338,7 @@ test("新安装不因私人目录存在而切换设置，保留诊断记录", as
         const Plugin = load(); const fixture = appFixture(base);
         if (!legacy) fixture.files.delete("追踪/播客.md");
         const plugin = new Plugin(); plugin.app = fixture.app;
-        let data = { schemaVersion: 1, coverReport: { repaired: 1 } };
+        let data = { schemaVersion: 2, coverReport: { repaired: 1 } };
         plugin.loadData = async () => data;
         plugin.saveData = async value => { data = value; };
         plugin.addCommand = () => {}; plugin.addSettingTab = () => {};
@@ -347,7 +347,7 @@ test("新安装不因私人目录存在而切换设置，保留诊断记录", as
         assert.equal(plugin.config.dailyIntegration, false);
         assert.equal(plugin.config.catalogPath, "Podcasts.md");
         assert.equal(data.coverReport.repaired, 1);
-        assert.equal(data.schemaVersion, 1);
+        assert.equal(data.schemaVersion, 2);
     }
 });
 
@@ -498,5 +498,5 @@ test('podcast parsing has no old work-state or leading-date fallback', () => {
     const {stateOf, recordDate} = load()._internals;
     assert.equal(stateOf('<!-- douban-state: done -->'), undefined);
     assert.equal(recordDate('- 2026-11-03 [Episode](<https://example.com>)'), '');
-    assert.equal(recordDate('<!-- podcast-date: 2026-11-03 -->'), '2026-11-03');
+    assert.equal(recordDate('<!-- media-date: 2026-11-03 -->'), '2026-11-03');
 });

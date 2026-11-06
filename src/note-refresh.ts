@@ -29,8 +29,8 @@ async function backup(podcast: CaptureService, entry: NoteRefreshEntry): Promise
     const vault = podcast.app.vault;
     const suffix = new Date().toISOString().replace(/[:.]/g, '-');
     const base = `${entry.path}.${suffix}`;
-    let path = `${base}.podcast-capture-backup`;
-    for (let index = 1; vault.getAbstractFileByPath(path); index++) path = `${base}-${index}.podcast-capture-backup`;
+    let path = `${base}.media-capture-backup`;
+    for (let index = 1; vault.getAbstractFileByPath(path); index++) path = `${base}-${index}.media-capture-backup`;
     const file = await vault.create(path, entry.original);
     if (await vault.read(file) !== entry.original) throw new Error(`备份内容校验失败：${path}。原笔记未替换。`);
     return path;

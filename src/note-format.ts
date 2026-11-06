@@ -101,7 +101,7 @@ export function renderEpisodeNote(template: string, values: NoteValues, ruleId =
     if (frontmatter) {
         const slots = new Map<string, string>();
         const header = (frontmatter[1] ?? '').replace(/\{\{([^{}]+)\}\}/g, (_match: string, token: string) => {
-            const key = `PODCAST_CAPTURE_SLOT_${slots.size}_END`;
+            const key = `MEDIA_CAPTURE_SLOT_${slots.size}_END`;
             slots.set(key, valueOf(token, values));
             return key;
         });
@@ -111,14 +111,14 @@ export function renderEpisodeNote(template: string, values: NoteValues, ruleId =
         const replace = (value: unknown, depth = 0): unknown => {
             if (depth > 20) throw new Error('模板的笔记属性嵌套过深。');
             if (typeof value === 'string') {
-                return value.replace(/PODCAST_CAPTURE_SLOT_\d+_END/g, key => slots.get(key) ?? key);
+                return value.replace(/MEDIA_CAPTURE_SLOT_\d+_END/g, key => slots.get(key) ?? key);
             }
             if (value && typeof value === 'object') {
                 if (seen.has(value)) throw new Error('模板的笔记属性不能包含循环引用。');
                 seen.add(value);
                 const result: unknown = Array.isArray(value) ? value.map((item: unknown) => replace(item, depth + 1))
                     : value instanceof Date ? value : Object.fromEntries(Object.entries(value).map(([key, item]) => {
-                        if (/PODCAST_CAPTURE_SLOT_\d+_END/.test(key)) throw new Error('模板变量只能用于属性值，不能用于属性名。');
+                        if (/MEDIA_CAPTURE_SLOT_\d+_END/.test(key)) throw new Error('模板变量只能用于属性值，不能用于属性名。');
                         return [key, replace(item, depth + 1)];
                     }));
                 seen.delete(value);
@@ -130,8 +130,8 @@ export function renderEpisodeNote(template: string, values: NoteValues, ruleId =
         properties = isRecord(replaced) ? replaced : {};
         body = template.slice(frontmatter[0].length);
     }
-    properties.podcast_capture_id = values.id;
-    properties.podcast_capture_rule = ruleId;
+    properties.media_capture_id = values.id;
+    properties.media_capture_rule = ruleId;
     const content = renderTemplateBody(body, values);
     return `---\n${stringifyYaml(properties).trimEnd()}\n---\n\n${content.trim()}\n`;
 }

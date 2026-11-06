@@ -29,7 +29,7 @@ export async function saveCapture(service: CaptureService, input: CaptureItem): 
     const catalog = service.app.vault.getAbstractFileByPath(catalogPath) ?? null;
     const source = isMarkdownFile(catalog) ? await service.app.vault.read(catalog) : '';
     const previous = findEntry(source, item);
-    if (previous && !isListeningState(stateOf(previous))) throw new Error('Unsupported log row: missing podcast-state marker.');
+    if (previous && !isListeningState(stateOf(previous))) throw new Error('Unsupported log row: missing media-state marker.');
     const identity = previous ? entryIdentity(previous) : null;
     const id = identity ? blockId(identity) : service.notes.matchId(item) ?? blockId(item);
     const createdDate = service.notes.values(id)?.currentdate || localDate();
@@ -115,7 +115,7 @@ export async function saveCapture(service: CaptureService, input: CaptureItem): 
         }
         const primary = logged ?? note;
         if (!primary) throw new Error('没有成功写入的目标。');
-        service.app.workspace.trigger('podcast-capture:updated', { path: primary.path, blockId: logged || previous ? id : '', state: item.state,
+        service.app.workspace.trigger('media-capture:updated', { path: primary.path, blockId: logged || previous ? id : '', state: item.state,
             date: item.date, ...(note ? { notePath: note.path, output: mode } : {}) } satisfies CaptureUpdatedEvent);
         return { hasCover: !!cover.path, coverPath: cover.path, coverError: cover.error, coverSource: cover.source,
             ...(note ? { notePath: note.path, noteCreated: note.created } : {}),
@@ -133,8 +133,8 @@ export function attachEpisodeNote(text: string, id: string, path: string, anchor
     const lines = text.split(/\r?\n/);
     const index = lines.findIndex(line => line.startsWith('- ') && line.trimEnd().endsWith('^' + id));
     if (index < 0) return text;
-    const line = (lines[index] ?? '').trimEnd().replace(/\s*<!-- podcast-note -->\s*\[\[[^\]]+\]\]/, '');
+    const line = (lines[index] ?? '').trimEnd().replace(/\s*<!-- media-note -->\s*\[\[[^\]]+\]\]/, '');
     const target = path.replace(/\.md$/i, '') + (anchor ? '#^' + anchor : '');
-    lines[index] = line.replace(/\s+(\^\S+)$/, (_match: string, block: string) => ` <!-- podcast-note --> [[${target}|笔记]] ${block}`);
+    lines[index] = line.replace(/\s+(\^\S+)$/, (_match: string, block: string) => ` <!-- media-note --> [[${target}|笔记]] ${block}`);
     return lines.join('\n');
 }

@@ -83,7 +83,7 @@ export class EpisodeNotes {
         const text = await this.podcast.app.vault.read(file);
         const header = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text)?.[1];
         if (header === undefined) return '';
-        try { const props = record(parseYaml(header)); const id = props.podcast_capture_id; return props.podcast_capture_rule === ruleId && typeof id === 'string' ? id : ''; }
+        try { const props = record(parseYaml(header)); const id = props.media_capture_id; return props.media_capture_rule === ruleId && typeof id === 'string' ? id : ''; }
         catch { return ''; }
     }
 
@@ -96,7 +96,7 @@ export class EpisodeNotes {
         const matches = vault.getMarkdownFiles().filter(file => {
             const properties: unknown = this.podcast.app.metadataCache?.getFileCache(file)?.frontmatter;
             const props = record(properties);
-            return props.podcast_capture_id === id && props.podcast_capture_rule === ruleId;
+            return props.media_capture_id === id && props.media_capture_rule === ruleId;
         });
         if (matches.length > 1) throw new Error('找到多篇相同单集标识的笔记，请先整理重复笔记。');
         const match = matches[0];

@@ -7,7 +7,7 @@ async function main() {
     if (args.length && (args.length !== 2 || args[0] !== '--vault')) {
         throw new Error('Usage: npm run deploy -- --vault <absolute-vault-path>');
     }
-    let vaultPath = args[1] || process.env.PODCAST_CAPTURE_VAULT;
+    let vaultPath = args[1] || process.env.MEDIA_CAPTURE_VAULT;
     if (!vaultPath) {
         try {
             const local = JSON.parse(await readFile(path.join(projectRoot, '.deploy.local.json'), 'utf8'));
@@ -17,7 +17,7 @@ async function main() {
         }
     }
     if (typeof vaultPath !== 'string' || !path.isAbsolute(vaultPath)) {
-        throw new Error('Set an absolute vaultPath in .deploy.local.json, PODCAST_CAPTURE_VAULT, or --vault.');
+        throw new Error('Set an absolute vaultPath in .deploy.local.json, MEDIA_CAPTURE_VAULT, or --vault.');
     }
     const result = await deployArtifacts(vaultPath);
     console.log(`Deployed ${result.files.join(', ')} to ${result.destination}`);

@@ -8,7 +8,7 @@ import { ensureFolder, isMarkdownFile } from './storage';
 import { isRecord } from './validation';
 
 export function entryMarkers(ruleId: string, id: string): { start: string; end: string } {
-    return { start: `<!-- podcast-entry:${ruleId}:${id}:start -->`, end: `<!-- podcast-entry:${ruleId}:${id}:end -->` };
+    return { start: `<!-- media-entry:${ruleId}:${id}:start -->`, end: `<!-- media-entry:${ruleId}:${id}:end -->` };
 }
 export function entryBlock(source: string, ruleId: string, id: string): string | null {
     const markers = entryMarkers(ruleId, id);

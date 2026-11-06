@@ -32,7 +32,7 @@ function vaultPath(value: unknown, extension = ""): string {
 function validateSettings(settings: unknown): CaptureSettingsData {
     const supplied = record(settings);
     const result = ruleTargets({ ...DEFAULT_SETTINGS, writeRules: defaultRules() });
-    for (const key of Object.keys(supplied)) if (!Object.prototype.hasOwnProperty.call(DEFAULT_SETTINGS, key) || ['catalogPath', 'entryHeading'].includes(key)) throw new Error(`Unknown settings field: ${key}. Version 0.9 requires writeRules; old settings are not migrated.`);
+    for (const key of Object.keys(supplied)) if (!Object.prototype.hasOwnProperty.call(DEFAULT_SETTINGS, key) || ['catalogPath', 'entryHeading'].includes(key)) throw new Error(`Unknown settings field: ${key}. Version 0.10 requires writeRules; old settings are not migrated.`);
     for (const key of ['videoCatalogPath', 'imageFolder', 'dailyFolder', 'dailyProperty', 'bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const) {
         if (supplied[key] !== undefined) {
             if (typeof supplied[key] !== 'string') throw new Error(`Setting ${key} must be text.`);
@@ -60,7 +60,7 @@ function validateSettings(settings: unknown): CaptureSettingsData {
     return result;
 }
 
-function recordDate(line: string | null | undefined): string { return line?.match(/<!--\s*podcast-date:\s*(\d{4}-\d{2}-\d{2})\s*-->/)?.[1] ?? ""; }
+function recordDate(line: string | null | undefined): string { return line?.match(/<!--\s*media-date:\s*(\d{4}-\d{2}-\d{2})\s*-->/)?.[1] ?? ""; }
 
 function localDate(): string {
     const date = new Date();
@@ -110,7 +110,7 @@ function blockId(item: EntryIdentity): string {
     return `${item.provider}-${item.id}`;
 }
 
-function stateOf(line: string | null | undefined): string | undefined { return line?.match(/<!--\s*podcast-state:\s*(.*?)\s*-->/)?.[1]; }
+function stateOf(line: string | null | undefined): string | undefined { return line?.match(/<!--\s*media-state:\s*(.*?)\s*-->/)?.[1]; }
 
 function markdownText(value: string): string {
     return String(value).replace(/\s+/g, " ").trim().replace(/\\/g, "\\\\").replace(/\[/g, "\\[").replace(/\]/g, "\\]").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -148,8 +148,8 @@ function entryLine(item: CaptureItem, cover: string, settings: Readonly<CaptureS
     if (!rule) throw new Error('集中清单写入规则缺失。');
     const values = withCoverWidth(noteValues(item, blockId(item), cover, createdDate, settings.playbackIntegration), rule.coverWidth);
     const row = renderTemplateBody(rule.template, values).trimEnd();
-    const date = values.listened ? ` <!-- podcast-date: ${values.listened} -->` : "";
-    return `${row} <!-- podcast-state: ${item.state} -->${date} ^${blockId(item)}`;
+    const date = values.listened ? ` <!-- media-date: ${values.listened} -->` : "";
+    return `${row} <!-- media-state: ${item.state} -->${date} ^${blockId(item)}`;
 }
 
 function updateCatalog(source: string, item: CaptureItem, cover: string, settings: Readonly<CaptureSettingsData> = DEFAULT_SETTINGS, createdDate = localDate()): CatalogUpdate {
@@ -164,7 +164,7 @@ function updateCatalog(source: string, item: CaptureItem, cover: string, setting
         return { text: source.replace(existing, () => updated), existing, preserved: true };
     }
     let row = entryLine({ ...item, ...(existing ? entryIdentity(existing) : {}), state: item.state, date: item.date, title: item.title }, cover, settings, createdDate);
-    const note = existing?.match(/<!-- podcast-note -->\s*\[\[[^\]]+\]\]/)?.[0];
+    const note = existing?.match(/<!-- media-note -->\s*\[\[[^\]]+\]\]/)?.[0];
     if (note) row = row.replace(/\s+(\^\S+)$/, (_match: string, block: string) => ` ${note} ${block}`);
     if (existing) return { text: source.replace(existing, () => row), existing, preserved: false };
     const lines = source.split(/\r?\n/);

@@ -11,7 +11,7 @@ import { openEpisodeNote } from './note-ui';
 
 declare module 'obsidian' {
     interface Workspace {
-        on(name: 'podcast-capture:recommend', callback: (source: Pick<RecommendationSource, 'path' | 'blockId'>) => void, ctx?: unknown): import('obsidian').EventRef;
+        on(name: 'media-capture:recommend', callback: (source: Pick<RecommendationSource, 'path' | 'blockId'>) => void, ctx?: unknown): import('obsidian').EventRef;
     }
 }
 
@@ -29,24 +29,24 @@ class EpisodeButtons extends MarkdownRenderChild {
             let source: RecommendationSource | undefined;
             try { source = sources.get(episodeUrl(link.href).blockId); } catch { continue; }
             const row = link.closest('li');
-            if (!source || !row || row.querySelector('.podcast-recommend-button')) continue;
-            const button = row.createEl('button', { text: '添加关联', cls: 'podcast-recommend-button' });
-            row.addClass('podcast-episode-row');
+            if (!source || !row || row.querySelector('.media-recommend-button')) continue;
+            const button = row.createEl('button', { text: '添加关联', cls: 'media-recommend-button' });
+            row.addClass('media-record-row');
             const nested = Array.from(row.children).find(child => child.tagName === 'UL' || child.tagName === 'OL');
             if (nested) {
-                nested.addClass('podcast-linked-works');
+                nested.addClass('media-linked-works');
                 row.insertBefore(button, nested);
             }
             const selected = source;
             this.registerDomEvent(button, 'click', () => new RecommendationModal(this.service, selected).open());
             this.buttons.push(button);
-            const note = row.createEl('button', { text: this.service.podcast.notes.known(source.blockId) ? '打开笔记' : '写笔记', cls: 'podcast-note-button' });
+            const note = row.createEl('button', { text: this.service.podcast.notes.known(source.blockId) ? '打开笔记' : '写笔记', cls: 'media-note-button' });
             if (nested) row.insertBefore(note, nested);
             this.registerDomEvent(note, 'click', () => { void openEpisodeNote(this.service.podcast, selected).catch((error: unknown) => new Notice(errorMessage(error))); });
             this.buttons.push(note);
             const media = mediaValues({ url: link.href, state: '在听', date: '' }, this.service.podcast.config.playbackIntegration);
             if (media.mediaurl) {
-                const play = row.createEl('a', { text: '在 Obsidian 中播放', cls: 'podcast-note-button', attr: { href: media.mediaurl } });
+                const play = row.createEl('a', { text: '在 Obsidian 中播放', cls: 'media-note-button', attr: { href: media.mediaurl } });
                 if (nested) row.insertBefore(play, nested);
                 this.buttons.push(play);
             }
@@ -69,7 +69,7 @@ export function registerRecommendationUI(plugin: Plugin, podcast: CaptureService
     plugin.registerMarkdownPostProcessor((element, context) => {
         if (podcast.isCatalog(context.sourcePath)) context.addChild(new EpisodeButtons(element, service));
     });
-    plugin.registerEvent(plugin.app.workspace.on('podcast-capture:recommend', source => {
+    plugin.registerEvent(plugin.app.workspace.on('media-capture:recommend', source => {
         const data = record(source);
         if (typeof data.path !== 'string' || !podcast.isCatalog(data.path) || typeof data.blockId !== 'string') {
             new Notice('媒体来源无效，请从记录页选择。');

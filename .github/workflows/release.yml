@@ -30,7 +30,7 @@ jobs:
             - name: Check for optional styles
               id: styles
               run: |
-                  [ -f release/podcast-capture/styles.css ] && echo "exists=true" >> "$GITHUB_OUTPUT" || echo "exists=false" >> "$GITHUB_OUTPUT"
+                  [ -f release/media-capture/styles.css ] && echo "exists=true" >> "$GITHUB_OUTPUT" || echo "exists=false" >> "$GITHUB_OUTPUT"
 
             - name: Upload assets and publish prerelease
               env:
@@ -44,6 +44,6 @@ jobs:
                     --prerelease \
                     --verify-tag \
                     --notes-file=.github/prerelease-notes.md \
-                    release/podcast-capture/main.js release/podcast-capture/manifest.json ${{ steps.styles.outputs.exists == 'true' && 'release/podcast-capture/styles.css' || '' }}
+                    release/media-capture/main.js release/media-capture/manifest.json ${{ steps.styles.outputs.exists == 'true' && 'release/media-capture/styles.css' || '' }}
 
                   gh release edit "$tag" --draft=false --prerelease --latest=false

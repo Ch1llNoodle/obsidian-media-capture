@@ -48,7 +48,7 @@ export async function prepareNoteRefresh(podcast: CaptureService): Promise<NoteR
     const vault = podcast.app.vault;
     const paths = new Set([...podcast.notes.paths(), ...podcast.appends.all().map(entry => entry.path)]);
     for (const file of vault.getMarkdownFiles()) {
-        const id: unknown = podcast.app.metadataCache?.getFileCache(file)?.frontmatter?.podcast_capture_id;
+        const id: unknown = podcast.app.metadataCache?.getFileCache(file)?.frontmatter?.media_capture_id;
         if (typeof id === 'string') paths.add(file.path);
     }
     for (const path of podcast.catalogPaths) {
@@ -78,11 +78,11 @@ export async function prepareNoteRefresh(podcast: CaptureService): Promise<NoteR
             entry.original = await vault.read(file); entry.replacement = entry.original;
             stage = '恢复单集信息';
             const props = noteProperties(entry.original);
-            if (typeof props.podcast_capture_id === 'string' && !podcast.isCatalog(path)) {
-                entry.id = props.podcast_capture_id;
-                if (!/^(douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?)$/.test(entry.id)) throw new Error('podcast_capture_id 缺失或无效，已跳过。');
-                if (typeof props.podcast_capture_rule !== 'string') throw new Error('Missing explicit podcast_capture_rule.');
-                const ruleId = props.podcast_capture_rule;
+            if (typeof props.media_capture_id === 'string' && !podcast.isCatalog(path)) {
+                entry.id = props.media_capture_id;
+                if (!/^(douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?)$/.test(entry.id)) throw new Error('media_capture_id 缺失或无效，已跳过。');
+                if (typeof props.media_capture_rule !== 'string') throw new Error('Missing explicit media_capture_rule.');
+                const ruleId = props.media_capture_rule;
                 const rule = getRule(ruleId); entry.ruleId = ruleId;
                 const template = templates.get(ruleId) ?? '';
                 entry.values = withCoverWidth(capturedValues(podcast, entry.id, entry.original), rule.coverWidth);
@@ -105,13 +105,13 @@ export async function prepareNoteRefresh(podcast: CaptureService): Promise<NoteR
                     const item = { ...identity, title: values.fulltitle || identity.title, show: values.show, episodeTitle: values.title,
                         published: values.published, description: values.description, date: values.listened || '', state: isListeningState(values.state) ? values.state : '在听' };
                     let row = entryLine(item, values.coverpath || '', { ...podcast.config, writeRules: [{ ...rule, template }] }, values.currentdate || '');
-                    const note = line.match(/<!-- podcast-note -->\s*\[\[[^\]]+\]\]/)?.[0];
+                    const note = line.match(/<!-- media-note -->\s*\[\[[^\]]+\]\]/)?.[0];
                     if (note) row = row.replace(/\s+(\^\S+)$/, (_match: string, anchor: string) => ` ${note} ${anchor}`);
                     lines[index] = row; entry.records?.push({ id, values });
                 }
                 entry.replacement = lines.join('\n');
             } else {
-                for (const match of entry.original.matchAll(/<!-- podcast-entry:([a-z][a-z0-9-]*):(douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?):start -->/g)) {
+                for (const match of entry.original.matchAll(/<!-- media-entry:([a-z][a-z0-9-]*):(douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?):start -->/g)) {
                     const ruleId = match[1] ?? '', id = match[2] ?? '';
                     const rule = getRule(ruleId), template = templates.get(ruleId) ?? '';
                     const block = entryBlock(entry.original, ruleId, id);

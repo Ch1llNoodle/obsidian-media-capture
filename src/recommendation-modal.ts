@@ -20,11 +20,11 @@ export class RecommendationModal extends Modal {
 
     override onOpen(): void {
         this.closed = false;
-        this.contentEl.addClass('podcast-capture');
+        this.contentEl.addClass('media-capture');
         this.contentEl.createEl('h2', { text: '添加关联' });
         const sourceLabel = this.contentEl.createEl('p');
         const field = (name: string) => {
-            const label = this.contentEl.createEl('label', { cls: 'podcast-capture-field' });
+            const label = this.contentEl.createEl('label', { cls: 'media-capture-field' });
             label.createSpan({ text: name });
             return label;
         };
@@ -32,7 +32,7 @@ export class RecommendationModal extends Modal {
         this.workInput.createEl('option', { value: '', text: '选择作品' });
         this.reasonInput = field('摘记（可留空）').createEl('input', { type: 'text' });
         this.message = this.contentEl.createEl('p', { attr: { role: 'status', 'aria-live': 'polite' } });
-        const footer = this.contentEl.createDiv({ cls: 'podcast-capture-actions' });
+        const footer = this.contentEl.createDiv({ cls: 'media-capture-actions' });
         footer.createEl('button', { text: '取消' }).addEventListener('click', () => this.close());
         footer.createEl('button', { text: '保存关联', cls: 'mod-cta' }).addEventListener('click', () => { void this.run(() => this.save()); });
         void this.run(async () => {

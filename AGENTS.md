@@ -3,7 +3,7 @@
 ## Project overview
 
 - Target: Obsidian Community Plugin (TypeScript → bundled JavaScript).
-- Entry point: `src/main.ts` compiled to `release/podcast-capture/main.js`; deployment copies it to the installed plugin directory.
+- Entry point: `src/main.ts` compiled to `release/media-capture/main.js`; deployment copies it to the installed plugin directory.
 - Required release artifacts: `main.js`, `manifest.json`, and optional `styles.css`.
 
 ## Environment & tooling
@@ -61,7 +61,7 @@ npm run build
     ```
 - **Do not commit build artifacts**: Never commit `node_modules/`, `main.js`, or other generated files to version control.
 - Keep the plugin small. Avoid large dependencies. Prefer browser-compatible packages.
-- Generated output belongs in `release/podcast-capture/`, which is excluded from Git. Deployment places main.js, manifest.json, and styles.css at the top level of the installed plugin folder in the vault.
+- Generated output belongs in `release/media-capture/`, which is excluded from Git. Deployment places main.js, manifest.json, and styles.css at the top level of the installed plugin folder in the vault.
 
 ## Manifest rules (`manifest.json`)
 
@@ -271,7 +271,7 @@ this.registerInterval(
 ## Local deployment
 
 - Keep the source Git repository separate from the installed plugin directory. If source resides inside a vault, exclude its directory from the outer vault repository.
-- `npm run build` stages runtime files in `release/podcast-capture/`; `npm run deploy` builds and copies them into a locally configured vault.
+- `npm run build` stages runtime files in `release/media-capture/`; `npm run deploy` builds and copies them into a locally configured vault.
 - `.deploy.local.json` is personal configuration and must remain ignored. Never commit an absolute personal vault path.
 - Deployment uses a fixed runtime-file allowlist. Never overwrite or delete the installed `data.json`, and never deploy the source repository or node_modules.
 - After changing output paths, update the release workflow, both README files, and deployment tests together.

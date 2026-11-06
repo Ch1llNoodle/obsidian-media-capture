@@ -27,11 +27,11 @@ export class CaptureService {
         this.queue = Promise.resolve();
         this.dataQueue = Promise.resolve();
         const data = record(await this.loadData());
-        if (data.settings && data.schemaVersion !== 1) throw new Error('Unsupported saved data. Version 0.9 requires schemaVersion 1 and writeRules. Export and rebuild the settings before loading.');
+        if (data.settings && data.schemaVersion !== 2) throw new Error('Unsupported saved data. Version 0.10 requires schemaVersion 2 and writeRules. Export and rebuild the settings before loading.');
         this.settings = validateSettings(data.settings ?? {});
         this.notes.initialize(data.noteIndex, data.noteMetadata);
         this.appends.initialize(data.outputEntries);
-        if (!data.settings) await this.updateData({ settings: this.settings, schemaVersion: 1 });
+        if (!data.settings) await this.updateData({ settings: this.settings, schemaVersion: 2 });
     }
     dispose(): void { this.unloaded = true; }
     async loadData(): Promise<unknown> { return this.plugin.loadData() as Promise<unknown>; }
@@ -51,7 +51,7 @@ export class CaptureService {
     }
     async saveSettings(value: unknown): Promise<void> {
         const settings = validateSettings(value);
-        await this.updateData({ settings, schemaVersion: 1 });
+        await this.updateData({ settings, schemaVersion: 2 });
         this.settings = settings;
     }
     async fetchMetadata(url: string): Promise<EpisodeMetadata> {

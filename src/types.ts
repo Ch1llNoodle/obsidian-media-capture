@@ -138,7 +138,7 @@ export interface CoverReport extends CoverRepairResult {
 export interface SavedDataPatch {
     coverCache?: Record<string, string>;
     settings?: CaptureSettingsData;
-    schemaVersion?: 1;
+    schemaVersion?: 2;
     coverReport?: CoverReport;
     noteIndex?: Record<string, string>;
     noteMetadata?: Record<string, Record<string, string>>;

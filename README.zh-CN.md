@@ -8,9 +8,11 @@ Media Capture 将豆瓣、小宇宙、Apple Podcasts 的播客信息及 YouTube�
 
 在 iPhone 或电脑上测试时，从 Obsidian 社区插件安装并启用 [BRAT](https://github.com/TfTHacker/obsidian42-brat)，添加测试插件仓库 `Ch1llNoodle/obsidian-media-capture`，选择已发布版本或预发布版本，然后启用 Media Capture。BRAT 在 Obsidian 内完成文件安装和后续更新。
 
-插件要求 Obsidian 1.5.0 或更高版本。将 `main.js`、`manifest.json`、`styles.css` 放入 `<笔记库>/.obsidian/plugins/podcast-capture/`，在 **设置 → 第三方插件**中启用 **Media Capture**。从源码构建时，三个文件生成于 `release/podcast-capture/`。
+插件要求 Obsidian 1.5.0 或更高版本。将 `main.js`、`manifest.json`、`styles.css` 放入 `<笔记库>/.obsidian/plugins/media-capture/`，在 **设置 → 第三方插件**中启用 **Media Capture**。从源码构建时，三个文件生成于 `release/media-capture/`。
 
 更新时替换这三个文件，重新加载插件。保留原有 `data.json`，其中保存规则设置、输出索引、采集元信息和最近一次封面补全报告。
+
+0.10 使用 `media-capture` 安装身份。从旧身份更新时，应重新安装当前身份，并在启用前同步已明确转换的配置和记录。命令、事件、属性、管理标记和备份统一使用 media 命名空间，不提供旧名称别名；平台记录 ID 与原始链接不变。
 
 #### 采集媒体
 
@@ -47,7 +49,7 @@ Apple Podcasts 使用单集分享链接；缺少 `i` 单集参数的节目主页
 
 固定路径将单集集中在一个文件中；`{{show}}.md` 按节目分组；`{{show}}/{{title}}.md` 配合新建方式可每条一篇。目录留空使用库根目录，缺少节目名时使用 Unsorted，不支持的文件名字符自动替换。新建方式找回已有同集笔记，遇到其他文件占用路径时增加单集标识后缀。追加方式复用目标文件，不存在时创建；已有文件须包含指定标题，标题留空则追加到末尾。多条已启用规则指向同一文件时，在写入前报错。
 
-集中清单规则保留固定路径、目标标题，以及含 `{{link}}` 的单行列表模板，以兼容已有日记链接和作品关联。其他追加规则支持多行 Markdown，以 `podcast-entry` 注释界定各集的管理区域；应保留注释与块标识，手写内容放在区域外；实时预览在已跟踪的输出文件中隐藏这些管理标记。重复采集保留已完成区域，状态变化时若区域已经手工修改则停止写入并说明原因。
+集中清单规则保留固定路径、目标标题，以及含 `{{link}}` 的单行列表模板，以兼容已有日记链接和作品关联。其他追加规则支持多行 Markdown，以 `media-entry` 注释界定各集的管理区域；应保留注释与块标识，手写内容放在区域外；实时预览在已跟踪的输出文件中隐藏这些管理标记。重复采集保留已完成区域，状态变化时若区域已经手工修改则停止写入并说明原因。
 
 每条规则均可选择库内 Markdown 模板，模板文件留空则使用内置内容。新建模板可以带 YAML 属性，追加模板使用正文，不执行 Templater 或 JavaScript。
 
@@ -89,7 +91,7 @@ tags: [podcast]
 
 **创建媒体笔记**命令以每条一篇预设打开添加窗口。清单行旁的**写笔记**固定使用该集，**打开笔记**找回其主要单集笔记；清单还保留第一个额外输出的链接，选择按节目／频道追加时可链接到节目文件。阅读模式与编辑器均提供行内入口，不需要快捷键。作品关联和基于清单的追踪仍使用集中清单规则，其他输出文件不会自动加入外部追踪工具的统计。
 
-每个新建文件都写入 `podcast_capture_id` 和 `podcast_capture_rule`，输出索引统一使用 `规则ID::记录ID`。追加索引跟随文件改名；已跟踪文件或管理区域消失时，保存会说明缺失位置，不在其他位置重新创建。跨设备使用时将 data.json 与笔记库一并同步。
+每个新建文件都写入 `media_capture_id` 和 `media_capture_rule`，输出索引统一使用 `规则ID::记录ID`。追加索引跟随文件改名；已跟踪文件或管理区域消失时，保存会说明缺失位置，不在其他位置重新创建。跨设备使用时将 data.json 与笔记库一并同步。
 
 #### 将模板应用到已有记录
 
@@ -97,7 +99,7 @@ tags: [podcast]
 
 新建方式的输出重新生成全文，包括属性和手写区域；追加方式只替换对应条目或管理区域，保留外围正文、作品子项和摘抄。同一节目文件内的多集内容合并为一次更新和一次备份，文件名与位置不变。
 
-每个文件替换前，在原文件旁保存并校验带时间戳、后缀为 `.podcast-capture-backup` 的完整文本备份。结果中的**查看备份**直接在 Obsidian 内显示原文，将原文复制回笔记即可恢复；确认不再需要原文后再清理备份。
+每个文件替换前，在原文件旁保存并校验带时间戳、后缀为 `.media-capture-backup` 的完整文本备份。结果中的**查看备份**直接在 Obsidian 内显示原文，将原文复制回笔记即可恢复；确认不再需要原文后再清理备份。
 
 模板更新必须使用已保存的采集元信息，当前笔记中的显式属性可覆盖对应值；不从旧链接、正文标题或清单文字重建元信息。缺失的可选字段在预览中列出；没有采集元信息、重复标识、原规则被移除或区域标记损坏时，说明原因并跳过。更新模板不发起网络请求。
 
@@ -117,9 +119,9 @@ tags: [podcast]
 - [作品名称](<https://movie.douban.com/subject/123/>) <!-- douban-state: 想看 --> <!-- douban-type: movie --> ^douban-123
 ```
 
-`douban-type` 可使用 `book`、`movie`、`teleplay`、`music`、`game`、`theater`，缺省时采用该清单配置的类型。可选工作区事件 `podcast-capture:recommend` 接收 `{ path, blockId }`，打开窗口并选中该来源播客；`supportsRecommendations` 表示接口可用。
+`douban-type` 可使用 `book`、`movie`、`teleplay`、`music`、`game`、`theater`，缺省时采用该清单配置的类型。可选工作区事件 `media-capture:recommend` 接收 `{ path, blockId }`，打开窗口并选中该来源播客；`supportsRecommendations` 表示接口可用。
 
-自定义同步脚本需要在同一作品的新行中保留 `podcast-sources:start` / `podcast-sources:end` 之间的来源信息。豆瓣收藏同步由外部工具负责。
+自定义同步脚本需要在同一作品的新行中保留 `media-sources:start` / `media-sources:end` 之间的来源信息。豆瓣收藏同步由外部工具负责。
 
 #### 设置
 
@@ -149,11 +151,11 @@ tags: [podcast]
 
 日记分区、活动统计、集合的完成标记和展示样式由笔记库自己的脚本或配置负责。插件提供可选路径、模板、日记字段与工作区事件，不内置个人目录、日记标题或按完成状态改写关联文字的规则。已有手写格式保留。
 
-输出为普通 Markdown，Dataview 等追踪插件为可选组件。保存后发出 `podcast-capture:updated` 工作区事件，包含 `path`、`blockId`、`state`、`date`；保存笔记时另有 `notePath`、`output`，没有清单行时 `blockId` 为空。载荷类型由 `src/types.ts` 中的 `CaptureUpdatedEvent` 定义。只读取清单的追踪工具不会自动统计独立笔记。
+输出为普通 Markdown，Dataview 等追踪插件为可选组件。保存后发出 `media-capture:updated` 工作区事件，包含 `path`、`blockId`、`state`、`date`；保存笔记时另有 `notePath`、`output`，没有清单行时 `blockId` 为空。载荷类型由 `src/types.ts` 中的 `CaptureUpdatedEvent` 定义。只读取清单的追踪工具不会自动统计独立笔记。
 
-0.9 只接受当前数据结构：根字段 `schemaVersion` 为 `1`，设置统一使用 `writeRules`。旧版平铺配置、旧状态／日期回退、没有规则前缀的索引和旧行内关联块不再转换；未知设置或不支持的数据格式会明确报错，不自动重写原配置。
+0.10 只接受当前数据结构：根字段 `schemaVersion` 为 `2`，设置统一使用 `writeRules`。插件属性使用 `media_capture_id`、`media_capture_rule`，管理标记和事件使用 media 命名空间。旧数据不自动转换；未知设置或不支持的数据格式会明确报错，不自动重写原配置。
 
-升级前备份 data.json 和相关记录。现有数据需在插件外明确转换，或从全新配置重新开始；其他设备应先同步转换后的配置与记录，再加载 0.9。插件不附带自动迁移脚本。模板更新遇到缺失采集元信息时逐文件报告，不猜测原文内容。安装 ID 保持 `podcast-capture`，它标识安装位置，不承担旧数据兼容。
+升级前备份 data.json 和相关记录。现有数据需在插件外明确转换，或从全新配置重新开始；其他设备应先同步转换后的配置与记录，再加载 0.10。插件不附带自动迁移脚本。模板更新遇到缺失采集元信息时逐文件报告，不猜测原文内容。安装 ID 为 `media-capture`；从旧身份更新时须重新安装当前身份，不提供旧名称别名。
 
 #### 开发与检查
 
@@ -169,7 +171,7 @@ npm test
 npm run lint
 ```
 
-生产构建将运行代码打包为 `release/podcast-capture/main.js`，并在同目录暂存 manifest 和样式。测试使用 esbuild 编译 TypeScript 模块，再通过模拟的 Obsidian API 验证行为。可选的追踪视图兼容测试由 `PODCAST_TRACKER_TEST_PATH` 指定脚本路径；未设置时跳过该项。`PODCAST_DOUBAN_SYNC_TEST_PATH` 可另外指定自定义豆瓣同步视图，验证来源保留与状态合并。
+生产构建将运行代码打包为 `release/media-capture/main.js`，并在同目录暂存 manifest 和样式。测试使用 esbuild 编译 TypeScript 模块，再通过模拟的 Obsidian API 验证行为。可选的追踪视图兼容测试由 `MEDIA_TRACKER_TEST_PATH` 指定脚本路径；未设置时跳过该项。`MEDIA_DOUBAN_SYNC_TEST_PATH` 可另外指定自定义豆瓣同步视图，验证来源保留与状态合并。
 
 发布文件为 `main.js`、`manifest.json`、`styles.css`。源码仓库忽略生成的构建文件、依赖目录及个人 `data.json`。依赖安全检查使用 `npm audit`，与编译、功能测试分别执行。
 
@@ -177,9 +179,9 @@ npm run lint
 
 #### 本地开发与部署
 
-源码仓库与安装目录分开管理；源码位于笔记库内时，在外层 Git 仓库忽略源码目录，运行文件和个人配置继续随笔记库备份。`release/podcast-capture/` 保存生成的安装文件，笔记库安装位置仍为 `.obsidian/plugins/podcast-capture/`。
+源码仓库与安装目录分开管理；源码位于笔记库内时，在外层 Git 仓库忽略源码目录，运行文件和个人配置继续随笔记库备份。`release/media-capture/` 保存生成的安装文件，笔记库安装位置仍为 `.obsidian/plugins/media-capture/`。
 
-将 `.deploy.example.json` 复制为 `.deploy.local.json`，把 `vaultPath` 设置为已有笔记库的绝对路径。执行 `npm run deploy` 完成构建和运行文件复制，然后在 Obsidian 中重新加载插件。`npm run deploy -- --vault /absolute/path/to/vault` 可覆盖本机配置，也支持环境变量 `PODCAST_CAPTURE_VAULT`；取值优先级为命令参数、环境变量、本机配置。
+将 `.deploy.example.json` 复制为 `.deploy.local.json`，把 `vaultPath` 设置为已有笔记库的绝对路径。执行 `npm run deploy` 完成构建和运行文件复制，然后在 Obsidian 中重新加载插件。`npm run deploy -- --vault /absolute/path/to/vault` 可覆盖本机配置，也支持环境变量 `MEDIA_CAPTURE_VAULT`；取值优先级为命令参数、环境变量、本机配置。
 
 部署只复制 main.js、manifest.json 和可选的 styles.css，保留 data.json 及其他安装文件；写入前核对插件 ID 和构建版本，拒绝部署到源码仓库或通过符号链接安装目录写入。本机部署配置和 release 产物不进入 Git。`npm run dev` 监听源码并更新构建目录，不自动部署。
 

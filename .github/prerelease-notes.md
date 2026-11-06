@@ -1,15 +1,11 @@
-### Media Capture 0.9.0
+### Media Capture 0.10.0
 
-#### Breaking data-format change
+#### Plugin identity reset
 
-This release removes backward-compatibility code. It accepts only schemaVersion 1 with writeRules, explicit note rule IDs and ruleId::recordId output indexes. Retired flat settings, old state/date fallbacks, inline association migrations and reconstruction of old notes from body text are removed. Unsupported data produces explicit errors without automatically rewriting the saved configuration.
+The installation ID is now media-capture. Runtime files install in .obsidian/plugins/media-capture and build into release/media-capture. Commands, workspace events, note properties, management markers, backup extensions and CSS use the media namespace. Deployment uses MEDIA_CAPTURE_VAULT. No old-name aliases or in-plugin migration code are included.
 
-Back up data.json and the affected notes before upgrading. Rebuild or explicitly convert the data outside the plugin, then synchronize the current-format data to your other devices. The plugin does not ship an automatic migration path. The existing installation ID remains podcast-capture; that is the installation identity, not a legacy parsing layer.
-
-#### Current behavior
-
-Capture, templates, configurable write rules, separate podcast/video logs, readable shared artwork, associations and optional playback remain available. Daily sections, completion styling and bulk attachment maintenance belong to vault scripts. All output types use the same capture metadata; template refresh rejects records whose captured metadata is missing.
+Saved data must use schemaVersion 2. Existing users must reinstall the new identity and synchronize explicitly converted data and records before enabling it; merely renaming a directory is insufficient. Keep a copy of personal data.json outside the source repository. Source builds and releases never include personal configuration.
 
 #### Validation
 
-107 tests cover current-format capture, template updates, artwork reuse, strict old-schema rejection, explicit output indexes, independent vault presentation and deployment. Strict TypeScript and production builds pass. Actual mobile interface and playback behavior still require device validation.
+Capture, write rules, template updates, shared artwork, associations and optional playback remain available. Tests cover deployment destinations, stable record identities, current data validation and the independent vault presentation script. Actual mobile installation and playback require device verification.

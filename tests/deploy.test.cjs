@@ -14,11 +14,11 @@ function fixture(t) {
     });
     const repo = path.join(root, 'repo');
     const vault = path.join(root, 'vault');
-    const release = path.join(repo, 'release', 'podcast-capture');
-    const installed = path.join(vault, '.obsidian', 'plugins', 'podcast-capture');
+    const release = path.join(repo, 'release', 'media-capture');
+    const installed = path.join(vault, '.obsidian', 'plugins', 'media-capture');
     fs.mkdirSync(release, { recursive: true });
     fs.mkdirSync(installed, { recursive: true });
-    const manifest = { id: 'podcast-capture', version: '0.3.1' };
+    const manifest = { id: 'media-capture', version: '0.3.1' };
     for (const dir of [repo, release, installed]) fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify(manifest));
     fs.writeFileSync(path.join(repo, 'styles.css'), 'source styles');
     fs.writeFileSync(path.join(release, 'main.js'), 'new bundle');
@@ -49,7 +49,7 @@ test('发布文件缺失或版本过期时，在写入前拒绝部署', async t 
     await assert.rejects(deployArtifacts(f.vault, f.repo), /missing release file/);
     assert.equal(fs.readFileSync(path.join(f.installed, 'main.js'), 'utf8'), 'old bundle');
     fs.writeFileSync(path.join(f.release, 'main.js'), 'new bundle');
-    fs.writeFileSync(path.join(f.release, 'manifest.json'), '{"id":"podcast-capture","version":"0.0.1"}');
+    fs.writeFileSync(path.join(f.release, 'manifest.json'), '{"id":"media-capture","version":"0.0.1"}');
     await assert.rejects(deployArtifacts(f.vault, f.repo), /stale/);
 });
 

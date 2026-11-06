@@ -26,7 +26,7 @@ export function renderRuleSettings(container: HTMLElement, podcast: CaptureServi
     for (const rule of rules) {
         new Setting(container).setName(rule.name).setDesc(rule.mode === 'append' ? '将模板内容追加到目标文件' : '按路径模板新建文件')
             .addToggle(toggle => toggle.setValue(rule.enabled).onChange(value => run(change(rule.id, { enabled: value }))));
-        const details = container.createEl('details', { cls: 'podcast-rule-settings' });
+        const details = container.createEl('details', { cls: 'media-rule-settings' });
         details.setAttribute('data-rule-id', rule.id);
         details.createEl('summary', { text: '编辑规则' });
         const field = (key: 'name' | 'folder' | 'pathTemplate' | 'heading' | 'templateFile', label: string, description: string): Setting =>

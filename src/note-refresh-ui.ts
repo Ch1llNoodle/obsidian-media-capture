@@ -16,11 +16,11 @@ export class NoteRefreshModal extends Modal {
     constructor(private readonly podcast: CaptureService) { super(podcast.app); }
     override onOpen(): void {
         this.closed = false;
-        this.contentEl.addClass('podcast-template-refresh');
+        this.contentEl.addClass('media-template-refresh');
         this.contentEl.createEl('h2', { text: '将模板应用到已有记录' });
-        this.contentEl.createEl('p', { text: '新建文件规则重新生成所选文件的全文，包括属性和手写区域；追加规则只更新对应条目或管理区域，保留区域外的正文。每个文件先保存完整备份，后缀为 .podcast-capture-backup，文件名与位置不变。' });
+        this.contentEl.createEl('p', { text: '新建文件规则重新生成所选文件的全文，包括属性和手写区域；追加规则只更新对应条目或管理区域，保留区域外的正文。每个文件先保存完整备份，后缀为 .media-capture-backup，文件名与位置不变。' });
         this.status = this.contentEl.createEl('p', { attr: { role: 'status', 'aria-live': 'polite' } });
-        const actions = this.contentEl.createDiv({ cls: 'podcast-capture-actions' });
+        const actions = this.contentEl.createDiv({ cls: 'media-capture-actions' });
         actions.createEl('button', { text: '重新预览' }).addEventListener('click', () => { if (!this.busy) void this.load(); });
         this.applyButton = actions.createEl('button', { text: '备份并更新所选笔记', cls: 'mod-cta' });
         this.applyButton.addEventListener('click', () => { void this.apply(); });
@@ -35,8 +35,8 @@ export class NoteRefreshModal extends Modal {
             this.entries = await prepareNoteRefresh(this.podcast);
             if (this.closed) return;
             for (const entry of this.entries) {
-                const row = this.list.createDiv({ cls: 'podcast-template-refresh-entry' });
-                const label = row.createEl('label', { cls: 'podcast-template-refresh-label' });
+                const row = this.list.createDiv({ cls: 'media-template-refresh-entry' });
+                const label = row.createEl('label', { cls: 'media-template-refresh-label' });
                 const checkbox = label.createEl('input', { type: 'checkbox' });
                 checkbox.disabled = !!entry.error;
                 checkbox.checked = !entry.error;
@@ -84,7 +84,7 @@ export class NoteRefreshModal extends Modal {
         report.value = results.map(result => [result.path, result.status === 'updated' ? '已更新' : result.status === 'unchanged' ? '无变化' : '未更新',
             result.backupPath ? '备份：' + result.backupPath : '', result.error].filter(Boolean).join('\n')).join('\n\n');
         for (const result of results) if (result.backupPath) {
-            const row = this.list.createDiv({ cls: 'podcast-template-refresh-entry' });
+            const row = this.list.createDiv({ cls: 'media-template-refresh-entry' });
             row.createSpan({ text: result.path + ' ' });
             row.createEl('button', { text: '查看备份' }).addEventListener('click', () => { void this.showBackup(result.backupPath); });
         }
@@ -94,11 +94,11 @@ export class NoteRefreshModal extends Modal {
     private async showBackup(path: string): Promise<void> {
         try {
             const file = this.app.vault.getAbstractFileByPath(path);
-            if (!isVaultFile(file) || file.extension !== 'podcast-capture-backup') throw new Error('备份文件已移动、删除或扩展名已改变。');
+            if (!isVaultFile(file) || file.extension !== 'media-capture-backup') throw new Error('备份文件已移动、删除或扩展名已改变。');
             const content = await this.app.vault.read(file);
             if (this.closed) return;
             const modal = new Modal(this.app);
-            modal.contentEl.addClass('podcast-template-refresh');
+            modal.contentEl.addClass('media-template-refresh');
             modal.contentEl.createEl('h2', { text: '备份原文' });
             modal.contentEl.createEl('p', { text: path });
             const original = modal.contentEl.createEl('textarea');

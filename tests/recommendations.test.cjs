@@ -106,9 +106,9 @@ test('作品清单路径重合时只读取一次，重复作品不重复显示',
     const works = await f.service.works(); assert.equal(works.length, 2); assert.equal(works[1].kind, 'teleplay');
 });
 
-test('真实同步保留作品的播客来源，删除豆瓣收藏后不再重建作品', { skip: !process.env.PODCAST_DOUBAN_SYNC_TEST_PATH }, async () => {
+test('真实同步保留作品的播客来源，删除豆瓣收藏后不再重建作品', { skip: !process.env.MEDIA_DOUBAN_SYNC_TEST_PATH }, async () => {
     const api = load();
-    const script = fs.readFileSync(process.env.PODCAST_DOUBAN_SYNC_TEST_PATH, 'utf8');
+    const script = fs.readFileSync(process.env.MEDIA_DOUBAN_SYNC_TEST_PATH, 'utf8');
     const AsyncFunction = Object.getPrototypeOf(async function() {}).constructor;
     let content = api.linkWorkSource(base.replace('#### Watchlist', '#### Watchlist\n\n' + row), film, source);
     let collected = true;
@@ -153,7 +153,7 @@ test('六类作品仅接受对应想状态，保存前再检查当前状态', as
     const f = fixture(api); const item = (await f.service.works())[0];
     f.content.set(item.path, f.content.get(item.path).replace('想看','看过'));
     await assert.rejects(f.service.link(item, source), /已不在/);
-    assert(!f.content.get(item.path).includes('podcast-sources:start'));
+    assert(!f.content.get(item.path).includes('media-sources:start'));
 });
 
 test('播客行显示作品链接与摘记，重复保存不增加条目，原状态封面日期保留', async () => {
@@ -195,7 +195,7 @@ test('新关联逐项追加在播客下方，不重复，重存播客仍保留�
     await f.service.link(item, source);
     const first = f.content.get('Podcasts.md');
     const second = api.linkEpisodeWork(first, source, {...item,id:'200',url:'https://movie.douban.com/subject/200/',title:'第二部'});
-    assert(second.includes('\n  - [[Recommendations/Movies#^douban-100|电影]] <!-- podcast-work -->\n  - [[Recommendations/Movies#^douban-200|第二部]]'));
+    assert(second.includes('\n  - [[Recommendations/Movies#^douban-100|电影]] <!-- media-work -->\n  - [[Recommendations/Movies#^douban-200|第二部]]'));
     assert.equal(api.linkEpisodeWork(second, source, item), second);
     const saved = api.updateCatalog(second, {id:'123',provider:'douban',blockId:'douban-123',url:'https://www.douban.com/podcast_episode/123',title:source.title,state:'听过',date:'2026-11-04'}, '').text;
     assert(saved.includes('\n  - [[Recommendations/Movies#^douban-200|第二部]]'));
@@ -211,12 +211,12 @@ test('association refresh preserves note-owned completed-work formatting', async
     assert(f.content.get('Podcasts.md').includes('~~' + link + '~~'));
 });
 
-test('vault presentation updates completed work marks without Capture', {skip: !process.env.PODCAST_WORK_PRESENTATION_TEST_PATH}, async () => {
-    const script = fs.readFileSync(process.env.PODCAST_WORK_PRESENTATION_TEST_PATH, 'utf8');
+test('vault presentation updates completed work marks without Capture', {skip: !process.env.MEDIA_WORK_PRESENTATION_TEST_PATH}, async () => {
+    const script = fs.readFileSync(process.env.MEDIA_WORK_PRESENTATION_TEST_PATH, 'utf8');
     const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
     const contents = new Map([
         ['追踪/电影.md', '- [电影](<https://movie.douban.com/subject/100/>) <!-- douban-state: 看过 --> ^douban-100'],
-        ['追踪/播客.md', '  - [[追踪/电影#^douban-100|电影]]（原摘记） <!-- podcast-work -->\n手写段落'],
+        ['追踪/播客.md', '  - [[追踪/电影#^douban-100|电影]]（原摘记） <!-- media-work -->\n手写段落'],
     ]);
     const callbacks = new Map(), cleanup = [];
     const owner = {registerEvent() {}, register: fn => cleanup.push(fn)};
@@ -241,6 +241,6 @@ test('vault presentation updates completed work marks without Capture', {skip: !
 
 test('retired inline association blocks are rejected without migration', () => {
     const api = load();
-    const text = '- [Episode](<https://www.douban.com/podcast_episode/123>) <!-- podcast-works:start -->old<!-- podcast-works:end --> ^douban-123';
+    const text = '- [Episode](<https://www.douban.com/podcast_episode/123>) <!-- media-works:start -->old<!-- media-works:end --> ^douban-123';
     assert.throws(() => api.linkEpisodeWork(text, source, {...film, path: 'Recommendations/Movies.md', state: 'wish'}), /Unsupported association format/);
 });
