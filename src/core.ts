@@ -2,10 +2,11 @@ import type { CaptureItem, CaptureSettingsData, CatalogUpdate, EntryIdentity, Ep
 import { record } from "./validation";
 import { decode } from "./metadata-helpers";
 import { isApplePlayerTitle } from "./apple";
+import { DEFAULT_NOTE_TEMPLATE, isCaptureMode, validateNoteSettings } from "./note-format";
 export { decode, plain, safeCover, coverUrl } from "./metadata-helpers";
 export { metadata } from "./metadata";
 
-const DEFAULT_SETTINGS: Readonly<CaptureSettingsData> = Object.freeze({ catalogPath: "Podcasts.md", entryHeading: "Entries", imageFolder: "image/podcasts", rowTemplate: "- {{date}} {{cover}} {{link}}", downloadCovers: true, repairOnStartup: false, dailyIntegration: false, dailyFolder: "Daily", dailyProperty: "podcasts", bookPath: "Recommendations/Books.md", moviePath: "Recommendations/Movies.md", teleplayPath: "Recommendations/Series.md", musicPath: "Recommendations/Music.md", gamePath: "Recommendations/Games.md", theaterPath: "Recommendations/Theater.md" });
+const DEFAULT_SETTINGS: Readonly<CaptureSettingsData> = Object.freeze({ captureMode: "log", noteFolder: "Podcasts", notePathTemplate: "{{show}}/{{title}}.md", noteTemplateFile: "", noteTemplate: DEFAULT_NOTE_TEMPLATE, catalogPath: "Podcasts.md", entryHeading: "Entries", imageFolder: "image/podcasts", rowTemplate: "- {{date}} {{cover}} {{link}}", downloadCovers: true, repairOnStartup: false, dailyIntegration: false, dailyFolder: "Daily", dailyProperty: "podcasts", bookPath: "Recommendations/Books.md", moviePath: "Recommendations/Movies.md", teleplayPath: "Recommendations/Series.md", musicPath: "Recommendations/Music.md", gamePath: "Recommendations/Games.md", theaterPath: "Recommendations/Theater.md" });
 // Only used to migrate installations created before settings were available.
 const LEGACY_SETTINGS: Readonly<CaptureSettingsData> = Object.freeze({ ...DEFAULT_SETTINGS, catalogPath: "追踪/播客.md", imageFolder: "追踪/image", repairOnStartup: true, dailyIntegration: true, dailyFolder: "daily", dailyProperty: "播客" });
 const STATES: readonly ListeningState[] = ["听过", "在听", "想听"];
@@ -25,7 +26,7 @@ function vaultPath(value: unknown, extension = ""): string {
 function validateSettings(settings: unknown): CaptureSettingsData {
     const supplied = record(settings);
     const result = { ...DEFAULT_SETTINGS };
-    for (const key of ["catalogPath", "imageFolder", "dailyFolder", "entryHeading", "dailyProperty", "rowTemplate", "bookPath", "moviePath", "teleplayPath", "musicPath", "gamePath", "theaterPath"] as const) {
+    for (const key of ["noteFolder", "notePathTemplate", "noteTemplateFile", "noteTemplate", "catalogPath", "imageFolder", "dailyFolder", "entryHeading", "dailyProperty", "rowTemplate", "bookPath", "moviePath", "teleplayPath", "musicPath", "gamePath", "theaterPath"] as const) {
         const value = supplied[key];
         if (value !== undefined) {
             if (typeof value !== "string") throw new Error(`设置 ${key} 必须是文本。`);
@@ -39,6 +40,11 @@ function validateSettings(settings: unknown): CaptureSettingsData {
             result[key] = value;
         }
     }
+    if (supplied.captureMode !== undefined) {
+        if (!isCaptureMode(supplied.captureMode)) throw new Error("请选择有效的保存方式。");
+        result.captureMode = supplied.captureMode;
+    }
+    validateNoteSettings(result);
     result.catalogPath = vaultPath(result.catalogPath, ".md");
     result.imageFolder = vaultPath(result.imageFolder);
     for (const key of ["bookPath", "moviePath", "teleplayPath", "musicPath", "gamePath", "theaterPath"] as const) {
@@ -152,10 +158,12 @@ function updateCatalog(source: string, item: CaptureItem, cover: string, setting
         if (cover && !/!\[(?:cover)?\|24\]\(</.test(updated)) {
             updated = updated.replace(/^(-\s+(?:\d{4}-\d{2}-\d{2}\s+)?)/, `$1![|24](<${cover}>) `);
         }
-        return { text: source.replace(existing, updated), existing, preserved: true };
+        return { text: source.replace(existing, () => updated), existing, preserved: true };
     }
-    const row = entryLine({ ...item, ...(existing ? entryIdentity(existing) : {}), state: item.state, date: item.date, title: item.title }, cover, settings);
-    if (existing) return { text: source.replace(existing, row), existing, preserved: false };
+    let row = entryLine({ ...item, ...(existing ? entryIdentity(existing) : {}), state: item.state, date: item.date, title: item.title }, cover, settings);
+    const note = existing?.match(/<!-- podcast-note -->\s*\[\[[^\]]+\]\]/)?.[0];
+    if (note) row = row.replace(/\s+(\^\S+)$/, (_match: string, block: string) => ` ${note} ${block}`);
+    if (existing) return { text: source.replace(existing, () => row), existing, preserved: false };
     const lines = source.split(/\r?\n/);
     const heading = lines.findIndex(line => /^#{1,6}\s+/.test(line) && line.replace(/^#{1,6}\s+/, "").trim() === settings.entryHeading);
     if (heading < 0) throw new Error(`记录文件缺少 ${settings.entryHeading} 标题，请添加该标题或调整设置。`);

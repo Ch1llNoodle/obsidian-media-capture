@@ -1,5 +1,6 @@
 export type Provider = 'douban' | 'xiaoyuzhou' | 'apple';
 export type ListeningState = '听过' | '在听' | '想听';
+export type CaptureMode = 'log' | 'note' | 'both';
 export type RecommendationKind = 'book' | 'movie' | 'teleplay' | 'music' | 'game' | 'theater';
 
 export interface RecommendationSource {
@@ -22,6 +23,11 @@ export interface RecommendationWork extends RecommendationItem {
 }
 
 export interface CaptureSettingsData {
+    captureMode: CaptureMode;
+    noteFolder: string;
+    notePathTemplate: string;
+    noteTemplateFile: string;
+    noteTemplate: string;
     catalogPath: string;
     entryHeading: string;
     imageFolder: string;
@@ -52,6 +58,10 @@ export interface Episode {
 export interface EpisodeMetadata {
     title: string;
     cover: string;
+    show?: string;
+    episodeTitle?: string;
+    published?: string;
+    description?: string;
 }
 
 // Optional identity fields preserve the pre-settings Douban record format.
@@ -69,6 +79,11 @@ export interface CaptureItem extends EntryIdentity {
     date: string;
     cover?: string;
     repairOnly?: boolean;
+    output?: CaptureMode;
+    show?: string;
+    episodeTitle?: string;
+    published?: string;
+    description?: string;
 }
 
 export interface CatalogUpdate {
@@ -82,6 +97,9 @@ export interface CaptureResult {
     coverError: string;
     coverSource: string;
     message: string;
+    coverPath?: string;
+    notePath?: string;
+    noteCreated?: boolean;
 }
 
 export interface CoverFailure {
@@ -104,6 +122,7 @@ export interface SavedDataPatch {
     settings?: CaptureSettingsData;
     settingsVersion?: number;
     coverReport?: CoverReport;
+    noteIndex?: Record<string, string>;
 }
 
 export interface CaptureUpdatedEvent {
@@ -111,4 +130,6 @@ export interface CaptureUpdatedEvent {
     blockId: string;
     state: ListeningState;
     date: string;
+    notePath?: string;
+    output?: CaptureMode;
 }

@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md) · English
 
-Podcast Capture saves episode links from Douban, Xiaoyuzhou, and Apple Podcasts to a Markdown log in Obsidian. Each episode occupies one line with a title, an optional local cover, and a listening date. Daily note integration is optional. Works mentioned in an episode can be linked to centralized wishlists. The interface currently uses Chinese.
+Podcast Capture saves episode links from Douban, Xiaoyuzhou, and Apple Podcasts as a one-line Markdown log, individual episode notes, or both. The default remains one line per episode, with a title, optional local cover, and listening date. Episode notes support folders grouped by show and Markdown templates. Daily integration and links to centralized work wishlists are optional. The interface currently uses Chinese.
 
 #### Installation
 
@@ -10,19 +10,72 @@ For iPhone and desktop testing, install [BRAT](https://github.com/TfTHacker/obsi
 
 Obsidian 1.5.0 or later is required. Place `main.js`, `manifest.json`, and `styles.css` in `<Vault>/.obsidian/plugins/podcast-capture/`, then enable **Podcast Capture** under **Settings → Community plugins**. Source builds place these files in `release/podcast-capture/`.
 
-When updating, replace those three files and reload the plugin. Keep the existing `data.json`, which stores personal settings and the latest cover repair report.
+When updating, replace those three files and reload the plugin. Keep the existing `data.json`, which stores personal settings, the episode-note index, and the latest cover repair report.
 
 #### Capture an episode
 
 1. Open the command palette and run **Podcast Capture: 添加播客** (add podcast).
-2. Paste an episode share link and select **获取名称与封面** (fetch title and cover).
-3. Confirm the title, listening date, and state, then select **保存** (save).
+2. Paste an episode share link and select **获取单集信息** (fetch episode information).
+3. Confirm the show, episode title, listening date, state, and save mode, then select **保存** (save).
 
 States are `听过` (listened), `在听` (in progress), and `想听` (wishlist). Only listened entries receive a listening date. The date is entered manually; the plugin does not import playback history. With daily integration enabled, opening the dialog from a dated note in the configured daily folder uses that note's date.
 
 For Apple Podcasts, share an individual episode. A show URL without an `i` episode parameter is rejected. If metadata cannot be fetched, enter the title manually. A failed cover download does not prevent saving.
 
 **打开播客记录** opens the configured log. **补全缺失封面** retries missing covers and reports the failure stage; when an image URL is available, the report links to the original image.
+
+#### Episode notes
+
+Choose a default save mode in the plugin settings, or change **保存方式** for a single capture:
+
+| Mode | Output |
+| --- | --- |
+| 记录清单 | One log row; no episode note is created |
+| 单集笔记 | One episode note, opened after saving; no log is created automatically |
+| 清单与单集笔记 | A log row with a note link, plus an episode note |
+
+The **创建单集笔记** command opens the capture dialog in note mode. In an existing log, **写笔记** opens a dialog prefilled with that row's episode; **打开笔记** reopens an indexed note. These actions work in reading mode and the editor, including mobile, without a hotkey. A note-only episode can be added to the log later with **添加播客**; work associations currently require a log row.
+
+The default note folder is `Podcasts` and the path within it is `{{show}}/{{title}}.md`. For example, a show named `Morning` and episode named `Airplanes` produce `Podcasts/Morning/Airplanes.md`. A missing show name uses `Unsorted`. The folder can be empty to use the vault root. Changing either setting affects new files only. Unsupported filename characters are replaced, reserved Windows names are prefixed, and a filename occupied by another file receives an episode-ID suffix. Existing files are never overwritten.
+
+Select a vault Markdown file under **Markdown 模板文件**, or leave it empty to use the editable built-in **新笔记模板**. Templates run only when creating a note; later edits and quotations remain untouched. Templates are plain Markdown with optional YAML properties. Templater expressions and JavaScript are not executed.
+
+| Variable | Value |
+| --- | --- |
+| `{{show}}`, `{{title}}` | Show name and episode title, kept separate |
+| `{{url}}` | Canonical episode link |
+| `{{cover}}`, `{{coverPath}}` | Local Markdown image with width 120, or its vault path; empty without a local cover |
+| `{{published}}` | Platform publication date, when available |
+| `{{listened}}` | Manually selected listening date for 听过; empty for other states |
+| `{{currentDate}}`, `{{date}}` | Local date when the note is created |
+| `{{description}}` | Platform description, when available, or manually entered text |
+| `{{state}}`, `{{provider}}`, `{{id}}` | Capture state, platform, and stable episode identifier |
+
+Date variables accept formats such as `{{published:YYYY-MM-DD}}` or `{{currentDate:YYYY-MM}}`. Paths support `show`, `title`, `published`, `listened`, `currentDate`, `date`, `provider`, and `id`; body-only variables are rejected in paths. Use `/` between path components to create subfolders. Missing optional metadata stays empty in the note and uses `Untitled` in a filename.
+
+For example, save the following as a Markdown template and select it in settings:
+
+```markdown
+---
+show: "{{show}}"
+published: "{{published}}"
+listened: "{{listened}}"
+tags: [podcast]
+---
+### {{title}}
+
+{{cover}}
+
+[Episode](<{{url}}>)
+
+#### Notes
+
+#### Quotes
+```
+
+New episode notes always include one managed property, `podcast_capture_id`, used to find them after a rename or move. Keep that property intact. Other properties come from the selected template; existing logs and daily notes receive no new managed properties. Repeated capture of a note reopens it without changing its content or dates. The index in `data.json` accelerates lookup; vault metadata can recover a note after syncing it to another device. Ambiguous duplicate identities require manual cleanup.
+
+Templates and paths are checked before creating outputs. If a later write fails after the log or note was saved, the error identifies the saved side; retrying reuses it. With daily integration enabled, both mode keeps the log block link, while note-only mode links the episode note when no log row exists. Only one link is added for an unchanged episode target.
 
 #### Link works to podcast episodes
 
@@ -46,6 +99,11 @@ Custom sync tools must preserve the span between `podcast-sources:start` and `po
 
 | Setting | Default | Behavior |
 | --- | --- | --- |
+| Save mode | `log` | Log, episode note, or both; can be overridden per capture |
+| Note folder | `Podcasts` | Relative vault folder; empty uses the root |
+| Note path template | `{{show}}/{{title}}.md` | Path inside the note folder, including `.md` |
+| Markdown template file | Empty | An existing vault `.md` template; empty uses the built-in template |
+| New note template | Title, show, cover, link, Notes, Quotes | Used only when creating a note |
 | Log file | `Podcasts.md` | Created when absent; changing this setting does not move the existing file |
 | Entry heading | `Entries` | New entries are inserted under this heading; other content is preserved |
 | Cover folder | `image/podcasts` | Relative path inside the vault |
@@ -76,7 +134,7 @@ Episodes from the same platform are matched by episode ID. Across platforms, rec
 
 #### Integration and migration
 
-The output is ordinary Markdown. Dataview and other tracking plugins are optional. After saving, the plugin emits the workspace event `podcast-capture:updated` with `path`, `blockId`, `state`, and `date`. `CaptureUpdatedEvent` in `src/types.ts` defines the payload.
+The output is ordinary Markdown. Dataview and other tracking plugins are optional. After saving, the plugin emits `podcast-capture:updated` with `path`, `blockId`, `state`, and `date`. Note captures also include `notePath` and `output`; `blockId` is empty when no log row exists. `CaptureUpdatedEvent` in `src/types.ts` defines the payload. Log-only tracking integrations do not automatically count standalone notes.
 
 Installations predating configurable settings can migrate their existing paths once, when no saved settings exist and the legacy log is present. Saved settings take precedence. Legacy `douban-state` comments and block identifiers remain readable.
 

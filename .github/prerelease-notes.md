@@ -1,45 +1,25 @@
-### Podcast Capture
+### Podcast Capture 0.6.0
 
-Capture Douban, Xiaoyuzhou, and Apple Podcasts episodes in a configurable Markdown log, with local covers and optional daily note integration.
+[简体中文说明](https://github.com/Ch1llNoodle/obsidian-podcast-capture/blob/master/README.zh-CN.md) · [English documentation](https://github.com/Ch1llNoodle/obsidian-podcast-capture/blob/master/README.md)
 
-This prerelease is available for testing with BRAT. Android and iOS loading is enabled; real-device compatibility remains unverified. The interface uses Chinese.
+Save Douban, Xiaoyuzhou, and Apple Podcasts episodes as a one-line Markdown log, individual episode notes, or both. Existing installations keep the log default and their saved paths.
 
-#### Clean editing and reading layouts
+#### Episode notes
 
-The 添加关联 button is available beside podcast entries in both editing and reading mode. Work links and excerpts appear as indented child list items beneath each episode, without a recommendation label. Existing inline episode links are converted to this layout while retaining their block IDs. Existing associations restore missing episode links after layout is ready. The wanted-only dropdown and fixed source remain unchanged. Each note is saved separately, with explicit partial-failure reporting and idempotent retry.
+- Choose the default save mode in settings or override it for a single capture.
+- Set a note folder and path pattern to group episodes by show.
+- Select a vault Markdown template or edit the built-in template. Variables include show, title, publication date, listening date, description, cover, link, and episode ID.
+- Use 创建单集笔记 from the command palette, or 写笔记 beside an episode in editing or reading mode. Existing notes reopen without overwriting handwritten content.
+- Managed episode identities locate renamed or moved notes. Filename collisions receive an ID suffix. Template and path errors are checked before output creation. Partial write failures identify the saved side and support retry.
 
-#### Apple Podcasts metadata fix
+Publication and listening dates remain separate. Missing optional metadata stays empty. Templates run only on creation and do not execute Templater or JavaScript. Daily integration stays optional; both mode retains one log block link, while note-only captures can link the note directly. Work associations continue to use log rows.
 
-Apple episode metadata now uses the public iTunes Lookup API before falling back to the webpage. Generic web player titles are rejected. Cover repair can correct previously saved player titles while preserving dates, block links, quotations, and custom names.
+#### 安装与使用
 
-#### Install with BRAT
+通过 BRAT 添加 Ch1llNoodle/obsidian-podcast-capture 并选择本版本，在 Obsidian 中启用插件。已有安装更新后重新加载插件。默认继续每集一行；需要长笔记时，在添加窗口选择“单集笔记”或“清单与单集笔记”，也可点已有单集旁的“写笔记”。目录、文件名与模板可在插件设置中调整。
 
-1. Install and enable BRAT from Obsidian's community plugins.
-2. In BRAT, add `Ch1llNoodle/obsidian-podcast-capture` as a beta plugin.
-3. Select this release or the latest available version, then enable Podcast Capture.
+发布附件为 main.js、manifest.json、styles.css，不包含个人 data.json。运行代码使用 Obsidian 和 Web API，允许 Android、iOS 加载；0.6.0 新功能尚未完成手机真机验证。界面使用中文。
 
-The release contains `main.js`, `manifest.json`, and `styles.css`. Personal settings are not included.
+#### Validation
 
-#### 中文说明
-
-将豆瓣、小宇宙和 Apple Podcasts 的单集保存为集中记录，支持本地封面、输出设置和可选的日记联动。本预发布版通过 BRAT 安装；已允许移动端加载，尚未完成真机验证。
-
-在 Obsidian 社区插件中安装并启用 BRAT，添加仓库 `Ch1llNoodle/obsidian-podcast-capture`，选择本版本或最新版本，然后启用 Podcast Capture。iPhone 无须通过“文件”App 复制插件文件。
-
-Apple 单集优先通过公开目录获取名称和封面，不依赖 Apple 登录。旧播放器标题可通过“补全缺失封面”一并修正，日期、块链接、摘抄和手写名称保留。
-
-在播客记录中选择单集旁的“添加关联”，直接选择想读、想看、想听或想玩的作品，填写可选摘记。来源固定为所点单集，没有搜索框和播客选择框，不列出已完成或进行中的作品。
-
-编辑模式和阅读模式均提供单集行内“添加关联”按钮。保存后播客行显示作品链接及摘记，作品行保留来源；已有作品侧关联在工作区就绪后补回播客行链接。
-
-Live Preview hides internal metadata and episode block IDs. Work markers are inline comments; reading-mode linked works use a scoped block layout. The association action uses a lightweight text-button style.
-
-实时预览隐藏内部注释和块标识；作品管理标记改为行内注释，不再占据单独空行。阅读视图对子列表单独设置换行与缩进，按钮改为轻量文字样式。
-
-Reading-mode episode rows allow flex wrapping, and linked-work lists occupy a full row. This also supports collection layouts that use a horizontal flex row for episode covers and titles.
-
-阅读视图中的播客父项允许 flex 换行，关联作品列表独占完整一行，兼容封面与标题横向排列的清单样式。
-
-Media-list presentation is independent of Podcast Capture. Editor decorations are limited to the podcast log; collection comments and block IDs can be styled through Obsidian CSS snippets.
-
-播客插件的编辑器装饰仅作用于播客记录，不再接管书影音清单的注释和块标识显示；清单样式由 Obsidian CSS 片段独立管理。
+Strict TypeScript, production bundling, ESLint, and automated tests cover capture modes, templates, note identity, duplicate saves, collision handling, retry, row actions, existing daily integration, recommendations, and deployment. Real platform availability and device rendering still require testing in Obsidian.

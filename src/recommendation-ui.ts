@@ -6,6 +6,7 @@ import { RecommendationService } from './recommendation-service';
 import { episodeUrl } from './core';
 import { errorMessage, record } from './validation';
 import { recommendationEditor } from './recommendation-editor';
+import { openEpisodeNote } from './note-ui';
 
 declare module 'obsidian' {
     interface Workspace {
@@ -38,6 +39,10 @@ class EpisodeButtons extends MarkdownRenderChild {
             const selected = source;
             this.registerDomEvent(button, 'click', () => new RecommendationModal(this.service, selected).open());
             this.buttons.push(button);
+            const note = row.createEl('button', { text: this.service.podcast.notes.known(source.blockId) ? '打开笔记' : '写笔记', cls: 'podcast-note-button' });
+            if (nested) row.insertBefore(note, nested);
+            this.registerDomEvent(note, 'click', () => { void openEpisodeNote(this.service.podcast, selected).catch((error: unknown) => new Notice(errorMessage(error))); });
+            this.buttons.push(note);
         }
     }
     override onunload(): void { this.disposed = true; this.buttons.forEach(button => button.remove()); }

@@ -1,6 +1,6 @@
 import type { RequestUrlParam, RequestUrlResponse } from 'obsidian';
 import type { Episode, EpisodeMetadata } from './types';
-import { coverUrl, plain } from './metadata-helpers';
+import { coverUrl, plain, publicationDate } from './metadata-helpers';
 import { errorMessage, isRecord, isUnknownArray, parseJson, record, scalarText } from './validation';
 
 type Request = (options: RequestUrlParam) => Promise<RequestUrlResponse>;
@@ -23,7 +23,8 @@ export function appleLookupMetadata(value: unknown, episode: Episode): EpisodeMe
     const showName = plain(item.collectionName) || plain(show?.collectionName ?? show?.trackName);
     const cover = coverUrl(item.artworkUrl600, item.artworkUrl160, item.artworkUrl100, item.artworkUrl60,
         show?.artworkUrl600, show?.artworkUrl100);
-    return { title: showName && !title.startsWith(showName + ' · ') ? `${showName} · ${title}` : title, cover };
+    return { title: showName && !title.startsWith(showName + ' · ') ? `${showName} · ${title}` : title, cover,
+        show: showName, episodeTitle: title, published: publicationDate(item.releaseDate), description: plain(item.description || item.shortDescription) };
 }
 
 /** Public catalog requests contain only the episode/show IDs and storefront. */

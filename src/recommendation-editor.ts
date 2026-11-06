@@ -1,22 +1,31 @@
-import { editorInfoField, editorLivePreviewField } from 'obsidian';
+import { editorInfoField, editorLivePreviewField, Notice } from 'obsidian';
 import { Decoration, type DecorationSet, EditorView, ViewPlugin, type ViewUpdate, WidgetType } from '@codemirror/view';
 import type { Range } from '@codemirror/state';
 import type { RecommendationService } from './recommendation-service';
 import type { RecommendationSource } from './types';
 import { RecommendationModal } from './recommendation-modal';
 import { episodeSource } from './recommendations';
+import { openEpisodeNote } from './note-ui';
+import { errorMessage } from './validation';
 
 class EpisodeAction extends WidgetType {
-    constructor(private readonly service: RecommendationService, private readonly source: RecommendationSource) { super(); }
-    override eq(other: EpisodeAction): boolean { return this.source.path === other.source.path && this.source.blockId === other.source.blockId; }
+    private readonly label: string;
+    constructor(private readonly service: RecommendationService, private readonly source: RecommendationSource, private readonly note = false) {
+        super(); this.label = note ? (service.podcast.notes.known(source.blockId) ? '打开笔记' : '写笔记') : '添加关联';
+    }
+    override eq(other: EpisodeAction): boolean { return this.source.path === other.source.path && this.source.blockId === other.source.blockId && this.note === other.note && this.label === other.label; }
     override toDOM(view: EditorView): HTMLElement {
         const button = view.dom.ownerDocument.createElement('button');
-        button.textContent = '添加关联';
-        button.className = 'podcast-recommend-button';
+        button.textContent = this.label;
+        button.className = this.note ? 'podcast-note-button' : 'podcast-recommend-button';
         button.type = 'button';
-        button.setAttribute('aria-label', `为${this.source.title}添加关联`);
+        button.setAttribute('aria-label', `${this.label}：${this.source.title}`);
         button.onmousedown = event => event.preventDefault();
-        button.onclick = event => { event.preventDefault(); new RecommendationModal(this.service, this.source).open(); };
+        button.onclick = event => {
+            event.preventDefault();
+            if (this.note) void openEpisodeNote(this.service.podcast, this.source).catch((error: unknown) => new Notice(errorMessage(error)));
+            else new RecommendationModal(this.service, this.source).open();
+        };
         return button;
     }
     override destroy(dom: HTMLElement): void { dom.onclick = null; dom.onmousedown = null; }
@@ -37,12 +46,13 @@ export function recommendationEditor(service: RecommendationService): ViewPlugin
                     seen.add(line.from);
                     const source = episodeSource(line.text, path);
                     if (livePreview && (source || /^ {2}- .*<!-- podcast-work -->\s*$/.test(line.text))) {
-                        const metadata = /\s*<!--\s*(?:(?:podcast-state|podcast-date|douban-state):[^>]*|podcast-work)\s*-->|\s+\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+)\s*$/g;
+                        const metadata = /\s*<!--\s*(?:(?:podcast-state|podcast-date|douban-state):[^>]*|podcast-work|podcast-note)\s*-->|\s+\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+)\s*$/g;
                         for (const match of line.text.matchAll(metadata)) {
                             ranges.push(Decoration.replace({}).range(line.from + match.index, line.from + match.index + match[0].length));
                         }
                     }
                     if (source) ranges.push(Decoration.widget({ widget: new EpisodeAction(service, source), side: 1 }).range(line.to));
+                    if (source) ranges.push(Decoration.widget({ widget: new EpisodeAction(service, source, true), side: 2 }).range(line.to));
                 }
                 position = line.to + 1;
             }

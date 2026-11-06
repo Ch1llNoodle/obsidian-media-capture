@@ -1,11 +1,14 @@
 .podcast-capture { max-width: 520px; }
 .podcast-capture-field { display: flex; flex-direction: column; gap: 6px; margin: 16px 0; }
 .podcast-capture-field > span { font-weight: 500; }
-.podcast-capture-field input, .podcast-capture-field select { width: 100%; }
+.podcast-capture-field input, .podcast-capture-field select, .podcast-capture-field textarea { width: 100%; }
+.podcast-capture-row { display: flex; flex-wrap: wrap; gap: 16px; }
+.podcast-capture-row > label { flex: 1; min-width: 140px; }
+.podcast-note-fields > summary { cursor: pointer; color: var(--text-muted); }
 .podcast-capture-message { color: var(--text-muted); min-height: 1.5em; }
 .podcast-capture-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 
-.podcast-recommend-button {
+.podcast-recommend-button, .podcast-note-button {
     margin-inline-start: 8px;
     min-height: 32px;
     white-space: nowrap;
@@ -15,7 +18,7 @@
     color: var(--text-muted);
     font-size: var(--font-ui-small);
 }
-.podcast-recommend-button:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
+.podcast-recommend-button:hover, .podcast-note-button:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
 .podcast-recommend-results { display: grid; gap: 6px; max-height: 240px; overflow-y: auto; }
 .podcast-recommend-results button { text-align: start; height: auto; white-space: normal; }
 

@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const vm = require('node:vm');
 const { buildSync } = require('esbuild');
+const yaml = require('js-yaml');
 
 test('播客条目固定来源，只有待看作品下拉框，没有搜索或播客选择', async () => {
     const bundle = buildSync({ entryPoints: [path.join(__dirname, '../src/main.ts')], bundle: true,
@@ -10,7 +11,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     const all = node => [node, ...node.children.flatMap(all)];
     function element(tag = 'div', options = {}) {
         const node = { tag, children: [], value: options.value ?? '', classList: { add() {} }, ...options,
-            setAttribute(key, value) { this[key] = value; }, addClass() {}, setText(value) { this.text = value; }, empty() { this.children = []; },
+            setAttribute(key, value) { this[key] = value; }, focus() {}, addClass() {}, setText(value) { this.text = value; }, empty() { this.children = []; },
             createEl(tag, options = {}) {
                 const child = element(tag, options); this.children.push(child);
                 if (this.tag === 'select' && !this.value) this.value = child.value;
@@ -18,7 +19,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
             }, createSpan(options) { return this.createEl('span', options); },
             createDiv(options) { return this.createEl('div', options); },
             addEventListener(name, fn) { this[name] = fn; },
-            querySelectorAll() { return all(this).filter(n => ['input', 'select', 'button'].includes(n.tag)); },
+            querySelectorAll() { return all(this).filter(n => ['input', 'select', 'textarea', 'button'].includes(n.tag)); },
             remove() { this.removed = true; },
         };
         return node;
@@ -32,12 +33,17 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     const content = new Map([['Podcasts.md', '- [节目 · 单集](<https://www.douban.com/podcast_episode/123>) ^douban-123\n- [另一个节目 · 单集](<https://podcasts.apple.com/us/podcast/id12?i=456>) ^apple-456'], ['Recommendations/Movies.md', '- [电影](<https://movie.douban.com/subject/100/>) <!-- douban-state: 想看 --> ^douban-100\n- [已完成](<https://movie.douban.com/subject/200/>) <!-- douban-state: 看过 --> ^douban-200\n- [正在看](<https://movie.douban.com/subject/300/>) <!-- douban-state: 在看 --> ^douban-300']]);
     files.set('Recommendations/Movies.md', { path: 'Recommendations/Movies.md', extension: 'md' });
     const app = { vault: {
+        on: () => ({}),
+        getMarkdownFiles: () => [...files.values()].filter(file => file.extension === 'md'),
         getAbstractFileByPath: p => files.get(p) ?? null,
         read: async file => content.get(file.path),
         createFolder: async p => { files.set(p, { path: p }); },
         create: async (p, text) => { const file = { path: p, extension: 'md' }; files.set(p, file); content.set(p, text); return file; },
         process: async (file, fn) => { content.set(file.path, fn(content.get(file.path))); },
     }, workspace: {
+        trigger() {},
+        getActiveFile: () => null,
+        getLeaf: () => ({ openFile: async () => {} }),
         onLayoutReady: fn => fn(),
         on: (name, fn) => { events.set(name, fn); return { name }; },
     } };
@@ -45,20 +51,47 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
         constructor() { this.app = app; }
         async loadData() { return { settings: { downloadCovers: false } }; }
         async saveData() {}
-        addSettingTab() {}
+        addSettingTab(tab) { this.settingsTab = tab; }
         addCommand(command) { commands.push(command); }
         registerEvent() {}
         registerEditorExtension(extension) { this.editorExtension = extension; }
         registerMarkdownPostProcessor(callback) { this.processor = callback; }
     }
     class Modal {
-        constructor() { this.contentEl = element(); }
+        constructor(app) { this.app = app; this.contentEl = element(); }
         open() { modals.push(this); this.onOpen(); }
         close() { this.onClose(); }
     }
     class MarkdownRenderChild {
         constructor(container) { this.containerEl = container; }
         registerDomEvent(node, name, fn) { node[name] = fn; }
+    }
+    class Setting {
+        constructor(container) { this.row = container.createDiv(); }
+        setName(name) { this.row.name = name; return this; }
+        setDesc() { return this; }
+        setHeading() { return this; }
+        addText(callback) { return this.input(callback, 'input'); }
+        addTextArea(callback) { return this.input(callback, 'textarea'); }
+        input(callback, tag) {
+            const node = this.row.createEl(tag);
+            callback({ inputEl: node, setValue: value => { node.value = value; }, getValue: () => node.value }); return this;
+        }
+        addDropdown(callback) {
+            const node = this.row.createEl('select');
+            const component = { addOptions: values => { node.options = values; return component; }, setValue: value => { node.value = value; return component; }, onChange: fn => { node.change = fn; return component; } };
+            callback(component); return this;
+        }
+        addToggle(callback) {
+            const component = { setValue: () => component, onChange: () => component }; callback(component); return this;
+        }
+        addButton(callback) { return this.button(callback); }
+        addExtraButton(callback) { return this.button(callback); }
+        button(callback) {
+            const node = this.row.createEl('button');
+            const component = { setButtonText: text => { node.text = text; return component; }, setIcon: () => component, setTooltip: () => component, onClick: fn => { node.click = fn; return component; } };
+            callback(component); return this;
+        }
     }
     const sandbox = { module: { exports: {} }, URL, URLSearchParams, Uint8Array, Date, console,
         require: name => {
@@ -68,13 +101,16 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
             };
             if (name === '@codemirror/state') return {};
             assert.equal(name, 'obsidian');
-            return { editorInfoField: editorInfo, editorLivePreviewField: livePreviewInfo, Plugin, Modal, MarkdownRenderChild, Notice: class {}, PluginSettingTab: class {},
-                Setting: class {}, normalizePath: p => p, requestUrl: async () => { throw new Error('Unexpected request'); } };
+            return { editorInfoField: editorInfo, editorLivePreviewField: livePreviewInfo, Plugin, Modal,
+                FuzzySuggestModal: class extends Modal { setPlaceholder() {} onOpen() {} }, MarkdownRenderChild, Notice: class {},
+                PluginSettingTab: class { constructor() { this.containerEl = element(); } },
+                parseYaml: yaml.load, stringifyYaml: yaml.dump,
+                Setting, normalizePath: p => p, requestUrl: async () => { throw new Error('Unexpected request'); } };
         } };
     vm.runInNewContext(bundle, sandbox);
     const plugin = new sandbox.module.exports.default();
     await plugin.onload();
-    assert.equal(commands.length, 4);
+    assert.equal(commands.length, 5);
     assert.equal(plugin.supportsRecommendations, true);
     events.get('podcast-capture:recommend')({ path: 'Podcasts.md', blockId: 'douban-123' });
     await new Promise(resolve => setImmediate(resolve));
@@ -125,7 +161,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
         } },
     } };
     const editor = new plugin.editorExtension.cls(view);
-    assert.equal(editor.decorations.filter(range => range.widget).length, 2);
+    assert.equal(editor.decorations.filter(range => range.widget).length, 4);
     assert(editor.decorations.filter(range => range.hidden).length >= 3);
     const widget = editor.decorations.find(range => range.widget).widget;
     const editorButton = widget.toDOM(view);
@@ -138,7 +174,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     view.state.field = field => field === editorInfo ? { file: { path: 'Podcasts.md' } } : false;
     editor.update({ view });
     assert.equal(editor.decorations.filter(range => range.hidden).length, 0);
-    assert.equal(editor.decorations.filter(range => range.widget).length, 2);
+    assert.equal(editor.decorations.filter(range => range.widget).length, 4);
     const bookText = '- [书名](<https://book.douban.com/subject/36728477/>) <!-- douban-state: 在读 --> <!-- douban-type: book --> ^douban-36728477';
     view.visibleRanges = [{ from: 0, to: bookText.length }];
     view.state.doc = { lineAt: () => ({ from: 0, to: bookText.length, text: bookText }) };
@@ -152,6 +188,27 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     view.state.field = () => ({ file: { path: 'Other.md' } });
     editor.update({ view });
     assert.equal(editor.decorations.length, 0);
+    commands.find(command => command.id === 'create-episode-note').callback();
+    assert.equal(modals.at(-1).outputInput.value, 'note');
+    assert.equal(modals.at(-1).urlInput.value, '');
+    assert.equal(row.children[1].text, '写笔记');
+    // A row opens a prefilled note dialog without choosing the episode again.
+    await row.children[1].click();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(modals.at(-1).urlInput.value, 'https://podcasts.apple.com/us/podcast/id12?i=456');
+    assert.equal(modals.at(-1).showInput.value, '另一个节目');
+    assert.equal(modals.at(-1).outputInput.value, 'note');
+    const noteDialog = modals.at(-1);
+    await noteDialog.save();
+    assert(files.has('Podcasts/另一个节目/单集.md'));
+    plugin.settingsTab.display();
+    const templateSetting = plugin.settingsTab.containerEl.children.find(node => node.name === 'Markdown 模板文件');
+    templateSetting.children.find(node => node.text === '选择').click();
+    const picker = modals.at(-1);
+    assert(picker.getItems().some(file => file.path === 'Podcasts/另一个节目/单集.md'));
+    picker.onChooseItem(files.get('Podcasts/另一个节目/单集.md'));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(plugin.service.config.noteTemplateFile, 'Podcasts/另一个节目/单集.md');
     plugin.onunload();
     assert.equal(plugin.service.unloaded, true);
 });

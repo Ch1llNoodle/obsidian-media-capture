@@ -1,5 +1,5 @@
 import type { Episode, EpisodeMetadata } from "./types";
-import { coverUrl, decode, plain } from "./metadata-helpers";
+import { coverUrl, decode, plain, publicationDate } from "./metadata-helpers";
 import { parseJson, record, isRecord, isUnknownArray } from "./validation";
 import { isApplePlayerTitle } from "./apple";
 
@@ -16,6 +16,8 @@ export function metadata(html: string, episode: Pick<Episode, "provider"> & Part
     let title = plain(metas.get("og:title") || metas.get("twitter:title") || html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1]);
     let cover = coverUrl(metas.get("og:image:secure_url"), metas.get("og:image"), metas.get("og:image:url"), metas.get("twitter:image"), metas.get("twitter:image:src"));
     let show = "";
+    let published = publicationDate(metas.get('article:published_time'));
+    let description = plain(metas.get('og:description') || metas.get('description') || metas.get('twitter:description'));
     if (episode.provider === "xiaoyuzhou") {
         const script = html.match(/<script\b(?=[^>]*\bid=["']__NEXT_DATA__["'])[^>]*>([\s\S]*?)<\/script>/i)?.[1];
         if (script) {
@@ -24,6 +26,8 @@ export function metadata(html: string, episode: Pick<Episode, "provider"> & Part
                 if (isRecord(data) && (!data.eid || typeof data.eid === "string" && data.eid.toLowerCase() === episode.id)) {
                     title = plain(data.title) || title;
                     show = plain(record(data.podcast).title);
+                    published = publicationDate(data.pubDate || data.publishTime) || published;
+                    description = plain(data.description || data.shownotes) || description;
                     cover = coverUrl(data.image, record(data.podcast).image, data.cover, cover);
                 }
             } catch { /* Fall back to public metadata when embedded episode JSON is unavailable. */ }
@@ -44,6 +48,8 @@ export function metadata(html: string, episode: Pick<Episode, "provider"> & Part
                 if (node) {
                     title = plain(node.name) || title;
                     show = plain(record(node.partOfSeries).name || record(node.partOfPodcast).name);
+                    published = publicationDate(node.datePublished) || published;
+                    description = plain(node.description) || description;
                     const image = isUnknownArray(node.image) ? node.image[0] : node.image;
                     cover = coverUrl(image, cover);
                     break;
@@ -64,6 +70,7 @@ export function metadata(html: string, episode: Pick<Episode, "provider"> & Part
     if (!title || isApplePlayerTitle(title) || /^(豆瓣|小宇宙)$/.test(title) || /登录|安全验证|异常请求|验证码|访问.*受限|豆瓣.*出错|Access Denied|not found/i.test(title)) {
         throw new Error("平台暂未返回单集信息，请稍后重试，或直接填写名称后保存。");
     }
-    return { title: show && !title.startsWith(show + " · ") ? `${show} · ${title}` : title, cover: coverUrl(cover) };
+    const episodeTitle = show && title.startsWith(show + ' · ') ? title.slice(show.length + 3) : title;
+    return { title: show && !title.startsWith(show + " · ") ? `${show} · ${title}` : title, cover: coverUrl(cover), show, episodeTitle, published, description };
 }
 

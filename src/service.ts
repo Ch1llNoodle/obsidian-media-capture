@@ -7,7 +7,11 @@ import { record, errorMessage } from "./validation";
 import { fetchAppleLookup, isApplePlayerTitle } from "./apple";
 import { cacheCover } from "./covers";
 
+import { EpisodeNotes } from "./episode-notes";
+import { saveCapture } from "./capture-output";
+
 export class PodcastService {
+    readonly notes = new EpisodeNotes(this);
     readonly plugin: Plugin;
     app: App;
     settings: CaptureSettingsData = { ...DEFAULT_SETTINGS };
@@ -22,6 +26,7 @@ export class PodcastService {
         this.dataQueue = Promise.resolve();
         const data = record(await this.loadData());
         this.settings = validateSettings(data.settings ?? (this.app.vault.getAbstractFileByPath(LEGACY_SETTINGS.catalogPath) ? LEGACY_SETTINGS : DEFAULT_SETTINGS));
+        this.notes.initialize(data.noteIndex);
         if (!data.settings) await this.updateData({ settings: this.settings, settingsVersion: 1 });
     }
     dispose(): void { this.unloaded = true; }
@@ -59,7 +64,7 @@ export class PodcastService {
             const response = await requestUrl({ url: episode.url, headers: { Referer: new URL(episode.url).origin + "/" }, throw: false });
             if (response.status !== 200) throw new Error(`平台返回 ${response.status}，可稍后重试或手动填写名称。`);
             const page = metadata(response.text, episode);
-            return lookup ? { title: lookup.title, cover: page.cover } : page;
+            return lookup ? { ...page, ...lookup, cover: page.cover } : page;
         } catch (error) {
             if (lookup) return lookup;
             throw new Error([lookupError, errorMessage(error)].filter(Boolean).join("；"));
@@ -120,7 +125,9 @@ export class PodcastService {
         }
         return { repaired, failures };
     }
-    async captureOne(item: CaptureItem): Promise<CaptureResult> {
+    captureOne(item: CaptureItem): Promise<CaptureResult> { return saveCapture(this, item); }
+    async captureLogOne(item: CaptureItem): Promise<CaptureResult> {
+        if (this.unloaded) throw new Error("插件已卸载，请重新启用后重试。");
         const episode = episodeUrl(item.url);
         item = { ...item, ...episode };
         if (!item.title?.trim() || !isListeningState(item.state)) throw new Error("名称或状态无效。");
@@ -155,18 +162,19 @@ export class PodcastService {
                 cover = await cacheCover(this.app, url, this.config.imageFolder, `podcast-${savedBlock}`);
             } catch (error) { cover = ""; coverError = errorMessage(error); }
         }
+        if (this.unloaded) throw new Error("插件已卸载，请重新启用后重试。");
         await this.app.vault.process(file, current => updateCatalog(current, item, cover, this.config).text);
-        if (!item.repairOnly && item.state === "听过" && diaries[0]) {
+        if (!item.repairOnly && item.state === "听过" && diaries.length === 1 && diaries[0]) {
             const label = item.title.replace(/\[|\]|\||\r|\n/g, " ");
             const link = `[[${this.config.catalogPath.replace(/\.md$/i, "")}#^${savedBlock}|${label}]]`;
-            await this.app.fileManager.processFrontMatter(diaries[0], (data: Record<string, unknown>) => {
+            try { await this.app.fileManager.processFrontMatter(diaries[0], (data: Record<string, unknown>) => {
                 const property = this.config.dailyProperty;
                 const stored: unknown = data[property];
                 const values: unknown[] = Array.isArray(stored) ? stored : stored ? [stored] : [];
                 if (!values.some(value => String(value).includes(`#^${savedBlock}|`) || String(value).includes(`#^${savedBlock}]]`))) data[property] = [...values, link];
-            });
+            }); } catch (error) { throw new Error("清单已保存，日记写入失败：" + errorMessage(error)); }
         }
         this.app.workspace.trigger("podcast-capture:updated", { path: this.config.catalogPath, blockId: savedBlock, state: item.state, date: item.date } satisfies CaptureUpdatedEvent);
-        return { hasCover: !!cover, coverError, coverSource, message: (completed ? "已保留原记录" : "已添加到播客记录") + (item.state === "听过" ? ` · ${item.date}` : completed ? ` · ${oldDate ?? "听过"}` : ` · ${item.state}`) + (coverError ? `（封面未获取到：${coverError}）` : "") };
+        return { hasCover: !!cover, coverPath: cover, coverError, coverSource, message: (completed ? "已保留原记录" : "已添加到播客记录") + (item.state === "听过" ? ` · ${item.date}` : completed ? ` · ${oldDate ?? "听过"}` : ` · ${item.state}`) + (coverError ? `（封面未获取到：${coverError}）` : "") };
     }
 }

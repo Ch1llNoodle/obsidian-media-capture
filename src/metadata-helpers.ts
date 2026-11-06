@@ -15,6 +15,13 @@ export function plain(value: unknown): string {
     return decode(scalarText(value).replace(/<[^>]*>/g, "")).replace(/\s+/g, " ").trim();
 }
 
+export function publicationDate(value: unknown): string {
+    const day = typeof value === 'string' ? /^\d{4}-\d{2}-\d{2}/.exec(value)?.[0] ?? '' : '';
+    if (!day) return '';
+    const date = new Date(day + 'T12:00:00Z');
+    return !Number.isNaN(date.valueOf()) && date.toISOString().slice(0, 10) === day ? day : '';
+}
+
 export function safeCover(value: unknown): string {
     try {
         if (typeof value !== "string") return "";
