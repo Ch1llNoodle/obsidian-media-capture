@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md) · English
 
-Media Capture applies Markdown templates to podcast and video information from Douban, Xiaoyuzhou, Apple Podcasts, YouTube, and Bilibili. Configurable rules append content to existing files or create new files, supporting one-line logs, one file per episode, and one file per show. The default remains one line per episode. Daily integration and links to work wishlists are optional. The interface currently uses Chinese.
+Media Capture saves podcast and video information from Douban, Xiaoyuzhou, Apple Podcasts, YouTube, and Bilibili as Markdown. Write rules support one-line logs, separate notes, and files grouped by show or channel. The default is one line per record, with separate podcast and video logs. Daily integration, work associations, and in-app playback are optional. The interface currently uses Chinese.
 
 #### Installation
 
@@ -12,15 +12,15 @@ Obsidian 1.5.0 or later is required. Place `main.js`, `manifest.json`, and `styl
 
 When updating, replace those three files and reload the plugin. Keep the existing `data.json`, which stores rule settings, output indexes, captured metadata, and the latest cover repair report.
 
-Version 0.10 installs under the `media-capture` identity. Existing users must install this identity and synchronize explicitly converted configuration and records before enabling it. Commands, events, properties, management markers and backups use the media namespace; there are no old-name aliases. Platform record IDs and source links remain unchanged.
+The plugin ID and installation directory are `media-capture`. Configuration requirements for installations predating 0.10 are described under Data format and vault integration.
 
 #### Capture media
 
-1. Open the command palette and run **Media Capture: 采集媒体** (add podcast).
-2. Paste a podcast or video share link and select **获取媒体信息** (fetch episode information).
-3. Confirm the show, episode title, listening date, state, and write preset, then select **保存** (save).
+1. Open the command palette and run **Media Capture: 采集媒体** (capture media).
+2. Paste a podcast or video share link and select **获取媒体信息** (fetch media information).
+3. Confirm the show or channel, title, record date, state, and write preset, then select **保存** (save).
 
-States are `听过` (listened), `在听` (in progress), and `想听` (wishlist). Only listened entries receive a listening date. The date is entered manually; the plugin does not import playback history. With daily integration enabled, opening the dialog from a dated note in the configured daily folder uses that note's date.
+Podcast states are `听过` (listened), `在听` (in progress), and `想听` (wishlist). Videos display `看过` (watched), `在看` (in progress), and `想看` (watchlist). Completed records receive the selected date. With daily integration enabled, opening the dialog from a dated note in the configured daily folder uses that note's date.
 
 For Apple Podcasts, share an individual episode. A show URL without an `i` episode parameter is rejected. If metadata cannot be fetched, enter the title manually. A failed cover download does not prevent saving.
 
@@ -28,7 +28,7 @@ For Apple Podcasts, share an individual episode. A show URL without an `i` episo
 
 #### Video records and optional playback
 
-Video rows use a separate configured log: `Videos.md` by default, or another explicitly configured vault path. File names are not inferred from path language. Both logs share the row template and heading. Independent notes and show/channel append outputs continue using their own rules.
+Video rows use a separate configured log: `Videos.md` by default, or another configured vault path. Both logs share the row template and heading. Independent notes and show/channel append outputs use their own rules.
 
 YouTube watch, shorts, live, embed and youtu.be links and full Bilibili BV/av links are supported. Bilibili parts remain separate records. Open short links first to copy the full address. Tracking parameters and start times are removed. Missing metadata can be entered manually.
 
@@ -36,7 +36,7 @@ Play in Obsidian is disabled by default. Configure a compatible player supportin
 
 #### Templates and write rules
 
-All outputs use the same episode metadata and template variables. Each write rule selects a template, a vault path, and either **append to file** or **create file**. Multiple enabled rules run for one capture, sharing one cover download and one daily-note link.
+All outputs use the same media metadata and template variables. Each write rule selects a template, a vault path, and either **append to file** or **create file**. Multiple enabled rules run for one capture, sharing one cover download and one daily-note link.
 
 | Preset | Destination | Content |
 | --- | --- | --- |
@@ -51,19 +51,19 @@ A fixed path collects episodes in one file; `{{show}}.md` groups them by show; `
 
 The concentrated log rule preserves a fixed path, target heading, and single-line list template containing `{{link}}` so existing daily links and work associations remain usable. Other append rules accept multiline Markdown. Their managed episode regions are delimited by `media-entry` comments. Keep those comments and block IDs; handwritten content outside the regions remains intact. Live Preview hides these management markers in tracked output files. A repeated capture preserves an existing completed region. A state transition stops if the region has been edited manually.
 
-Select a vault Markdown file for a rule, or leave the file path empty to use its inline content. Create templates may include YAML properties; append templates contain body Markdown. Templater and JavaScript are not executed.
+Select a vault Markdown file for a rule, or leave the file path empty to use its inline content. Create templates may include YAML properties; append templates contain body Markdown. Templates are rendered as text; embedded scripts are not executed.
 
 | Variable | Value |
 | --- | --- |
 | `{{show}}`, `{{title}}` | Show and episode title |
 | `{{fullTitle}}`, `{{link}}` | Combined show/title text, or its Markdown episode link |
-| `{{mediaLink}}`, `{{mediaUrl}}` | compatible player video link or URI; empty for podcast pages |
+| `{{mediaLink}}`, `{{mediaUrl}}` | Compatible player video link or URI; empty when playback is disabled or the source is a podcast page |
 | `{{kind}}`, `{{consumed}}` | `video` or `podcast`, and completed viewing/listening date |
 | `{{url}}` | Canonical platform episode URL |
 | `{{cover}}`, `{{coverPath}}` | Local Markdown image at the rule's width, or its vault path; empty without a cover |
 | `{{published}}` | Publication date supplied by the platform |
-| `{{listened}}` | Selected listening date for 听过; empty for other states |
-| `{{currentDate}}`, `{{date}}` | Local date of the episode's first generated record; retained during template updates |
+| `{{listened}}` | Selected completion date for listened or watched records; empty for other states |
+| `{{currentDate}}`, `{{date}}` | Local date of the first generated record; retained during template updates |
 | `{{description}}` | Available platform description or manually entered text |
 | `{{state}}`, `{{provider}}`, `{{id}}` | State, platform, and stable episode identifier |
 
@@ -105,13 +105,15 @@ Stored capture metadata retains dates and descriptions; explicit properties in c
 
 Reports identify each file, failed stage, reason, update status, and backup path. Files changed after preview are skipped. Backup failure prevents replacement; other selected files can still finish. Identical content creates no new backup. Closing a running update dialog does not cancel queued work.
 
-#### Link works to podcast episodes
+#### Link works to media records
 
 Mark a work as wanted on Douban, then import it into a Markdown collection with your own Douban sync tool. Set the six collection paths to your existing books, movies, series, music, games, and theater lists. Defaults are under `Recommendations/`; this plugin reads existing files only.
 
-In the podcast log (editing or reading mode), select **添加关联** beside an episode. That episode is fixed as the source. Choose a wanted work from the dropdown, optionally enter an excerpt, and select **保存关联**. Only works marked 想读, 想看, 想听, or 想玩 for their respective media types are offered; in-progress, completed, and unmarked works are excluded. There are no search fields or source-episode selector. The **打开媒体关联入口** command opens the podcast log.
+In either media log (editing or reading mode), select **添加关联** beside a record. Choose a wanted work from the dropdown, optionally enter an excerpt, and select **保存关联**. The selected record supplies the source. Available works are marked 想读, 想看, 想听, or 想玩 for their respective media types. The **打开媒体关联入口** command opens the podcast log; video rows provide their own association action.
 
-The work row links to its source episode, and linked works and optional excerpts appear as indented child list items beneath the podcast, without a recommendation label. Work-management markers are inline comments rather than separate lines. Live Preview hides internal status, work markers, and block IDs in the podcast log only; source mode retains the Markdown. Media collection presentation is managed independently by Obsidian styles or other tools. Reading mode uses a scoped nested-list layout. Titles, dates, states, and covers stay intact. Multiple episodes share one work row; selecting the same episode again adds no duplicate. Linking works entirely offline: it does not search Douban, fetch subject pages, download work covers, create work notes or wishlist entries, or write daily properties. The work and source are checked again before saving. Each note is updated separately; if the second write fails, the dialog reports which side was saved. Saving again completes the missing side without duplication. After layout is ready, existing work-side associations also restore missing podcast-row links, including works that have since been completed.
+The work row links to the source record; linked works and excerpts appear as indented child items beneath the podcast or video. Inline comments identify managed links. Live Preview hides management comments and block IDs in configured media logs; source mode shows the Markdown. Existing titles, dates, states, covers, and handwritten formatting are preserved. Multiple sources share one work row, and repeated saves reuse the same association.
+
+Associations update the configured local lists offline. The work and source are checked again before saving. Each note is updated separately; if the second write fails, the dialog reports which side was saved. Saving again completes the missing side without duplication. After layout is ready, existing work-side associations restore missing links beneath media records, including works that have since been completed.
 
 Collections use single-line Markdown list entries, for example:
 
@@ -119,7 +121,7 @@ Collections use single-line Markdown list entries, for example:
 - [Work title](<https://movie.douban.com/subject/123/>) <!-- douban-state: 想看 --> <!-- douban-type: movie --> ^douban-123
 ```
 
-`douban-type` accepts `book`, `movie`, `teleplay`, `music`, `game`, and `theater`; without it, the configured collection type is used. The optional `media-capture:recommend` workspace event accepts `{ path, blockId }` to preselect a source episode; `supportsRecommendations` indicates support.
+`douban-type` accepts `book`, `movie`, `teleplay`, `music`, `game`, and `theater`; without it, the configured collection type is used. The optional `media-capture:recommend` workspace event accepts `{ path, blockId }` to preselect a source record; `supportsRecommendations` indicates support.
 
 Custom sync tools must preserve the span between `media-sources:start` and `media-sources:end` when rewriting a matching work. Douban collection synchronization is handled by external tools.
 
@@ -128,28 +130,32 @@ Custom sync tools must preserve the span between `media-sources:start` and `medi
 | Setting | Default | Behavior |
 | --- | --- | --- |
 | Write rules | Concentrated log enabled | Presets or independently configured append/create rules |
+| Video log | `Videos.md` | Separate destination sharing the concentrated log template and heading |
+| Play in Obsidian | Disabled | Video playback links through a configured compatible player |
 | Cover folder | `image/media` | Shared local cover directory |
 | Download covers | Enabled | Downloads missing covers when capturing or repairing |
 | Repair on startup | Disabled | Repairs concentrated-log covers after layout is ready |
-| Daily integration | Disabled | Links listened episodes to exactly one existing dated note |
+| Daily integration | Disabled | Links completed podcast or video records to exactly one existing dated note |
 | Daily folder / property | `Daily` / `media` | Searches subfolders; preserves other properties |
 | Collection paths | Files under `Recommendations/`: `Books.md`, `Movies.md`, `Series.md`, `Music.md`, `Games.md`, `Theater.md` | Existing wanted-work collections |
 
-Daily integration creates no daily notes. When the concentrated log rule runs, its block link is used; otherwise the first additional output supplies the link, including an episode anchor in a show file. A note created from an existing log row keeps the existing activity source. Changing rule paths affects new outputs and does not move existing files.
+Daily integration writes links to existing notes whose filenames match `YYYY-MM-DD` in the configured folder or its subfolders. When the concentrated log rule runs, its block link is used; otherwise the first additional output supplies the link, including an episode anchor in a show file. A note created from an existing log row keeps the existing activity source. Changing rule paths affects new outputs; existing files stay in place.
 
 #### Record identity and repair
 
 Artwork filenames use the podcast show name when available, or the record title; videos use their title. Invalid characters become underscores, and different artwork with the same name receives an eight-character suffix. Cached image URLs reuse their files. New URLs are compared byte-for-byte only with artwork referenced by configured logs, captured metadata or the URL cache. Other attachments are not enumerated, renamed or deleted. Bulk attachment maintenance belongs to the vault. Recompressed, cropped and resized variants remain separate; shared artwork does not merge episode identities.
 
+When cover repair obtains an exact Apple episode match, it can replace a generic Apple player title previously saved as the record title. Handwritten titles, original dates, block IDs, and quotations are preserved.
+
 The plugin appends media-state and media-date comments and an Obsidian block identifier. These markers support deduplication, cover repair, and daily note links. Keep them when editing records manually. Notes and quotations outside the episode row are preserved.
 
-Episodes from the same platform are matched by episode ID. Across platforms, records are reused only when the full `show · episode` title matches after case, whitespace, and Unicode normalization. A completed record keeps its original date. Recording a repeat listen on another date requires daily integration and exactly one existing note for that date; the original log row is retained.
+Records from the same platform are matched by episode or video ID. Across platforms, records are reused only when the full `show · title` matches after case, whitespace, and Unicode normalization. A completed record keeps its original date. Recording a repeat listen or viewing on another date requires daily integration and exactly one existing note for that date. Both dates link to the same log row and cover.
 
 #### Data format and vault integration
 
-Daily sections, activity summaries, completion styling and personal collection presentation belong to vault scripts or configuration. The plugin exposes optional paths, templates, daily fields and workspace events; it does not hardcode personal directories or diary titles or rewrite work labels based on completion. Existing handwritten formatting is preserved.
+The plugin manages capture, write rules, cover caching, associations, and optional links to daily notes. Vault scripts or configuration manage diary sections, activity classification, summaries, and completion styling. Paths, templates, daily fields, and workspace events provide the integration points. Existing handwritten formatting is preserved.
 
-The output is ordinary Markdown. Dataview and other tracking plugins are optional. After saving, the plugin emits `media-capture:updated` with `path`, `blockId`, `state`, and `date`. Note captures also include `notePath` and `output`; `blockId` is empty when no log row exists. `CaptureUpdatedEvent` in `src/types.ts` defines the payload. Log-only tracking integrations do not automatically count standalone notes.
+The output is ordinary Markdown and can be read directly or used by optional tracking tools. After saving, the plugin emits `media-capture:updated` with `path`, `blockId`, `state`, and `date`. Note captures also include `notePath` and `output`; `blockId` is empty when no log row exists. `CaptureUpdatedEvent` in `src/types.ts` defines the payload. Log-only tracking integrations count records from the configured logs.
 
 Version 0.10 accepts only the current data schema (`schemaVersion: 2`) and `writeRules`. Retired flat settings, old state/date parsing, unscoped output indexes and old inline association blocks are not migrated. Unknown settings and unsupported data formats produce explicit errors without rewriting the saved data.
 

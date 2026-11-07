@@ -1,11 +1,7 @@
-### Media Capture 0.10.0
+### Media Capture 0.10.1
 
-#### Plugin identity reset
+Chinese and English documentation now describe podcast and video capture consistently, including completion states, separate video logs, work associations, repeated viewing, and shared cover files. The settings reference includes optional playback and the video destination.
 
-The installation ID is now media-capture. Runtime files install in .obsidian/plugins/media-capture and build into release/media-capture. Commands, workspace events, note properties, management markers, backup extensions and CSS use the media namespace. Deployment uses MEDIA_CAPTURE_VAULT. No old-name aliases or in-plugin migration code are included.
+Settings descriptions clarify daily links, cover reuse, and the scope of template updates. The plugin manages capture and saved media records; diary sections and activity classification remain vault configuration.
 
-Saved data must use schemaVersion 2. Existing users must reinstall the new identity and synchronize explicitly converted data and records before enabling it; merely renaming a directory is insufficient. Keep a copy of personal data.json outside the source repository. Source builds and releases never include personal configuration.
-
-#### Validation
-
-Capture, write rules, template updates, shared artwork, associations and optional playback remain available. Tests cover deployment destinations, stable record identities, current data validation and the independent vault presentation script. Actual mobile installation and playback require device verification.
+This release uses the same `media-capture` installation ID and schema version 2 as 0.10.0. Update the runtime files and keep the existing `data.json`.
