@@ -1,6 +1,6 @@
 {
   "name": "media-capture",
-  "version": "0.10.2",
+  "version": "0.11.0",
   "description": "Capture podcasts and videos with Markdown templates and configurable write rules.",
   "author": "Ch1llNoodle",
   "repository": {
@@ -14,7 +14,7 @@
     "build": "tsc --noEmit && node esbuild.config.mjs production",
     "version": "node version-bump.mjs && git add manifest.json versions.json",
     "lint": "eslint .",
-    "test": "node --test tests/core.test.cjs tests/deploy.test.cjs tests/recommendations.test.cjs tests/ui.test.cjs tests/episode-notes.test.cjs",
+    "test": "node --test tests/core.test.cjs tests/deploy.test.cjs tests/recommendations.test.cjs tests/ui.test.cjs tests/episode-notes.test.cjs tests/data-store.test.cjs",
     "typecheck": "tsc --noEmit",
     "deploy": "npm run build && node scripts/deploy.mjs"
   },

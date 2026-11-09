@@ -20,6 +20,8 @@ main.js
 
 # obsidian
 data.json
+records.json
+records.json.tmp
 
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store

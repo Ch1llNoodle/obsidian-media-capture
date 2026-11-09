@@ -32,7 +32,10 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     const files = new Map([['Podcasts.md', { path: 'Podcasts.md', extension: 'md' }]]);
     const content = new Map([['Podcasts.md', '- [节目 · 单集](<https://www.douban.com/podcast_episode/123>) <!-- media-state: 在听 --> ^douban-123\n- [另一个节目 · 单集](<https://podcasts.apple.com/us/podcast/id12?i=456>) <!-- media-state: 在听 --> ^apple-456'], ['Recommendations/Movies.md', '- [电影](<https://movie.douban.com/subject/100/>) <!-- douban-state: 想看 --> ^douban-100\n- [已完成](<https://movie.douban.com/subject/200/>) <!-- douban-state: 看过 --> ^douban-200\n- [正在看](<https://movie.douban.com/subject/300/>) <!-- douban-state: 在看 --> ^douban-300']]);
     files.set('Recommendations/Movies.md', { path: 'Recommendations/Movies.md', extension: 'md' });
+    const stored = new Map();
     const app = { vault: {
+        configDir: '.obsidian',
+        adapter: { exists: async p => stored.has(p), read: async p => stored.get(p), write: async (p, s) => stored.set(p,s), rename: async (a,b) => { stored.set(b,stored.get(a)); stored.delete(a); } },
         on: () => ({}),
         getMarkdownFiles: () => [...files.values()].filter(file => file.extension === 'md'),
         getAbstractFileByPath: p => files.get(p) ?? null,
@@ -48,8 +51,8 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
         on: (name, fn) => { events.set(name, fn); return { name }; },
     } };
     class Plugin {
-        constructor() { this.app = app; }
-        async loadData() { return { schemaVersion: 2, settings: { downloadCovers: false } }; }
+        constructor() { this.app = app; this.manifest = {id: 'media-capture'}; }
+        async loadData() { return { schemaVersion: 3, settings: { downloadCovers: false } }; }
         async saveData() {}
         addSettingTab(tab) { this.settingsTab = tab; }
         addCommand(command) { commands.push(command); }

@@ -26,6 +26,7 @@ function fixture(t) {
     fs.writeFileSync(path.join(release, 'data.json'), 'must not deploy');
     fs.writeFileSync(path.join(release, 'README.md'), 'must not deploy');
     fs.writeFileSync(path.join(installed, 'data.json'), '{"keep":"personal settings"}');
+    fs.writeFileSync(path.join(installed, 'records.json'), '{"keep":"capture records"}');
     fs.writeFileSync(path.join(installed, 'main.js'), 'old bundle');
     fs.writeFileSync(path.join(installed, 'custom.txt'), 'keep');
     return { repo, vault, release, installed };
@@ -38,6 +39,7 @@ test('部署只复制运行文件，保留个人配置和其他安装文件', as
     assert.deepEqual(result.files, ['main.js', 'manifest.json', 'styles.css']);
     assert.equal(fs.readFileSync(path.join(f.installed, 'main.js'), 'utf8'), 'new bundle');
     assert.equal(fs.readFileSync(path.join(f.installed, 'data.json'), 'utf8'), '{"keep":"personal settings"}');
+    assert.equal(fs.readFileSync(path.join(f.installed, 'records.json'), 'utf8'), '{"keep":"capture records"}');
     assert.equal(fs.readFileSync(path.join(f.installed, 'custom.txt'), 'utf8'), 'keep');
     assert(!fs.existsSync(path.join(f.installed, 'README.md')));
 });

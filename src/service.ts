@@ -10,6 +10,7 @@ import { AppendOutputs } from "./append-output";
 
 import { EpisodeNotes } from "./episode-notes";
 import { saveCapture } from "./capture-output";
+import { CaptureDataStore } from './data-store';
 
 export class CaptureService {
     readonly notes = new EpisodeNotes(this);
@@ -27,15 +28,15 @@ export class CaptureService {
         this.queue = Promise.resolve();
         this.dataQueue = Promise.resolve();
         const data = record(await this.loadData());
-        if (data.settings && data.schemaVersion !== 2) throw new Error('Unsupported saved data. Version 0.10 requires schemaVersion 2 and writeRules. Export and rebuild the settings before loading.');
+        if (data.settings && data.schemaVersion !== 3) throw new Error('Unsupported saved data. Use schemaVersion 3 and records.json.');
         this.settings = validateSettings(data.settings ?? {});
         this.notes.initialize(data.noteIndex, data.noteMetadata);
         this.appends.initialize(data.outputEntries);
-        if (!data.settings) await this.updateData({ settings: this.settings, schemaVersion: 2 });
+        if (!data.settings) await this.updateData({ settings: this.settings, schemaVersion: 3 });
     }
     dispose(): void { this.unloaded = true; }
-    async loadData(): Promise<unknown> { return this.plugin.loadData() as Promise<unknown>; }
-    saveData(data: Record<string, unknown>): Promise<void> { return this.plugin.saveData(data); }
+    async loadData(): Promise<unknown> { return new CaptureDataStore(this.plugin).load(); }
+    saveData(data: Record<string, unknown>): Promise<void> { return new CaptureDataStore(this.plugin).save(data); }
     repairOnReady(): void {
         if (!this.unloaded && this.config.repairOnStartup && this.config.downloadCovers) {
             void this.repairCovers(true).catch(error => console.error("Media Capture: 封面补全失败", errorMessage(error)));
@@ -51,7 +52,7 @@ export class CaptureService {
     }
     async saveSettings(value: unknown): Promise<void> {
         const settings = validateSettings(value);
-        await this.updateData({ settings, schemaVersion: 2 });
+        await this.updateData({ settings, schemaVersion: 3 });
         this.settings = settings;
     }
     async fetchMetadata(url: string): Promise<EpisodeMetadata> {
@@ -131,7 +132,6 @@ export class CaptureService {
                 else failures.push({ title: identity.title, url: identity.url, imageUrl: result.coverSource, error: result.coverError || "未获取到封面" });
             } catch (error) { failures.push({ title: identity.title, url: identity.url, error: errorMessage(error) }); }
         }
-        await this.updateData({ coverReport: { checkedAt: new Date().toISOString(), repaired, failures } });
         if (!silent || repaired) new Notice(`已补全 ${repaired} 个媒体封面${repaired < missing.length ? `，${missing.length - repaired} 个暂未获取到` : ""}。`);
         if (!silent && failures.length) {
             const modal = new Modal(this.app);

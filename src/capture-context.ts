@@ -1,7 +1,7 @@
 import type { TFile } from 'obsidian';
 import type { CaptureService } from './service';
 import type { CaptureItem } from './types';
-import { splitEpisodeTitle, relativeNotePath } from './note-format';
+import { splitEpisodeTitle } from './note-format';
 import { cacheCover } from './covers';
 import { coverUrl } from './metadata-helpers';
 import { record, errorMessage } from './validation';
@@ -37,41 +37,28 @@ export async function captureCover(service: CaptureService, item: CaptureItem, i
             }
             if (!source) throw new Error('页面未提供可识别的封面');
             const data = record(await service.loadData());
-            const cache = record(data.coverCache);
-            const cached = cache[source];
-            let validCached = '';
-            if (typeof cached === 'string') {
-                try { validCached = relativeNotePath(cached); } catch { /* Ignore invalid saved paths. */ }
+            const candidates = new Set<string>();
+            const showCandidates = new Set<string>();
+            const showKey = (name: string): string => name.normalize('NFKC').replace(/\s+/g, ' ').trim().toLowerCase();
+            const show = showKey(item.show || splitEpisodeTitle(item.title).show);
+            const podcast = item.provider !== 'youtube' && item.provider !== 'bilibili';
+            for (const values of Object.values(record(data.noteMetadata))) {
+                const saved = record(values).coverpath;
+                if (typeof saved === 'string') candidates.add(saved);
             }
-            if (validCached.startsWith(service.config.imageFolder + '/') && service.app.vault.getAbstractFileByPath(validCached)) path = validCached;
-            else {
-                const candidates = new Set(Object.values(cache).filter((value): value is string => typeof value === 'string'));
-                const showCandidates = new Set<string>();
-                const showKey = (name: string): string => name.normalize('NFKC').replace(/\s+/g, ' ').trim().toLowerCase();
-                const show = showKey(item.show || splitEpisodeTitle(item.title).show);
-                const podcast = item.provider !== 'youtube' && item.provider !== 'bilibili';
-                for (const values of Object.values(record(data.noteMetadata))) {
-                    const saved = record(values).coverpath;
-                    if (typeof saved === 'string') candidates.add(saved);
+            for (const catalogPath of service.catalogPaths) {
+                const file = service.app.vault.getAbstractFileByPath(catalogPath) ?? null;
+                if (!isMarkdownFile(file)) continue;
+                for (const line of (await service.app.vault.read(file)).split(/\r?\n/)) {
+                    const cover = /!\[(?:cover)?\|\d+\]\(<([^>]+)>\)/.exec(line)?.[1];
+                    if (!cover) continue;
+                    candidates.add(cover);
+                    const identity = podcast && show ? entryIdentity(line) : null;
+                    if (identity && identity.provider !== 'youtube' && identity.provider !== 'bilibili'
+                        && showKey(splitEpisodeTitle(identity.title).show) === show) showCandidates.add(cover);
                 }
-                for (const catalogPath of service.catalogPaths) {
-                    const file = service.app.vault.getAbstractFileByPath(catalogPath) ?? null;
-                    if (!isMarkdownFile(file)) continue;
-                    for (const line of (await service.app.vault.read(file)).split(/\r?\n/)) {
-                        const cover = /!\[(?:cover)?\|\d+\]\(<([^>]+)>\)/.exec(line)?.[1];
-                        if (!cover) continue;
-                        candidates.add(cover);
-                        const identity = podcast && show ? entryIdentity(line) : null;
-                        if (identity && identity.provider !== 'youtube' && identity.provider !== 'bilibili'
-                            && showKey(splitEpisodeTitle(identity.title).show) === show) showCandidates.add(cover);
-                    }
-                }
-                path = await cacheCover(service.app, source, service.config.imageFolder, item.provider === 'youtube' || item.provider === 'bilibili' ? (item.episodeTitle || item.title) : (item.show || splitEpisodeTitle(item.title).show || item.episodeTitle || item.title || id), [...candidates], [...showCandidates]);
-                const entries: Record<string, string> = {};
-                for (const [key, value] of Object.entries(cache)) if (typeof value === 'string') entries[key] = value;
-                entries[source] = path;
-                await service.updateData({ coverCache: entries });
             }
+            path = await cacheCover(service.app, source, service.config.imageFolder, item.provider === 'youtube' || item.provider === 'bilibili' ? (item.episodeTitle || item.title) : (item.show || splitEpisodeTitle(item.title).show || item.episodeTitle || item.title || id), [...candidates], [...showCandidates]);
         } catch (cause) { error = errorMessage(cause); }
     }
     return { path, source, error };

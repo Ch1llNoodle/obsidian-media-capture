@@ -10,9 +10,9 @@ For iPhone and desktop testing, install [BRAT](https://github.com/TfTHacker/obsi
 
 Obsidian 1.5.0 or later is required. Place `main.js`, `manifest.json`, and `styles.css` in `<Vault>/.obsidian/plugins/media-capture/`, then enable **Media Capture** under **Settings → Community plugins**. Source builds place these files in `release/media-capture/`.
 
-When updating, replace those three files and reload the plugin. Keep the existing `data.json`, which stores rule settings, output indexes, captured metadata, and the latest cover repair report.
+When updating, replace those three files and reload the plugin. Keep both `data.json` (settings) and `records.json` (capture records).
 
-The plugin ID and installation directory are `media-capture`. Configuration requirements for installations predating 0.10 are described under Data format and vault integration.
+The plugin ID and installation directory are `media-capture`. Configuration requirements for installations predating 0.11 are described under Data format and vault integration.
 
 #### Capture media
 
@@ -91,7 +91,7 @@ tags: [podcast]
 
 **创建媒体笔记** opens the capture dialog with the per-episode preset. **写笔记** beside a log row preselects that episode; **打开笔记** reopens its primary episode note. The log also keeps a link to the first additional output, including a show file when selected. Reading mode and the editor provide row actions without hotkeys. Work associations and log-based tracking still use the concentrated log rule; arbitrary output files are not automatically included by external trackers.
 
-Every created file contains both `media_capture_id` and `media_capture_rule`. Output indexes use the single `ruleId::recordId` key format. Append indexes follow file renames; if a tracked file or its region disappears, saving reports the missing target rather than recreating it elsewhere. Keep data.json with the vault for cross-device continuity.
+Every created file contains both `media_capture_id` and `media_capture_rule`. Output indexes use the single `ruleId::recordId` key format. Append indexes follow file renames; if a tracked file or its region disappears, saving reports the missing target rather than recreating it elsewhere. Keep data.json and records.json with the vault for cross-device continuity.
 
 #### Apply templates to existing records
 
@@ -143,7 +143,7 @@ Daily integration writes links to existing notes whose filenames match `YYYY-MM-
 
 #### Record identity and repair
 
-Artwork filenames use the podcast show name when available, or the record title; videos use their title. Invalid characters become underscores, and different artwork with the same name receives an eight-character suffix. Cached image URLs reuse their files. New URLs are compared byte-for-byte only with artwork referenced by configured logs, captured metadata or the URL cache. Other attachments are not enumerated, renamed or deleted. Bulk attachment maintenance belongs to the vault. For podcast covers, referenced images from the same normalized show name also receive a conservative visual comparison at 32 by 32 pixels. Matching resized or recompressed artwork reuses the existing file; changed artwork remains separate. Videos use byte comparison. Show candidates are read from log rows even when the URL cache is empty.
+Artwork filenames use the podcast show name when available, or the record title; videos use their title. Invalid characters become underscores, and different artwork with the same name receives an eight-character suffix. Candidate images come from configured logs and capture records. Byte-identical images share a file. Podcast covers from the same normalized show name also receive a conservative visual comparison at 32 by 32 pixels; matching resized or recompressed artwork reuses the existing file. Videos use byte comparison. New records may download an image for comparison; duplicate files are not saved. Cover URLs and repair reports are not persisted. Repair results appear in the current operation. Existing attachments keep their names and locations.
 
 When cover repair obtains an exact Apple episode match, it can replace a generic Apple player title previously saved as the record title. Handwritten titles, original dates, block IDs, and quotations are preserved.
 
@@ -153,13 +153,13 @@ Records from the same platform are matched by episode or video ID. Across platfo
 
 #### Data format and vault integration
 
-The plugin manages capture, write rules, cover caching, associations, and optional links to daily notes. Vault scripts or configuration manage diary sections, activity classification, summaries, and completion styling. Paths, templates, daily fields, and workspace events provide the integration points. Existing handwritten formatting is preserved.
+The plugin manages capture, write rules, local cover files, associations, and optional links to daily notes. Vault scripts or configuration manage diary sections, activity classification, summaries, and completion styling. Paths, templates, daily fields, and workspace events provide the integration points. Existing handwritten formatting is preserved.
 
 The output is ordinary Markdown and can be read directly or used by optional tracking tools. After saving, the plugin emits `media-capture:updated` with `path`, `blockId`, `state`, and `date`. Note captures also include `notePath` and `output`; `blockId` is empty when no log row exists. `CaptureUpdatedEvent` in `src/types.ts` defines the payload. Log-only tracking integrations count records from the configured logs.
 
-Version 0.10 accepts only the current data schema (`schemaVersion: 2`) and `writeRules`. Retired flat settings, old state/date parsing, unscoped output indexes and old inline association blocks are not migrated. Unknown settings and unsupported data formats produce explicit errors without rewriting the saved data.
+Version 0.11 stores only `{schemaVersion: 3, settings}` in data.json. A separate records.json uses schema version 1 and stores output indexes, compact source metadata, and managed append entries. Generated links, image markup, provider identifiers, and duplicate date fields are reconstructed when loading. Unchanged records are not rewritten; record updates are verified in a temporary file before replacement.
 
-Before upgrading an existing installation, back up data.json and the affected notes. Start with fresh settings or explicitly convert the data outside the plugin; synchronize the converted configuration and records to other devices before loading 0.10. No migration script ships with the plugin. Template refresh requires captured metadata; missing metadata is reported per file.
+Synchronize both files with the notes when moving to another device. Records support output lookup, edit detection, and template updates. Existing combined data must be converted outside the plugin before loading 0.11. Unsupported formats are rejected before writing. Fresh installations create records.json only after capturing content. Template refresh reports missing source metadata per file.
 
 #### Development and validation
 
@@ -177,7 +177,7 @@ npm run lint
 
 The production build bundles runtime code into `release/media-capture/main.js` and stages the manifest and stylesheet alongside it. Tests bundle TypeScript modules with esbuild and execute them against mocked Obsidian APIs. An optional tracker compatibility test uses the script path provided by `MEDIA_TRACKER_TEST_PATH`; it is skipped when that variable is absent. `MEDIA_DOUBAN_SYNC_TEST_PATH` enables an additional integration test against a custom Douban sync view. `MEDIA_WORK_PRESENTATION_TEST_PATH` can point to an independent vault presentation script to verify completion markers and cleanup without Capture.
 
-Release files are `main.js`, `manifest.json`, and `styles.css`. Generated bundles, dependencies, and personal `data.json` are excluded from source control. Dependency security checks use `npm audit` separately from compilation and functional tests.
+Release files are `main.js`, `manifest.json`, and `styles.css`. Generated bundles, dependencies, and personal `data.json` and `records.json` are excluded from source control. Dependency security checks use `npm audit` separately from compilation and functional tests.
 
 Pushing a tag that matches the manifest and package versions runs the release workflow. After build, test, and lint checks pass, it uploads the runtime files and publishes a GitHub prerelease for BRAT. This workflow does not submit the plugin to the community catalog.
 
@@ -187,7 +187,7 @@ Keep the source repository separate from the installed plugin directory. If the 
 
 Copy `.deploy.example.json` to `.deploy.local.json` and set `vaultPath` to the absolute path of an existing vault. Run `npm run deploy` to build and copy the runtime files, then reload Media Capture in Obsidian. `npm run deploy -- --vault /absolute/path/to/vault` overrides the local configuration; `MEDIA_CAPTURE_VAULT` is also supported. Resolution order is command argument, environment variable, then local configuration.
 
-Deployment copies only main.js, manifest.json, and the optional styles.css. It preserves data.json and other installation files, checks the plugin ID and staged version, and rejects deployment into a source repository or through symbolic-link installation directories. Local deployment configuration and release output are excluded from Git. `npm run dev` watches the source and updates the staged files; it does not deploy automatically.
+Deployment copies only main.js, manifest.json, and the optional styles.css. It preserves data.json, records.json, and other installation files, checks the plugin ID and staged version, and rejects deployment into a source repository or through symbolic-link installation directories. Local deployment configuration and release output are excluded from Git. `npm run dev` watches the source and updates the staged files; it does not deploy automatically.
 
 #### Network access and mobile support
 

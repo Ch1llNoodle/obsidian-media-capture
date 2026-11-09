@@ -1,9 +1,7 @@
-### Media Capture 0.10.2
+### Media Capture 0.11.0
 
-Podcast covers from the same show now reuse existing artwork when platforms supply resized or recompressed versions. A conservative visual comparison supplements exact byte matching; changed artwork remains separate, and video covers retain exact byte matching.
+Settings now live alone in data.json (schema version 3). Durable capture metadata and output indexes live in records.json (schema version 1). Cover URL caches and repair reports are no longer persisted; artwork reuse reads existing log and record references.
 
-Same-show candidates are read from configured log rows even when the cover URL cache is empty. The plugin preserves existing image files and records; bulk cleanup remains a vault maintenance task.
+Capture metadata stores source fields once. Links, image markup, platform identifiers and date aliases are reconstructed when loading. Record updates use a verified temporary file; unchanged data is not rewritten.
 
-Validation covers visual differences, cropping, cache-independent cross-platform reuse, and separate shows. The test suite passes 106 tests, with 3 optional vault integration tests skipped.
-
-Update the runtime files and keep the existing `data.json`. The installation ID remains `media-capture` and the data schema remains version 2.
+Keep both data.json and records.json when syncing devices. Existing combined settings must be converted outside the plugin before loading this version. No runtime compatibility or automatic migration is included.

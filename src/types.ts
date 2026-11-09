@@ -131,15 +131,9 @@ export interface CoverRepairResult {
     failures: CoverFailure[];
 }
 
-export interface CoverReport extends CoverRepairResult {
-    checkedAt: string;
-}
-
 export interface SavedDataPatch {
-    coverCache?: Record<string, string>;
     settings?: CaptureSettingsData;
-    schemaVersion?: 2;
-    coverReport?: CoverReport;
+    schemaVersion?: 3;
     noteIndex?: Record<string, string>;
     noteMetadata?: Record<string, Record<string, string>>;
     outputEntries?: StoredEntry[];

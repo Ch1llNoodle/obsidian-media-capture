@@ -28,7 +28,7 @@ const item = { provider: 'douban', blockId: 'douban-123', id: '123', url: 'https
 
 function fixture(options = {}) {
     const files = new Map(), contents = new Map(), properties = new Map(), events = new Map(), updated = [];
-    let data = { schemaVersion: 2, settings: validateSettings({ downloadCovers: false, ...options }), unrelated: { retained: true } };
+    let data = { schemaVersion: 3, settings: validateSettings({ downloadCovers: false, ...options }), unrelated: { retained: true } };
     let writes = 0;
     const add = (p, text) => {
         const file = { path: p, extension: p.split('.').at(-1), basename: p.split('/').at(-1).replace(/\.md$/, '') };
@@ -53,6 +53,8 @@ function fixture(options = {}) {
     workspace: { trigger: (name, event) => updated.push({ name, ...event }) } };
     const plugin = { app, loadData: async () => data, saveData: async value => { data = value; }, registerEvent() {} };
     const service = new CaptureService(plugin);
+    service.loadData = async () => data;
+    service.saveData = async value => { data = value; };
     const saveSettings = service.saveSettings.bind(service);
     service.saveSettings = options => saveSettings(validateSettings(options));
     return { service, plugin, files, contents, properties, events, updated, add, header, data: () => data, writes: () => writes };
@@ -554,7 +556,7 @@ test('cover assets are shared across providers and survive reload; changed artwo
     assert.equal(covers().length, 1);
     await f.service.initialize();
     await f.service.capture({...two, ...sandbox.module.exports.episodeUrl('https://www.xiaoyuzhoufm.com/episode/6aec66196381f0f964c44d72'), title: '节目 · 第三集'});
-    assert.equal(imageRequests, 2); assert.equal(covers().length, 1);
+    assert.equal(imageRequests, 3); assert.equal(covers().length, 1);
     imageResponse = {status: 200, arrayBuffer: Uint8Array.from([255,216,255,1,217]).buffer};
     await f.service.capture({...one, ...sandbox.module.exports.episodeUrl('https://www.douban.com/podcast_episode/456'), title: '节目 · 特别集', cover: 'https://img3.doubanio.com/mpic/new.jpg'});
     assert.equal(covers().length, 2);

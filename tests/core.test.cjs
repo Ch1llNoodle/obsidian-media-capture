@@ -14,6 +14,9 @@ import * as artwork from "./src/artwork";
 import { captureCover } from "./src/capture-context";
 class TestService extends CaptureService {
     constructor() { super({loadData: async () => null, saveData: async () => {}}); }
+    saved = null;
+    async loadData() { return this.saved; }
+    async saveData(value) { this.saved = value; }
     onload() { return this.initialize(); }
 }
 module.exports = TestService;
@@ -92,10 +95,10 @@ test('cross-platform podcast cover uses same-show log references without a URL c
     const coverPath = 'image/media/Show.jpg';
     const file = { path: coverPath, extension: 'jpg' };
     const log = { path: 'Podcasts.md', extension: 'md' };
-    let writes = 0, cached;
+    let writes = 0;
     const service = {
         config: { downloadCovers: true, imageFolder: 'image/media' }, catalogPaths: ['Podcasts.md'],
-        loadData: async () => ({}), updateData: async patch => { cached = patch.coverCache; },
+        loadData: async () => ({}), updateData: async () => { throw new Error("Cover lookup must not persist a cache"); },
         app: { vault: {
             getAbstractFileByPath: path => path === coverPath ? file : path === log.path ? log : path === 'image/media' ? { path } : null,
             readBinary: async () => savedBytes,
@@ -106,7 +109,7 @@ test('cross-platform podcast cover uses same-show log references without a URL c
     };
     const result = await captureCover(service, { ...item, title: 'Show · New episode', show: 'Show' }, item.id, '', true);
     assert.equal(result.error, ''); assert.equal(result.path, coverPath); assert.equal(writes, 0);
-    assert.equal(cached[item.cover], coverPath); assert.equal(revoked, 2);
+    assert.equal(revoked, 2);
     const other = await captureCover(service, { ...item, title: 'Other · Episode', show: 'Other' }, item.id, '', true);
     assert.equal(other.error, ''); assert.notEqual(other.path, coverPath); assert.equal(writes, 1);
 });
@@ -323,7 +326,7 @@ test("补图报告保存真实失败阶段，不再只有零个封面的提示",
         const result = await plugin.repairCovers(true);
         assert.equal(result.repaired, 0);
         assert(result.failures[0].error.includes(expected));
-        assert(saved.coverReport.failures[0].error.includes(expected));
+        assert.equal(saved?.coverReport, undefined);
         assert.equal(saved.retainedSetting, true);
         assert(!fixture.contents.get("追踪/播客.md").includes("![|24]"));
     }
@@ -388,7 +391,7 @@ test("新安装不因私人目录存在而切换设置，保留诊断记录", as
         const Plugin = load(); const fixture = appFixture(base);
         if (!legacy) fixture.files.delete("追踪/播客.md");
         const plugin = new Plugin(); plugin.app = fixture.app;
-        let data = { schemaVersion: 2, coverReport: { repaired: 1 } };
+        let data = { schemaVersion: 3, unrelated: { retained: true } };
         plugin.loadData = async () => data;
         plugin.saveData = async value => { data = value; };
         plugin.addCommand = () => {}; plugin.addSettingTab = () => {};
@@ -396,8 +399,8 @@ test("新安装不因私人目录存在而切换设置，保留诊断记录", as
         await plugin.onload();
         assert.equal(plugin.config.dailyIntegration, false);
         assert.equal(plugin.config.catalogPath, "Podcasts.md");
-        assert.equal(data.coverReport.repaired, 1);
-        assert.equal(data.schemaVersion, 2);
+        assert.equal(data.unrelated.retained, true);
+        assert.equal(data.schemaVersion, 3);
     }
 });
 
