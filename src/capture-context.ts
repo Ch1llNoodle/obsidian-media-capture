@@ -6,6 +6,7 @@ import { cacheCover } from './covers';
 import { coverUrl } from './metadata-helpers';
 import { record, errorMessage } from './validation';
 import { isMarkdownFile } from './storage';
+import { entryIdentity } from './core';
 
 export function dailyNotes(service: CaptureService, item: CaptureItem): TFile[] {
     return service.config.dailyIntegration ? service.app.vault.getMarkdownFiles().filter(file => file.path.startsWith(service.config.dailyFolder + '/') && file.basename === item.date) : [];
@@ -45,6 +46,10 @@ export async function captureCover(service: CaptureService, item: CaptureItem, i
             if (validCached.startsWith(service.config.imageFolder + '/') && service.app.vault.getAbstractFileByPath(validCached)) path = validCached;
             else {
                 const candidates = new Set(Object.values(cache).filter((value): value is string => typeof value === 'string'));
+                const showCandidates = new Set<string>();
+                const showKey = (name: string): string => name.normalize('NFKC').replace(/\s+/g, ' ').trim().toLowerCase();
+                const show = showKey(item.show || splitEpisodeTitle(item.title).show);
+                const podcast = item.provider !== 'youtube' && item.provider !== 'bilibili';
                 for (const values of Object.values(record(data.noteMetadata))) {
                     const saved = record(values).coverpath;
                     if (typeof saved === 'string') candidates.add(saved);
@@ -52,9 +57,16 @@ export async function captureCover(service: CaptureService, item: CaptureItem, i
                 for (const catalogPath of service.catalogPaths) {
                     const file = service.app.vault.getAbstractFileByPath(catalogPath) ?? null;
                     if (!isMarkdownFile(file)) continue;
-                    for (const match of (await service.app.vault.read(file)).matchAll(/!\[(?:cover)?\|\d+\]\(<([^>]+)>\)/g)) if (match[1]) candidates.add(match[1]);
+                    for (const line of (await service.app.vault.read(file)).split(/\r?\n/)) {
+                        const cover = /!\[(?:cover)?\|\d+\]\(<([^>]+)>\)/.exec(line)?.[1];
+                        if (!cover) continue;
+                        candidates.add(cover);
+                        const identity = podcast && show ? entryIdentity(line) : null;
+                        if (identity && identity.provider !== 'youtube' && identity.provider !== 'bilibili'
+                            && showKey(splitEpisodeTitle(identity.title).show) === show) showCandidates.add(cover);
+                    }
                 }
-                path = await cacheCover(service.app, source, service.config.imageFolder, item.provider === 'youtube' || item.provider === 'bilibili' ? (item.episodeTitle || item.title) : (item.show || splitEpisodeTitle(item.title).show || item.episodeTitle || item.title || id), [...candidates]);
+                path = await cacheCover(service.app, source, service.config.imageFolder, item.provider === 'youtube' || item.provider === 'bilibili' ? (item.episodeTitle || item.title) : (item.show || splitEpisodeTitle(item.title).show || item.episodeTitle || item.title || id), [...candidates], [...showCandidates]);
                 const entries: Record<string, string> = {};
                 for (const [key, value] of Object.entries(cache)) if (typeof value === 'string') entries[key] = value;
                 entries[source] = path;

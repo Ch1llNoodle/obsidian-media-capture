@@ -143,7 +143,7 @@ Daily integration writes links to existing notes whose filenames match `YYYY-MM-
 
 #### Record identity and repair
 
-Artwork filenames use the podcast show name when available, or the record title; videos use their title. Invalid characters become underscores, and different artwork with the same name receives an eight-character suffix. Cached image URLs reuse their files. New URLs are compared byte-for-byte only with artwork referenced by configured logs, captured metadata or the URL cache. Other attachments are not enumerated, renamed or deleted. Bulk attachment maintenance belongs to the vault. Recompressed, cropped and resized variants remain separate; shared artwork does not merge episode identities.
+Artwork filenames use the podcast show name when available, or the record title; videos use their title. Invalid characters become underscores, and different artwork with the same name receives an eight-character suffix. Cached image URLs reuse their files. New URLs are compared byte-for-byte only with artwork referenced by configured logs, captured metadata or the URL cache. Other attachments are not enumerated, renamed or deleted. Bulk attachment maintenance belongs to the vault. For podcast covers, referenced images from the same normalized show name also receive a conservative visual comparison at 32 by 32 pixels. Matching resized or recompressed artwork reuses the existing file; changed artwork remains separate. Videos use byte comparison. Show candidates are read from log rows even when the URL cache is empty.
 
 When cover repair obtains an exact Apple episode match, it can replace a generic Apple player title previously saved as the record title. Handwritten titles, original dates, block IDs, and quotations are preserved.
 

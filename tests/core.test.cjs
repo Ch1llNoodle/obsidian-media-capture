@@ -10,12 +10,14 @@ const testBundle = buildSync({
     stdin: {
         contents: `import { CaptureService } from "./src/service";
 import * as core from "./src/core";
+import * as artwork from "./src/artwork";
+import { captureCover } from "./src/capture-context";
 class TestService extends CaptureService {
     constructor() { super({loadData: async () => null, saveData: async () => {}}); }
     onload() { return this.initialize(); }
 }
 module.exports = TestService;
-module.exports._internals = {...core, FIXTURE_SETTINGS: core.validateSettings({...core.DEFAULT_SETTINGS, writeRules: core.DEFAULT_SETTINGS.writeRules.map(rule => rule.id === 'catalog' ? {...rule, folder: '', pathTemplate: '追踪/播客.md'} : rule), videoCatalogPath: '追踪/视频.md', imageFolder: '追踪/image', repairOnStartup: true, dailyIntegration: true, dailyFolder: 'daily', dailyProperty: '播客'})};`,
+module.exports._internals = {...core, ...artwork, captureCover, FIXTURE_SETTINGS: core.validateSettings({...core.DEFAULT_SETTINGS, writeRules: core.DEFAULT_SETTINGS.writeRules.map(rule => rule.id === 'catalog' ? {...rule, folder: '', pathTemplate: '追踪/播客.md'} : rule), videoCatalogPath: '追踪/视频.md', imageFolder: '追踪/image', repairOnStartup: true, dailyIntegration: true, dailyFolder: 'daily', dailyProperty: '播客'})};`,
         resolveDir: path.resolve(__dirname, ".."),
         loader: "ts",
     },
@@ -23,8 +25,8 @@ module.exports._internals = {...core, FIXTURE_SETTINGS: core.validateSettings({.
     external: ["obsidian"], write: false,
 }).outputFiles[0].text;
 
-function load(request = async () => { throw new Error("offline"); }) {
-    const sandbox = { module: { exports: {} }, URL, URLSearchParams, console, Uint8Array, Date,
+function load(request = async () => { throw new Error("offline"); }, browser = {}) {
+    const sandbox = { module: { exports: {} }, URL, URLSearchParams, console, Uint8Array, Date, ...browser,
         require: name => {
             assert.equal(name, "obsidian");
             return { Plugin: class {}, Modal: class {}, Notice: class {}, PluginSettingTab: class {}, Setting: class {}, requestUrl: request, normalizePath: value => value.replace(/\\/g, "/") };
@@ -60,6 +62,54 @@ function appFixture(source, dates = ["2026-11-03", "2026-11-04"]) {
 
 const base = "### Podcasts\n\n#### Entries\n\n#### Quotes\n\n手写摘抄与 [[已有笔记]]\n";
 const item = { provider: "douban", blockId: "douban-509937", id: "509937", url: "https://www.douban.com/podcast_episode/509937", title: "无人知晓 · E46 我们从未看见彼此", state: "听过", date: "2026-11-03", cover: "https://img3.doubanio.com/mpic/cover.jpg" };
+
+test('same-show artwork tolerates compression but rejects changed art and cropping', () => {
+    const { sameArtwork } = load()._internals;
+    const pixels = new Uint8ClampedArray(32 * 32 * 4).fill(120);
+    const original = { ratio: 1, pixels };
+    assert(sameArtwork(original, { ratio: 1, pixels: new Uint8ClampedArray(pixels).fill(123) }));
+    assert(!sameArtwork(original, { ratio: 1, pixels: new Uint8ClampedArray(pixels).fill(150) }));
+    assert(!sameArtwork(original, { ratio: 1.1, pixels }));
+    const changed = new Uint8ClampedArray(pixels);
+    changed.fill(180, 0, 32 * 32 * 4 / 10);
+    assert(!sameArtwork(original, { ratio: 1, pixels: changed }));
+});
+
+test('cross-platform podcast cover uses same-show log references without a URL cache', async () => {
+    const savedBytes = new Uint8Array([255, 216, 10]).buffer;
+    const incomingBytes = new Uint8Array([255, 216, 11]).buffer;
+    const pixels = new Uint8ClampedArray(32 * 32 * 4).fill(100);
+    let revoked = 0;
+    const browser = {
+        Uint8ClampedArray, window: { setTimeout, clearTimeout },
+        Blob: class {},
+        URL: class extends URL { static createObjectURL() { return 'blob:test'; } static revokeObjectURL() { revoked++; } },
+        Image: class { naturalWidth = 121; naturalHeight = 121; set src(value) { queueMicrotask(() => this.onload()); } },
+        document: {},
+        createEl: () => ({ getContext: () => ({ fillRect() {}, drawImage() {}, getImageData: () => ({ data: pixels }) }) }),
+    };
+    const { captureCover } = load(async () => ({ status: 200, arrayBuffer: incomingBytes }), browser)._internals;
+    const coverPath = 'image/media/Show.jpg';
+    const file = { path: coverPath, extension: 'jpg' };
+    const log = { path: 'Podcasts.md', extension: 'md' };
+    let writes = 0, cached;
+    const service = {
+        config: { downloadCovers: true, imageFolder: 'image/media' }, catalogPaths: ['Podcasts.md'],
+        loadData: async () => ({}), updateData: async patch => { cached = patch.coverCache; },
+        app: { vault: {
+            getAbstractFileByPath: path => path === coverPath ? file : path === log.path ? log : path === 'image/media' ? { path } : null,
+            readBinary: async () => savedBytes,
+            createFolder: async () => {},
+            read: async () => '- ![|24](<image/media/Show.jpg>) [Show · Earlier episode](<https://www.xiaoyuzhoufm.com/episode/6aec66196381f0f964c44d72>)',
+            createBinary: async () => { writes++; },
+        } },
+    };
+    const result = await captureCover(service, { ...item, title: 'Show · New episode', show: 'Show' }, item.id, '', true);
+    assert.equal(result.error, ''); assert.equal(result.path, coverPath); assert.equal(writes, 0);
+    assert.equal(cached[item.cover], coverPath); assert.equal(revoked, 2);
+    const other = await captureCover(service, { ...item, title: 'Other · Episode', show: 'Other' }, item.id, '', true);
+    assert.equal(other.error, ''); assert.notEqual(other.path, coverPath); assert.equal(writes, 1);
+});
 
 test("分享链接归一化，拒绝仿冒域名与非法日期", () => {
     const { episodeUrl, validDate, safeCover } = load()._internals;

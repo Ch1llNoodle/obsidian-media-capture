@@ -1,7 +1,9 @@
-### Media Capture 0.10.1
+### Media Capture 0.10.2
 
-Chinese and English documentation now describe podcast and video capture consistently, including completion states, separate video logs, work associations, repeated viewing, and shared cover files. The settings reference includes optional playback and the video destination.
+Podcast covers from the same show now reuse existing artwork when platforms supply resized or recompressed versions. A conservative visual comparison supplements exact byte matching; changed artwork remains separate, and video covers retain exact byte matching.
 
-Settings descriptions clarify daily links, cover reuse, and the scope of template updates. The plugin manages capture and saved media records; diary sections and activity classification remain vault configuration.
+Same-show candidates are read from configured log rows even when the cover URL cache is empty. The plugin preserves existing image files and records; bulk cleanup remains a vault maintenance task.
 
-This release uses the same `media-capture` installation ID and schema version 2 as 0.10.0. Update the runtime files and keep the existing `data.json`.
+Validation covers visual differences, cropping, cache-independent cross-platform reuse, and separate shows. The test suite passes 106 tests, with 3 optional vault integration tests skipped.
+
+Update the runtime files and keep the existing `data.json`. The installation ID remains `media-capture` and the data schema remains version 2.
