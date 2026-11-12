@@ -49,6 +49,17 @@ export class CaptureSettings extends PluginSettingTab {
                         .catch((error: unknown) => { new Notice(errorMessage(error)); });
                 });
             });
+        new Setting(container).setName('TMDB（可选）').setHeading();
+        new Setting(container).setName('TMDB API Read Access Token').setDesc('在 themoviedb.org/settings/api 获取读取令牌。追踪页点击搜索或更新分集时，向 TMDB 发送剧名或剧集编号。')
+            .addText(component => {
+                component.inputEl.type = 'password';
+                component.inputEl.autocomplete = 'off';
+                component.setValue(this.plugin.config.tmdbToken);
+                component.inputEl.addEventListener('change', () => {
+                    void this.plugin.saveSettings({ ...this.plugin.config, tmdbToken: component.getValue() })
+                        .catch((error: unknown) => { new Notice(errorMessage(error)); });
+                });
+            });
         new Setting(container).setName("已有作品清单").setHeading();
         for (const kind of recommendationKinds) text(`${kind}Path`, recommendationNames[kind], "已同步或导入的 Markdown 清单路径。关联时更新清单中的现有作品。");
     }

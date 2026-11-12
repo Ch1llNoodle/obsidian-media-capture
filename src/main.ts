@@ -1,3 +1,4 @@
+import { searchTv, tvSeasons, tvEpisodes } from './tmdb';
 import { Notice, Plugin } from 'obsidian';
 import { CaptureService } from './service';
 import { CaptureModal } from './capture-modal';
@@ -14,6 +15,10 @@ export default class MediaCapture extends Plugin {
         if (!this.service || this.service.unloaded) return Promise.reject(new Error('请重新启用 Media Capture。'));
         return fetchStudyProgress(this.service.config.maimemoToken);
     }
+
+    searchTv(query: string) { return searchTv(this.service.config.tmdbToken, query); }
+    tvSeasons(id: number) { return tvSeasons(this.service.config.tmdbToken, id); }
+    tvEpisodes(id: number, season: number) { return tvEpisodes(this.service.config.tmdbToken, id, season); }
 
     override async onload(): Promise<void> {
         this.service = new CaptureService(this);

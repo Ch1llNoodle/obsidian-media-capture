@@ -205,3 +205,7 @@ Runtime code uses Obsidian APIs and standard Web APIs, with no Node.js or Electr
 #### License
 
 [Zero-Clause BSD](LICENSE).
+
+#### TV episode data (optional)
+
+Set **TMDB API Read Access Token** in Capture settings using the read access token from https://www.themoviedb.org/settings/api. The plugin exposes `searchTv(query)`, `tvSeasons(id)`, and `tvEpisodes(id, season)` for vault views. Requests run only when a view calls these methods, sending the search title or numeric series and season IDs to api.tmdb.org with the token in the authorization header. No episode cache or viewing progress is stored in plugin data. The calling note view owns matching, presentation, and progress storage. This integration does not modify daily notes or collection states. Desktop and iOS interaction require device verification.

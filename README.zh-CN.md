@@ -205,3 +205,7 @@ npm run lint
 #### 许可证
 
 [Zero-Clause BSD](LICENSE)。
+
+#### 电视剧分集数据（可选）
+
+在 Capture 设置页填写 **TMDB API Read Access Token**，使用 https://www.themoviedb.org/settings/api 提供的读取令牌。插件向笔记视图提供 `searchTv(query)`、`tvSeasons(id)` 和 `tvEpisodes(id, season)`。仅在视图调用时向 api.tmdb.org 请求，发送搜索剧名或剧集与季度编号，令牌放在授权请求头中。插件数据不保存分集缓存或观看进度；匹配、展示和进度保存由笔记视图负责。此接口不修改日记或收藏状态。桌面与 iOS 实际交互仍需设备验证。

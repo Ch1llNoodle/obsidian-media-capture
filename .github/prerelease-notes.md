@@ -1,9 +1,9 @@
-### Media Capture 0.12.0
+### Media Capture 0.13.0
 
-Maimemo study progress is an optional Capture integration. Configure the token in the plugin settings using the masked input. Vault views can call fetchStudyProgress() to retrieve progress and separate completed new-word and review-word counts.
+Add optional TMDB integration for TV series search, season selection, and episode metadata. Configure the API Read Access Token in Capture settings. Vault views can call searchTv(query), tvSeasons(id), and tvEpisodes(id, season).
 
-Completed counts are verified against the daily word list before returning. Incomplete, duplicate or truncated results produce an error. A temporary HTTP 503 is retried once after one second.
+Requests use https://api.tmdb.org/3 through Obsidian's request API. Connection failures show a network troubleshooting message. Credentials remain in plugin settings; episode lists, viewing progress, diary snapshots, and presentation remain owned by vault views. No background requests or persistent episode cache are added to the plugin.
 
-Requests use Obsidian's request API. No background polling or study-result cache is added. Diary sections, date guards, daily snapshots and heatmaps remain vault-owned. Existing media capture and storage formats are unchanged.
+The optional Maimemo study integration remains available. Both integrations use masked credential fields and reject whitespace in tokens.
 
-Validation: production build passes; 118 tests pass and 3 optional vault integration tests are skipped. ESLint retains one existing settings-search warning.
+Validation: production build passes; 121 tests pass and 3 optional vault integration tests are skipped. Desktop TMDB search was verified by the user. iPhone interaction has not been verified.
