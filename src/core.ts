@@ -14,7 +14,7 @@ function ruleTargets(settings: Omit<CaptureSettingsData, 'catalogPath' | 'entryH
     }) as CaptureSettingsData;
 }
 
-const DEFAULT_SETTINGS: Readonly<CaptureSettingsData> = Object.freeze(ruleTargets({ writeRules: defaultRules(), videoCatalogPath: 'Videos.md', playbackIntegration: false, imageFolder: 'image/media', downloadCovers: true, repairOnStartup: false, dailyIntegration: false, dailyFolder: 'Daily', dailyProperty: 'media', bookPath: 'Recommendations/Books.md', moviePath: 'Recommendations/Movies.md', teleplayPath: 'Recommendations/Series.md', musicPath: 'Recommendations/Music.md', gamePath: 'Recommendations/Games.md', theaterPath: 'Recommendations/Theater.md' }));
+const DEFAULT_SETTINGS: Readonly<CaptureSettingsData> = Object.freeze(ruleTargets({ writeRules: defaultRules(), videoCatalogPath: 'Videos.md', playbackIntegration: false, imageFolder: 'image/media', downloadCovers: true, repairOnStartup: false, dailyIntegration: false, dailyFolder: 'Daily', dailyProperty: 'media', maimemoToken: '', bookPath: 'Recommendations/Books.md', moviePath: 'Recommendations/Movies.md', teleplayPath: 'Recommendations/Series.md', musicPath: 'Recommendations/Music.md', gamePath: 'Recommendations/Games.md', theaterPath: 'Recommendations/Theater.md' }));
 const STATES: readonly ListeningState[] = ["听过", "在听", "想听"];
 
 export function isListeningState(value: unknown): value is ListeningState {
@@ -33,7 +33,7 @@ function validateSettings(settings: unknown): CaptureSettingsData {
     const supplied = record(settings);
     const result = ruleTargets({ ...DEFAULT_SETTINGS, writeRules: defaultRules() });
     for (const key of Object.keys(supplied)) if (!Object.prototype.hasOwnProperty.call(DEFAULT_SETTINGS, key) || ['catalogPath', 'entryHeading'].includes(key)) throw new Error(`Unknown settings field: ${key}. Version 0.10 requires writeRules; old settings are not migrated.`);
-    for (const key of ['videoCatalogPath', 'imageFolder', 'dailyFolder', 'dailyProperty', 'bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const) {
+    for (const key of ['videoCatalogPath', 'imageFolder', 'dailyFolder', 'dailyProperty', 'maimemoToken', 'bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const) {
         if (supplied[key] !== undefined) {
             if (typeof supplied[key] !== 'string') throw new Error(`Setting ${key} must be text.`);
             result[key] = supplied[key];
@@ -45,6 +45,8 @@ function validateSettings(settings: unknown): CaptureSettingsData {
             result[key] = supplied[key];
         }
     }
+    result.maimemoToken = result.maimemoToken.trim().replace(/^Bearer\s+/i, '');
+    if (/\s/.test(result.maimemoToken)) throw new Error('Invalid Maimemo token: whitespace is not allowed.');
     if (supplied.writeRules !== undefined) result.writeRules = validateRules(supplied.writeRules);
     result.videoCatalogPath = vaultPath(result.videoCatalogPath, '.md');
     result.imageFolder = vaultPath(result.imageFolder);

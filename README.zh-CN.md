@@ -136,10 +136,17 @@ tags: [podcast]
 | 保存本地封面 | 开启 | 采集或补图时下载缺失封面 |
 | 启动时补全封面 | 关闭 | 工作区就绪后补全集中清单的封面 |
 | 日记联动 | 关闭 | 将听过或看过的记录链接写入唯一匹配的已有日期日记 |
+| 墨墨 API 令牌 | 空 | 按需认证读取今日学习进度 |
 | 日记目录／属性 | `Daily`／`media` | 搜索子目录，保留其他属性 |
 | 作品清单路径 | `Recommendations/` 下的 `Books.md`、`Movies.md`、`Series.md`、`Music.md`、`Games.md`、`Theater.md` | 已有的想状态作品清单 |
 
 日记联动在配置目录及其子目录中，按 `YYYY-MM-DD` 文件名匹配已有日记。执行集中清单规则时使用清单块链接，否则使用第一个额外输出，节目文件的链接包含单集定位。从已有清单行创建笔记时沿用原活动来源。修改规则路径作用于新增输出，已有文件保留在原位置。
+
+#### 墨墨学习进度（可选）
+
+在 Media Capture 设置的“墨墨学习（可选）”中填写“墨墨 API 令牌”，输入框按密码显示，凭证随插件设置保存。在墨墨 App 的“我的 → 更多设置 → 实验功能 → 开放 API”获取 Token，开启自动同步，并在当天打开 App 初始化学习任务。
+
+笔记库视图可调用 `app.plugins.plugins['media-capture'].fetchStudyProgress()`，取得 `{finished, total, study_time, new_finished, review_finished}`，分别为已完成总词数、计划词数、毫秒单位的学习时长、新学完成词数和复习完成词数。插件使用 Obsidian 请求接口和已配置的 Token，调用时读取今日进度，HTTP 503 时等待 1 秒后重试一次；认证、频控和数据格式错误均显示具体提示。新学和复习数量从 `get_today_items` 的已完成条目统计，需与总进度数量相同。接口单次最多返回 1000 条，超过时提示无法完整统计。日记布局、日期检查、当日结果保存和学习标记由笔记库脚本管理。
 
 #### 记录标识与补图
 
@@ -191,7 +198,7 @@ npm run lint
 
 #### 网络访问与移动端
 
-YouTube 元信息通过 `www.youtube.com/oembed` 获取，Bilibili 请求公开视频页。豆瓣和小宇宙的元信息请求发送至单集公开页面。Apple Podcasts 优先使用 `itunes.apple.com` 的公开 iTunes Lookup API，按分享链接中的单集编号和地区精确匹配，再回退单集网页，不使用 Apple 登录态或令牌。节目目录每次最多查询 200 集，较早单集可能需要网页回退或手动填写名称。封面仅从 `doubanio.com`、`xyzcdn.net`、`mzstatic.com`、`ytimg.com`、`hdslb.com` 及其子域通过 HTTPS 下载。即使手动填写名称，保存时也可能请求缺失封面；关闭本地封面下载后，不再发起图片下载请求。手动补图和可选的启动补图也会按需请求单集页面。作品与播客的关联仅访问已配置的本地清单，不发起网络请求。
+墨墨学习进度调用 `POST https://open.maimemo.com/open/api/v1/memo/study/get_study_progress`，使用已配置的 Bearer Token 认证。YouTube 元信息通过 `www.youtube.com/oembed` 获取，Bilibili 请求公开视频页。豆瓣和小宇宙的元信息请求发送至单集公开页面。Apple Podcasts 优先使用 `itunes.apple.com` 的公开 iTunes Lookup API，按分享链接中的单集编号和地区精确匹配，再回退单集网页，不使用 Apple 登录态或令牌。节目目录每次最多查询 200 集，较早单集可能需要网页回退或手动填写名称。封面仅从 `doubanio.com`、`xyzcdn.net`、`mzstatic.com`、`ytimg.com`、`hdslb.com` 及其子域通过 HTTPS 下载。即使手动填写名称，保存时也可能请求缺失封面；关闭本地封面下载后，不再发起图片下载请求。手动补图和可选的启动补图也会按需请求单集页面。作品与播客的关联仅访问已配置的本地清单，不发起网络请求。
 
 运行代码使用 Obsidian API 和标准 Web API，不依赖 Node.js 或 Electron。manifest 允许 Android、iOS 加载，尚未完成真机兼容性验证。插件不读取平台登录凭据或播放历史，不包含遥测。平台或网络错误会显示在添加窗口或补图报告中。
 

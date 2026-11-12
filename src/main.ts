@@ -4,10 +4,16 @@ import { CaptureModal } from './capture-modal';
 import { CaptureSettings } from './settings-ui';
 import { registerRecommendationUI } from './recommendation-ui';
 import { NoteRefreshModal } from './note-refresh-ui';
+import { fetchStudyProgress, type StudyProgress } from './maimemo';
 
 export default class MediaCapture extends Plugin {
     service!: CaptureService;
     readonly supportsRecommendations = true;
+
+    fetchStudyProgress(): Promise<StudyProgress> {
+        if (!this.service || this.service.unloaded) return Promise.reject(new Error('请重新启用 Media Capture。'));
+        return fetchStudyProgress(this.service.config.maimemoToken);
+    }
 
     override async onload(): Promise<void> {
         this.service = new CaptureService(this);

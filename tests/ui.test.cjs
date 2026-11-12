@@ -116,6 +116,14 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     vm.runInNewContext(bundle, sandbox);
     const plugin = new sandbox.module.exports.default();
     await plugin.onload();
+    assert.equal(typeof plugin.fetchStudyProgress, 'function');
+    await assert.rejects(plugin.fetchStudyProgress(), /Media Capture/);
+    plugin.settingsTab.display();
+    const tokenRow = all(plugin.settingsTab.containerEl).find(node => node.name === '墨墨 API 令牌');
+    assert(tokenRow);
+    const tokenInput = all(tokenRow).find(node => node.tag === 'input');
+    assert.equal(tokenInput.type, 'password');
+    assert.equal(tokenInput.autocomplete, 'off');
     assert.equal(commands.length, 6);
     assert.equal(plugin.supportsRecommendations, true);
     events.get('media-capture:recommend')({ path: 'Podcasts.md', blockId: 'douban-123' });

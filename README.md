@@ -136,10 +136,17 @@ Custom sync tools must preserve the span between `media-sources:start` and `medi
 | Download covers | Enabled | Downloads missing covers when capturing or repairing |
 | Repair on startup | Disabled | Repairs concentrated-log covers after layout is ready |
 | Daily integration | Disabled | Links completed podcast or video records to exactly one existing dated note |
+| Maimemo token | Empty | Optional authenticated access to today's study progress |
 | Daily folder / property | `Daily` / `media` | Searches subfolders; preserves other properties |
 | Collection paths | Files under `Recommendations/`: `Books.md`, `Movies.md`, `Series.md`, `Music.md`, `Games.md`, `Theater.md` | Existing wanted-work collections |
 
 Daily integration writes links to existing notes whose filenames match `YYYY-MM-DD` in the configured folder or its subfolders. When the concentrated log rule runs, its block link is used; otherwise the first additional output supplies the link, including an episode anchor in a show file. A note created from an existing log row keeps the existing activity source. Changing rule paths affects new outputs; existing files stay in place.
+
+#### Optional Maimemo study progress
+
+In Media Capture settings, enter the API token under **墨墨学习（可选） → 墨墨 API 令牌**. The field masks the token and saves it with plugin settings. Obtain a token from the Maimemo app under **我的 → 更多设置 → 实验功能 → 开放 API** and enable automatic synchronization. Open the app each day to initialize the study tasks.
+
+Vault views can call `app.plugins.plugins['media-capture'].fetchStudyProgress()` to retrieve `{finished, total, study_time, new_finished, review_finished}`. The method uses Obsidian's request API and the configured token; `study_time` is milliseconds. Completed words from `get_today_items` supply the new-word and review-word counts. A complete breakdown requires the list count to match the progress count; the endpoint supports up to 1,000 items per request. Requests run only when called. A temporary HTTP 503 is retried once after one second. Authentication, rate-limit and response errors produce a readable message. Diary layout, date checks, saved daily snapshots and learning flags remain the responsibility of vault scripts.
 
 #### Record identity and repair
 
@@ -191,7 +198,7 @@ Deployment copies only main.js, manifest.json, and the optional styles.css. It p
 
 #### Network access and mobile support
 
-YouTube metadata requests use `www.youtube.com/oembed`; Bilibili requests use its public video pages. Douban and Xiaoyuzhou metadata requests go to the selected episode's public page. Apple Podcasts first uses the public iTunes Lookup API at `itunes.apple.com`, matching the exact episode ID and storefront from the shared link, then falls back to the episode webpage. No Apple login or token is used. Catalog results are limited to 200 episodes per show; an older episode may need the webpage fallback or a manually entered title. Cover downloads are restricted to HTTPS hosts under `doubanio.com`, `xyzcdn.net`, `mzstatic.com`, `ytimg.com`, and `hdslb.com`. Saving may fetch a missing cover even when the title was entered manually; disabling cover downloads prevents those image requests. Manual repair and optional startup repair also fetch episode pages when needed. Linking works and episodes reads configured local lists only and makes no network requests.
+Maimemo study progress requests use `POST https://open.maimemo.com/open/api/v1/memo/study/get_study_progress` with the configured Bearer token. YouTube metadata requests use `www.youtube.com/oembed`; Bilibili requests use its public video pages. Douban and Xiaoyuzhou metadata requests go to the selected episode's public page. Apple Podcasts first uses the public iTunes Lookup API at `itunes.apple.com`, matching the exact episode ID and storefront from the shared link, then falls back to the episode webpage. No Apple login or token is used. Catalog results are limited to 200 episodes per show; an older episode may need the webpage fallback or a manually entered title. Cover downloads are restricted to HTTPS hosts under `doubanio.com`, `xyzcdn.net`, `mzstatic.com`, `ytimg.com`, and `hdslb.com`. Saving may fetch a missing cover even when the title was entered manually; disabling cover downloads prevents those image requests. Manual repair and optional startup repair also fetch episode pages when needed. Linking works and episodes reads configured local lists only and makes no network requests.
 
 Runtime code uses Obsidian APIs and standard Web APIs, with no Node.js or Electron dependency. Android and iOS loading is enabled in the manifest; real-device compatibility remains unverified. The plugin does not read platform credentials or playback history and does not include telemetry. Platform or network failures appear in the dialog or cover repair report.
 

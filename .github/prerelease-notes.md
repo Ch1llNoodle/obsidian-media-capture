@@ -1,7 +1,9 @@
-### Media Capture 0.11.0
+### Media Capture 0.12.0
 
-Settings now live alone in data.json (schema version 3). Durable capture metadata and output indexes live in records.json (schema version 1). Cover URL caches and repair reports are no longer persisted; artwork reuse reads existing log and record references.
+Maimemo study progress is an optional Capture integration. Configure the token in the plugin settings using the masked input. Vault views can call fetchStudyProgress() to retrieve progress and separate completed new-word and review-word counts.
 
-Capture metadata stores source fields once. Links, image markup, platform identifiers and date aliases are reconstructed when loading. Record updates use a verified temporary file; unchanged data is not rewritten.
+Completed counts are verified against the daily word list before returning. Incomplete, duplicate or truncated results produce an error. A temporary HTTP 503 is retried once after one second.
 
-Keep both data.json and records.json when syncing devices. Existing combined settings must be converted outside the plugin before loading this version. No runtime compatibility or automatic migration is included.
+Requests use Obsidian's request API. No background polling or study-result cache is added. Diary sections, date guards, daily snapshots and heatmaps remain vault-owned. Existing media capture and storage formats are unchanged.
+
+Validation: production build passes; 118 tests pass and 3 optional vault integration tests are skipped. ESLint retains one existing settings-search warning.

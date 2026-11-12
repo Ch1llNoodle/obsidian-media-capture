@@ -54,6 +54,7 @@ export interface CaptureSettingsData {
     dailyIntegration: boolean;
     dailyFolder: string;
     dailyProperty: string;
+    maimemoToken: string;
     bookPath: string;
     moviePath: string;
     teleplayPath: string;
