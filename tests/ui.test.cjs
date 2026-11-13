@@ -73,7 +73,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
         registerDomEvent(node, name, fn) { node[name] = fn; }
     }
     class Setting {
-        constructor(container) { this.row = container.createDiv(); }
+        constructor(container) { this.row = container.createDiv(); this.settingEl = this.row; }
         setName(name) { this.row.name = name; return this; }
         setDesc() { return this; }
         setHeading() { return this; }
@@ -81,7 +81,8 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
         addTextArea(callback) { return this.input(callback, 'textarea'); }
         input(callback, tag) {
             const node = this.row.createEl(tag);
-            callback({ inputEl: node, setValue: value => { node.value = value; }, getValue: () => node.value }); return this;
+            const component = { inputEl: node, setPlaceholder: () => component, setValue: value => { node.value = value; return component; }, getValue: () => node.value };
+            callback(component); return this;
         }
         addDropdown(callback) {
             const node = this.row.createEl('select');
@@ -115,15 +116,31 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
         } };
     vm.runInNewContext(bundle, sandbox);
     const plugin = new sandbox.module.exports.default();
+    assert.throws(() => plugin.getCredential('example'), /Media Capture/);
     await plugin.onload();
-    assert.equal(typeof plugin.fetchStudyProgress, 'function');
-    await assert.rejects(plugin.fetchStudyProgress(), /Media Capture/);
+    assert.equal(plugin.getCredential('missing'), '');
+    await plugin.service.saveSettings({ ...plugin.service.config, credentials: [{ name: 'example', value: 'test-secret' }] });
+    assert.equal(plugin.getCredential('example'), 'test-secret');
+    assert.equal(plugin.fetchStudyProgress, undefined);
+    assert.equal(plugin.searchPlaces, undefined);
+    assert.equal(plugin.searchTv, undefined);
     plugin.settingsTab.display();
-    const tokenRow = all(plugin.settingsTab.containerEl).find(node => node.name === '墨墨 API 令牌');
-    assert(tokenRow);
-    const tokenInput = all(tokenRow).find(node => node.tag === 'input');
-    assert.equal(tokenInput.type, 'password');
-    assert.equal(tokenInput.autocomplete, 'off');
+    const credentialInputs = all(plugin.settingsTab.containerEl).filter(node => node.tag === 'input' && node.type === 'password');
+    assert.equal(credentialInputs.length, 1);
+    assert(credentialInputs.every(node => node.autocomplete === 'off' && typeof node.change === 'function'));
+    const credentialNameInput = all(plugin.settingsTab.containerEl).find(node => node['aria-label'] === '凭证字段名');
+    credentialNameInput.value = 'renamed'; credentialNameInput.change();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(plugin.getCredential('example'), '');
+    assert.equal(plugin.getCredential('renamed'), 'test-secret');
+    const valueInput = all(plugin.settingsTab.containerEl).find(node => node.type === 'password');
+    valueInput.value = 'updated-secret'; valueInput.change();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(plugin.getCredential('renamed'), 'updated-secret');
+    const credentialRow = plugin.settingsTab.containerEl.children.find(row => all(row).some(node => node['aria-label'] === '凭证字段名'));
+    all(credentialRow).find(node => node.tag === 'button').click();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(plugin.getCredential('renamed'), '');
     assert.equal(commands.length, 6);
     assert.equal(plugin.supportsRecommendations, true);
     events.get('media-capture:recommend')({ path: 'Podcasts.md', blockId: 'douban-123' });
@@ -266,4 +283,5 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     assert.equal(editor.decorations.filter(range => range.hidden).length, 3, 'show files hide their own management markers in Live Preview');
     plugin.onunload();
     assert.equal(plugin.service.unloaded, true);
+    assert.throws(() => plugin.getCredential('example'), /Media Capture/);
 });

@@ -42,6 +42,11 @@ export interface RecommendationWork extends RecommendationItem {
     state: string;
 }
 
+export interface Credential {
+    name: string;
+    value: string;
+}
+
 export interface CaptureSettingsData {
     writeRules: WriteRule[];
     readonly catalogPath: string;
@@ -54,8 +59,7 @@ export interface CaptureSettingsData {
     dailyIntegration: boolean;
     dailyFolder: string;
     dailyProperty: string;
-    maimemoToken: string;
-    tmdbToken: string;
+    credentials: Credential[];
     bookPath: string;
     moviePath: string;
     teleplayPath: string;

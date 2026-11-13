@@ -1,24 +1,23 @@
-import { searchTv, tvSeasons, tvEpisodes } from './tmdb';
 import { Notice, Plugin } from 'obsidian';
 import { CaptureService } from './service';
 import { CaptureModal } from './capture-modal';
 import { CaptureSettings } from './settings-ui';
 import { registerRecommendationUI } from './recommendation-ui';
 import { NoteRefreshModal } from './note-refresh-ui';
-import { fetchStudyProgress, type StudyProgress } from './maimemo';
+import type { CaptureSettingsData } from './types';
 
 export default class MediaCapture extends Plugin {
     service!: CaptureService;
     readonly supportsRecommendations = true;
 
-    fetchStudyProgress(): Promise<StudyProgress> {
-        if (!this.service || this.service.unloaded) return Promise.reject(new Error('请重新启用 Media Capture。'));
-        return fetchStudyProgress(this.service.config.maimemoToken);
+    private get activeSettings(): CaptureSettingsData {
+        if (!this.service || this.service.unloaded) throw new Error('请重新启用 Media Capture。');
+        return this.service.config;
     }
 
-    searchTv(query: string) { return searchTv(this.service.config.tmdbToken, query); }
-    tvSeasons(id: number) { return tvSeasons(this.service.config.tmdbToken, id); }
-    tvEpisodes(id: number, season: number) { return tvEpisodes(this.service.config.tmdbToken, id, season); }
+    getCredential(name: string): string {
+        return this.activeSettings.credentials.find(entry => entry.name === name)?.value ?? '';
+    }
 
     override async onload(): Promise<void> {
         this.service = new CaptureService(this);

@@ -2,7 +2,15 @@
 
 [简体中文](README.zh-CN.md) · English
 
-Media Capture saves podcast and video information from Douban, Xiaoyuzhou, Apple Podcasts, YouTube, and Bilibili as Markdown. Write rules support one-line logs, separate notes, and files grouped by show or channel. The default is one line per record, with separate podcast and video logs. Daily integration, work associations, and in-app playback are optional. The interface currently uses Chinese.
+Media Capture saves podcast and video information from Douban, Xiaoyuzhou, Apple Podcasts, YouTube, and Bilibili as Markdown. Write rules support one-line logs, separate notes, and files grouped by show or channel. The default is one line per record, with separate podcast and video logs. The interface currently uses Chinese.
+
+Daily-note links, work associations, and in-app playback are optional. Custom credentials give vault scripts a single place to store field/value pairs. API integrations, diary buttons, episode grids, maps, and heatmaps belong to the vault configuration.
+
+| Managed by Capture | Managed by the vault |
+| --- | --- |
+| Media capture, write rules, covers, work associations | Diary layout, activity sections and classification |
+| Custom credential storage and lookup | API requests, study snapshots, episode progress and travel records |
+| Optional links to existing daily notes | Place notes, map views, summaries and heatmaps |
 
 #### Installation
 
@@ -12,7 +20,7 @@ Obsidian 1.5.0 or later is required. Place `main.js`, `manifest.json`, and `styl
 
 When updating, replace those three files and reload the plugin. Keep both `data.json` (settings) and `records.json` (capture records).
 
-The plugin ID and installation directory are `media-capture`. Configuration requirements for installations predating 0.11 are described under Data format and vault integration.
+The plugin ID and installation directory are `media-capture`. Only runtime files are needed for installation; source files and `node_modules` stay outside the installed plugin directory.
 
 #### Capture media
 
@@ -136,17 +144,26 @@ Custom sync tools must preserve the span between `media-sources:start` and `medi
 | Download covers | Enabled | Downloads missing covers when capturing or repairing |
 | Repair on startup | Disabled | Repairs concentrated-log covers after layout is ready |
 | Daily integration | Disabled | Links completed podcast or video records to exactly one existing dated note |
-| Maimemo token | Empty | Optional authenticated access to today's study progress |
+| Custom credentials | Empty | User-defined field/value pairs for vault scripts |
 | Daily folder / property | `Daily` / `media` | Searches subfolders; preserves other properties |
 | Collection paths | Files under `Recommendations/`: `Books.md`, `Movies.md`, `Series.md`, `Music.md`, `Games.md`, `Theater.md` | Existing wanted-work collections |
 
 Daily integration writes links to existing notes whose filenames match `YYYY-MM-DD` in the configured folder or its subfolders. When the concentrated log rule runs, its block link is used; otherwise the first additional output supplies the link, including an episode anchor in a show file. A note created from an existing log row keeps the existing activity source. Changing rule paths affects new outputs; existing files stay in place.
 
-#### Optional Maimemo study progress
+#### Custom credentials
 
-In Media Capture settings, enter the API token under **墨墨学习（可选） → 墨墨 API 令牌**. The field masks the token and saves it with plugin settings. Obtain a token from the Maimemo app under **我的 → 更多设置 → 实验功能 → 开放 API** and enable automatic synchronization. Open the app each day to initialize the study tasks.
+Use **Custom credentials** in settings to add, rename, edit, or delete field/value entries. Values are masked on screen. Field names are case-sensitive, unique, and limited to 80 characters; up to 100 entries are allowed. Values are stored exactly as entered. Authentication headers, token normalization, and service-specific validation belong to the calling script.
 
-Vault views can call `app.plugins.plugins['media-capture'].fetchStudyProgress()` to retrieve `{finished, total, study_time, new_finished, review_finished}`. The method uses Obsidian's request API and the configured token; `study_time` is milliseconds. Completed words from `get_today_items` supply the new-word and review-word counts. A complete breakdown requires the list count to match the progress count; the endpoint supports up to 1,000 items per request. Requests run only when called. A temporary HTTP 503 is retried once after one second. Authentication, rate-limit and response errors produce a readable message. Diary layout, date checks, saved daily snapshots and learning flags remain the responsibility of vault scripts.
+Vault scripts can read a configured value with:
+
+```javascript
+const capture = app.plugins.plugins['media-capture'];
+const token = capture.getCredential('serviceToken');
+```
+
+`getCredential(name)` returns an empty string when the field is absent and throws when the plugin is unavailable or unloaded. It reads settings without making a network request. The plugin does not define service names, URLs, request methods, or response formats. API clients, request access, error handling, records, and presentation belong to the vault's scripts and configuration.
+
+Values are saved as plain text in `data.json`; masking the input does not encrypt that file. Synchronize it only with private vault data. Renaming or deleting a field requires updating any scripts that use that field name. The current settings format uses a `credentials` array of `{name, value}` entries; fixed service-specific settings and methods are no longer supported.
 
 #### Record identity and repair
 
@@ -164,9 +181,14 @@ The plugin manages capture, write rules, local cover files, associations, and op
 
 The output is ordinary Markdown and can be read directly or used by optional tracking tools. After saving, the plugin emits `media-capture:updated` with `path`, `blockId`, `state`, and `date`. Note captures also include `notePath` and `output`; `blockId` is empty when no log row exists. `CaptureUpdatedEvent` in `src/types.ts` defines the payload. Log-only tracking integrations count records from the configured logs.
 
-Version 0.11 stores only `{schemaVersion: 3, settings}` in data.json. A separate records.json uses schema version 1 and stores output indexes, compact source metadata, and managed append entries. Generated links, image markup, provider identifiers, and duplicate date fields are reconstructed when loading. Unchanged records are not rewritten; record updates are verified in a temporary file before replacement.
+| Installation file | Content | When needed |
+| --- | --- | --- |
+| `data.json` | `{schemaVersion: 3, settings}`, including configured credentials | Plugin settings and service access |
+| `records.json` | Schema version 1: output indexes, compact source metadata, and managed append entries | Capture output lookup, edit detection, and template updates |
 
-Synchronize both files with the notes when moving to another device. Records support output lookup, edit detection, and template updates. Existing combined data must be converted outside the plugin before loading 0.11. Unsupported formats are rejected before writing. Fresh installations create records.json only after capturing content. Template refresh reports missing source metadata per file.
+Generated links, image markup, provider identifiers, and duplicate date fields are reconstructed when loading. Unchanged records are not rewritten; record updates are verified in a temporary file before replacement. Credentials are stored as plain text in `data.json`; masking the settings field only hides them on screen. Keep that file out of public repositories.
+
+Synchronize both files with the notes when moving to another device. Unsupported formats are rejected before writing; the plugin does not migrate them. Fresh installations create `records.json` only after capturing content. Template refresh reports missing source metadata per file. API responses, study snapshots, viewing progress, and place records are not added to these files.
 
 #### Development and validation
 
@@ -198,14 +220,18 @@ Deployment copies only main.js, manifest.json, and the optional styles.css. It p
 
 #### Network access and mobile support
 
-Maimemo study progress requests use `POST https://open.maimemo.com/open/api/v1/memo/study/get_study_progress` with the configured Bearer token. YouTube metadata requests use `www.youtube.com/oembed`; Bilibili requests use its public video pages. Douban and Xiaoyuzhou metadata requests go to the selected episode's public page. Apple Podcasts first uses the public iTunes Lookup API at `itunes.apple.com`, matching the exact episode ID and storefront from the shared link, then falls back to the episode webpage. No Apple login or token is used. Catalog results are limited to 200 episodes per show; an older episode may need the webpage fallback or a manually entered title. Cover downloads are restricted to HTTPS hosts under `doubanio.com`, `xyzcdn.net`, `mzstatic.com`, `ytimg.com`, and `hdslb.com`. Saving may fetch a missing cover even when the title was entered manually; disabling cover downloads prevents those image requests. Manual repair and optional startup repair also fetch episode pages when needed. Linking works and episodes reads configured local lists only and makes no network requests.
+Network requests use Obsidian's request API. The following table covers the built-in services; custom vault views may use additional services of their own.
 
-Runtime code uses Obsidian APIs and standard Web APIs, with no Node.js or Electron dependency. Android and iOS loading is enabled in the manifest; real-device compatibility remains unverified. The plugin does not read platform credentials or playback history and does not include telemetry. Platform or network failures appear in the dialog or cover repair report.
+| Feature | Destination and requests | Data sent / authentication |
+| --- | --- | --- |
+| Podcast metadata | Douban and Xiaoyuzhou episode pages; `itunes.apple.com` lookup and Apple episode pages | Episode or show identifiers and storefront; no platform login |
+| Video metadata | `www.youtube.com/oembed`; Bilibili public video pages | Canonical video URL or identifier; no platform login |
+| Covers | HTTPS under `doubanio.com`, `xyzcdn.net`, `mzstatic.com`, `ytimg.com`, `hdslb.com` | Cover URL from media metadata |
+
+Apple lookup returns up to 200 episodes per show; older episodes may require the webpage fallback or a manually entered title. Saving may fetch a missing cover even with a manually entered title. Disabling cover downloads stops image requests; manual repair and optional startup repair may still fetch media pages. Associations read local collections without network requests. Custom credential lookup makes no requests; vault scripts own any requests that use those values.
+
+Runtime code uses Obsidian APIs and standard Web APIs, with no Node.js or Electron dependency. Android and iOS loading is enabled in the manifest; real-device compatibility remains unverified. Only credentials explicitly supplied in settings are made available to vault scripts. The plugin does not read browser login sessions or playback history and does not include telemetry. Platform or network failures appear in the calling view, dialog, or cover repair report.
 
 #### License
 
 [Zero-Clause BSD](LICENSE).
-
-#### TV episode data (optional)
-
-Set **TMDB API Read Access Token** in Capture settings using the read access token from https://www.themoviedb.org/settings/api. The plugin exposes `searchTv(query)`, `tvSeasons(id)`, and `tvEpisodes(id, season)` for vault views. Requests run only when a view calls these methods, sending the search title or numeric series and season IDs to api.tmdb.org with the token in the authorization header. No episode cache or viewing progress is stored in plugin data. The calling note view owns matching, presentation, and progress storage. This integration does not modify daily notes or collection states. Desktop and iOS interaction require device verification.

@@ -42,3 +42,7 @@
     margin-block: 0.15em;
 }
 .media-record-row > .media-linked-works > li > p { margin-block: 0; }
+
+.media-capture-credential .setting-item-info { display: none; }
+.media-capture-credential .setting-item-control { flex: 1; flex-wrap: wrap; gap: 8px; }
+.media-capture-credential input { flex: 1; min-width: 100px; width: auto; }

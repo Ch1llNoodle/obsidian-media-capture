@@ -1,3 +1,4 @@
+import { renderCredentials } from './credential-settings';
 import { PluginSettingTab, Setting, Notice, type App } from "obsidian";
 
 import type { CaptureService } from "./service";
@@ -38,28 +39,7 @@ export class CaptureSettings extends PluginSettingTab {
         toggle("dailyIntegration", "写入日记属性", "默认关闭。开启后，将听过或看过的记录链接写入对应日期的现有日记。");
         text("dailyFolder", "日记目录", "此目录及子目录中的日记文件名使用 YYYY-MM-DD。");
         text("dailyProperty", "日记属性", "保存媒体记录链接的列表属性名称。");
-        new Setting(container).setName('墨墨学习（可选）').setHeading();
-        new Setting(container).setName('墨墨 API 令牌').setDesc('在墨墨的“我的 → 更多设置 → 实验功能 → 开放 API”获取，并开启自动同步。日记中的同步按钮读取今日进度。')
-            .addText(component => {
-                component.inputEl.type = 'password';
-                component.inputEl.autocomplete = 'off';
-                component.setValue(this.plugin.config.maimemoToken);
-                component.inputEl.addEventListener('change', () => {
-                    void this.plugin.saveSettings({ ...this.plugin.config, maimemoToken: component.getValue() })
-                        .catch((error: unknown) => { new Notice(errorMessage(error)); });
-                });
-            });
-        new Setting(container).setName('TMDB（可选）').setHeading();
-        new Setting(container).setName('TMDB API Read Access Token').setDesc('在 themoviedb.org/settings/api 获取读取令牌。追踪页点击搜索或更新分集时，向 TMDB 发送剧名或剧集编号。')
-            .addText(component => {
-                component.inputEl.type = 'password';
-                component.inputEl.autocomplete = 'off';
-                component.setValue(this.plugin.config.tmdbToken);
-                component.inputEl.addEventListener('change', () => {
-                    void this.plugin.saveSettings({ ...this.plugin.config, tmdbToken: component.getValue() })
-                        .catch((error: unknown) => { new Notice(errorMessage(error)); });
-                });
-            });
+        renderCredentials(container, this.plugin, () => this.display());
         new Setting(container).setName("已有作品清单").setHeading();
         for (const kind of recommendationKinds) text(`${kind}Path`, recommendationNames[kind], "已同步或导入的 Markdown 清单路径。关联时更新清单中的现有作品。");
     }

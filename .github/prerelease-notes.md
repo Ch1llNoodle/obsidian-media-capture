@@ -1,9 +1,7 @@
-### Media Capture 0.13.0
+### Media Capture 0.15.0
 
-Add optional TMDB integration for TV series search, season selection, and episode metadata. Configure the API Read Access Token in Capture settings. Vault views can call searchTv(query), tvSeasons(id), and tvEpisodes(id, season).
+Replace fixed service settings with one custom-credentials list. Add, rename, edit, and delete user-defined field/value pairs. Values are masked in settings and stored as plain text in data.json.
 
-Requests use https://api.tmdb.org/3 through Obsidian's request API. Connection failures show a network troubleshooting message. Credentials remain in plugin settings; episode lists, viewing progress, diary snapshots, and presentation remain owned by vault views. No background requests or persistent episode cache are added to the plugin.
+Vault scripts use getCredential(name) to retrieve a value. Missing fields return an empty string; calls before initialization or after unload fail. Lookup does not make network requests.
 
-The optional Maimemo study integration remains available. Both integrations use masked credential fields and reject whitespace in tokens.
-
-Validation: production build passes; 121 tests pass and 3 optional vault integration tests are skipped. Desktop TMDB search was verified by the user. iPhone interaction has not been verified.
+Remove the built-in study, TV, and place service clients and their fixed settings and methods. API request code, validation, records, and views belong to vault configuration. The plugin does not migrate old settings. Existing capture, cover, work-association, and template features remain available.
