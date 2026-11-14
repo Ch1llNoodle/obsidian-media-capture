@@ -1,6 +1,7 @@
+import { isMediaState } from './media-state';
 import { t } from './i18n';
 import { normalizePath, type Plugin } from 'obsidian';
-import { episodeUrl, isListeningState } from './core';
+import { episodeUrl } from './core';
 import { noteValues } from './note-format';
 import { isRecord, parseJson, record } from './validation';
 
@@ -10,6 +11,7 @@ export function packMetadata(input: unknown): Record<string, Record<string, stri
     const result: Record<string, Record<string, string>> = {};
     for (const [id, inputValues] of Object.entries(record(input))) {
         const values = record(inputValues);
+        if (!isMediaState(values.state)) throw new Error(t('Invalid captured state for {0}.', id));
         const saved: Record<string, string> = {};
         for (const field of sourceFields) if (typeof values[field] === 'string' && values[field]) saved[field] = values[field];
         const show = typeof values.show === 'string' ? values.show : '';
@@ -25,7 +27,7 @@ export function unpackMetadata(input: unknown, playback: boolean): Record<string
     const result: Record<string, Record<string, string>> = {};
     for (const [id, inputValues] of Object.entries(record(input))) {
         const values = record(inputValues);
-        if (typeof values.url !== 'string' || typeof values.title !== 'string' || !isListeningState(values.state)) throw new Error(t("Invalid stored capture: {0}", id));
+        if (typeof values.url !== 'string' || typeof values.title !== 'string' || !isMediaState(values.state)) throw new Error(t("Invalid stored capture: {0}", id));
         const source = episodeUrl(values.url);
         const show = typeof values.show === 'string' ? values.show : '';
         const title = typeof values.fulltitle === 'string' ? values.fulltitle : show ? `${show} · ${values.title}` : values.title;
@@ -58,9 +60,11 @@ export class CaptureDataStore {
         const adapter = this.plugin.app.vault.adapter;
         if (!await adapter.exists(this.path)) return {};
         const raw = parseJson(await adapter.read(this.path));
-        if (!isRecord(raw) || raw.schemaVersion !== 1 || Object.keys(raw).some(key => !['schemaVersion', 'noteIndex', 'noteMetadata', 'outputEntries'].includes(key))) throw new Error(t("Invalid records.json. Capture records were not changed."));
+        if (!isRecord(raw) || raw.schemaVersion !== 2 || Object.keys(raw).some(key => !['schemaVersion', 'noteIndex', 'noteMetadata', 'outputEntries'].includes(key))) throw new Error(t("Invalid records.json. Capture records were not changed."));
         if (raw.noteIndex !== undefined && !isRecord(raw.noteIndex) || raw.noteMetadata !== undefined && !isRecord(raw.noteMetadata)
             || raw.outputEntries !== undefined && !Array.isArray(raw.outputEntries)) throw new Error(t("Invalid capture record structure."));
+        if (Array.isArray(raw.outputEntries) && raw.outputEntries.some(entry => !isMediaState(record(entry).state))) throw new Error(t("Invalid capture record structure."));
+        if (Object.values(record(raw.noteMetadata)).some(entry => !isMediaState(record(entry).state))) throw new Error(t("Invalid capture record structure."));
         return raw;
     }
 
@@ -76,11 +80,11 @@ export class CaptureDataStore {
         const previousRecords = await this.records();
         const settings = { schemaVersion: 3, settings: data.settings };
         const metadata = packMetadata(data.noteMetadata);
-        const records = { schemaVersion: 1,
+        const records = { schemaVersion: 2,
             ...(Object.keys(record(data.noteIndex)).length ? { noteIndex: data.noteIndex } : {}),
             ...(Object.keys(metadata).length ? { noteMetadata: metadata } : {}),
             ...(Array.isArray(data.outputEntries) && data.outputEntries.length ? { outputEntries: data.outputEntries } : {}) };
-        if (JSON.stringify(records) !== JSON.stringify(Object.keys(previousRecords).length ? previousRecords : { schemaVersion: 1 })) {
+        if (JSON.stringify(records) !== JSON.stringify(Object.keys(previousRecords).length ? previousRecords : { schemaVersion: 2 })) {
             const adapter = this.plugin.app.vault.adapter;
             const temporary = this.path + '.tmp';
             const text = JSON.stringify(records, null, 2) + '\n';

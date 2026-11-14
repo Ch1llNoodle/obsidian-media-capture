@@ -1,17 +1,12 @@
 import { t } from './i18n';
-import type { CaptureItem, CaptureSettingsData, CatalogUpdate, EntryIdentity, Episode, ListeningState } from "./types";
+import type { CaptureItem, CaptureSettingsData, CatalogUpdate, EntryIdentity, Episode } from "./types";
 import { videoUrl } from "./media";
 import { decode } from "./metadata-helpers";
 import { noteValues, renderTemplateBody, withCoverWidth } from "./note-format";
 import { DEFAULT_SETTINGS } from './settings';
+import { isMediaState } from './media-state';
 export { decode, plain, safeCover, coverUrl } from "./metadata-helpers";
 export { metadata } from "./metadata";
-
-const STATES: readonly ListeningState[] = ["听过", "在听", "想听"];
-
-export function isListeningState(value: unknown): value is ListeningState {
-    return STATES.some(state => state === value);
-}
 
 function recordDate(line: string | null | undefined): string { return line?.match(/<!--\s*media-date:\s*(\d{4}-\d{2}-\d{2})\s*-->/)?.[1] ?? ""; }
 
@@ -63,7 +58,12 @@ function blockId(item: EntryIdentity): string {
     return `${item.provider}-${item.id}`;
 }
 
-function stateOf(line: string | null | undefined): string | undefined { return line?.match(/<!--\s*media-state:\s*(.*?)\s*-->/)?.[1]; }
+function stateOf(line: string | null | undefined) {
+    const value = line?.match(/<!--\s*media-state:\s*(.*?)\s*-->/)?.[1];
+    if (value === undefined) return;
+    if (!isMediaState(value)) throw new Error(t('Invalid captured state for {0}.', value));
+    return value;
+}
 
 function markdownText(value: string): string {
     return String(value).replace(/\s+/g, " ").trim().replace(/\\/g, "\\\\").replace(/\[/g, "\\[").replace(/\]/g, "\\]").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -108,7 +108,7 @@ function entryLine(item: CaptureItem, cover: string, settings: Readonly<CaptureS
 function updateCatalog(source: string, item: CaptureItem, cover: string, settings: Readonly<CaptureSettingsData> = DEFAULT_SETTINGS, createdDate = localDate()): CatalogUpdate {
     const existing = findEntry(source, item);
     const oldState = stateOf(existing);
-    if (existing && oldState === "听过") {
+    if (existing && oldState === "completed") {
         let updated = existing;
         if (cover && !/!\[(?:cover)?\|\d+\]\(</.test(updated)) {
             const width = settings.writeRules.find(rule => rule.id === 'catalog')?.coverWidth ?? 24;
@@ -128,4 +128,4 @@ function updateCatalog(source: string, item: CaptureItem, cover: string, setting
 }
 
 
-export { STATES, recordDate, localDate, validDate, episodeUrl, blockId, stateOf, markdownText, entryIdentity, titleKey, findEntry, entryLine, updateCatalog };
+export { recordDate, localDate, validDate, episodeUrl, blockId, stateOf, markdownText, entryIdentity, titleKey, findEntry, entryLine, updateCatalog };

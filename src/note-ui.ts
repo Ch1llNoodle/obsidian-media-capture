@@ -1,9 +1,10 @@
+import { isMediaState } from './media-state';
 import { t } from './i18n';
 import { FuzzySuggestModal, Notice, type App, type TFile } from 'obsidian';
 import type { CaptureService } from './service';
 import type { RecommendationSource } from './types';
 import { CaptureModal } from './capture-modal';
-import { entryIdentity, isListeningState, localDate, recordDate, stateOf } from './core';
+import { entryIdentity, localDate, recordDate, stateOf } from './core';
 import { isMarkdownFile } from './storage';
 import { errorMessage } from './validation';
 
@@ -30,7 +31,7 @@ export async function openEpisodeNote(podcast: CaptureService, source: Pick<Reco
     const identity = line ? entryIdentity(line) : null;
     if (!identity || !line) throw new Error(t("单集记录已变化，请重新选择。"));
     const state = stateOf(line);
-    if (!isListeningState(state)) throw new Error(t("Unsupported log row: missing media-state marker."));
+    if (!isMediaState(state)) throw new Error(t("Unsupported log row: missing media-state marker."));
     new CaptureModal(podcast, { output: 'note', item: { ...identity, state,
         date: recordDate(line) || localDate(), cover: line.match(/!\[(?:cover)?\|\d+\]\(<([^>]+)>\)/)?.[1] ?? '' } }).open();
 }

@@ -34,7 +34,7 @@ export default class MediaCapture extends Plugin {
         this.addCommand({
             id: 'create-media-note', name: t("创建媒体笔记"),
             callback: () => new CaptureModal(this.service, { output: 'note', item: {
-                id: '', url: '', title: '', state: '听过', date: '',
+                id: '', url: '', title: '', state: "completed", date: '',
             } }).open(),
         });
         this.addCommand({

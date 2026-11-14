@@ -1,8 +1,9 @@
+import { isMediaState } from './media-state';
 import { t } from './i18n';
 import type { CaptureService } from './service';
 import type { NoteRefreshEntry } from './note-refresh';
 import type { WriteRule } from './types';
-import { blockId, episodeUrl, validDate, entryIdentity, entryLine, isListeningState } from './core';
+import { blockId, episodeUrl, validDate, entryIdentity, entryLine } from './core';
 import { noteProperties, noteValues, renderEpisodeNote, renderTemplateBody, withCoverWidth, type NoteValues } from './note-format';
 import { entryBlock, entryMarkers } from './append-output';
 import { ruleTemplate } from './write-rules';
@@ -18,10 +19,10 @@ function capturedValues(podcast: CaptureService, id: string, source: string): No
     const show = text('show', saved.show);
     const title = text('title', saved.title);
     const state = text('state', saved.state);
-    if (!isListeningState(state)) throw new Error(t("Invalid captured state for {0}.", id));
+    if (!isMediaState(state)) throw new Error(t("Invalid captured state for {0}.", id));
     const listened = text('listened', saved.listened);
     const published = text('published', saved.published);
-    if (state === '听过' && !validDate(listened)) throw new Error(t("Missing completed date for {0}.", id));
+    if (state === "completed" && !validDate(listened)) throw new Error(t("Missing completed date for {0}.", id));
     if (published && !validDate(published)) throw new Error(t("Invalid publication date for {0}.", id));
     return noteValues({ ...episode, title: show ? show + ' · ' + title : title, show, episodeTitle: title,
         state, date: listened, published, description: text('description', saved.description) },
@@ -104,7 +105,7 @@ export async function prepareNoteRefresh(podcast: CaptureService): Promise<NoteR
                     ids.add(id);
                     const values = capturedValues(podcast, id, line); missing(entry, template, values);
                     const item = { ...identity, title: values.fulltitle || identity.title, show: values.show, episodeTitle: values.title,
-                        published: values.published, description: values.description, date: values.listened || '', state: isListeningState(values.state) ? values.state : '在听' };
+                        published: values.published, description: values.description, date: values.listened || '', state: isMediaState(values.state) ? values.state : "in-progress" };
                     let row = entryLine(item, values.coverpath || '', { ...podcast.config, writeRules: [{ ...rule, template }] }, values.currentdate || '');
                     const note = line.match(/<!-- media-note -->\s*\[\[[^\]]+\]\]/)?.[0];
                     if (note) row = row.replace(/\s+(\^\S+)$/, (_match: string, anchor: string) => ` ${note} ${anchor}`);
@@ -123,7 +124,7 @@ export async function prepareNoteRefresh(podcast: CaptureService): Promise<NoteR
                     const replacement = `${markers.start}\n${renderTemplateBody(template, values).trim()}\n\n^${id}-${ruleId}\n${markers.end}`;
                     entry.replacement = entry.replacement.replace(block, () => replacement);
                     entry.records?.push({ id, values });
-                    entry.updates?.push({ id, ruleId, path, content: replacement, state: isListeningState(values.state) ? values.state : '在听', date: values.listened || '' });
+                    entry.updates?.push({ id, ruleId, path, content: replacement, state: isMediaState(values.state) ? values.state : "in-progress", date: values.listened || '' });
                 }
                 if (!entry.updates?.length) throw new Error(t("没有完整的单集区域标记，已跳过。"));
             }

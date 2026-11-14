@@ -1,9 +1,10 @@
+import { isMediaState, mediaStateLabel } from './media-state';
 import { t } from './i18n';
 import type { CaptureService } from './service';
 import type { CaptureItem, CaptureResult, CaptureUpdatedEvent, WriteRule } from './types';
 import type { EpisodeNotePlan } from './episode-notes';
 import type { AppendPlan } from './append-output';
-import { blockId, entryIdentity, episodeUrl, findEntry, isListeningState, localDate, recordDate, stateOf, updateCatalog, validDate } from './core';
+import { blockId, entryIdentity, episodeUrl, findEntry, localDate, recordDate, stateOf, updateCatalog, validDate } from './core';
 import { isCapturePreset, noteValues, splitEpisodeTitle } from './note-format';
 import { rulesFor, ruleTemplate } from './write-rules';
 import { isMarkdownFile } from './storage';
@@ -22,25 +23,25 @@ export async function saveCapture(service: CaptureService, input: CaptureItem): 
     if (!rules.length) throw new Error(t("没有启用的写入规则，请在设置中启用至少一条。"));
     const item: CaptureItem = { ...input, ...parsed };
     if (service.unloaded) throw new Error(t("插件已卸载，请重新启用后重试。"));
-    if (!item.title.trim() || !isListeningState(item.state)) throw new Error(t("名称或状态无效。"));
-    if (item.state === '听过' && !validDate(item.date)) throw new Error(t("收听日期无效。"));
+    if (!item.title.trim() || !isMediaState(item.state)) throw new Error(t("名称或状态无效。"));
+    if (item.state === "completed" && !validDate(item.date)) throw new Error(t("收听日期无效。"));
     if (item.published && !validDate(item.published)) throw new Error(t("发布日期无效。"));
     const split = splitEpisodeTitle(item.title);
     item.show ??= split.show; item.episodeTitle ??= split.episodeTitle;
     const catalog = service.app.vault.getAbstractFileByPath(catalogPath) ?? null;
     const source = isMarkdownFile(catalog) ? await service.app.vault.read(catalog) : '';
     const previous = findEntry(source, item);
-    if (previous && !isListeningState(stateOf(previous))) throw new Error(t("Unsupported log row: missing media-state marker."));
+    if (previous && !isMediaState(stateOf(previous))) throw new Error(t("Unsupported log row: missing media-state marker."));
     const identity = previous ? entryIdentity(previous) : null;
     const id = identity ? blockId(identity) : service.notes.matchId(item) ?? blockId(item);
     const createdDate = service.notes.values(id)?.currentdate || localDate();
     const diaries = dailyNotes(service, item);
-    const completed = stateOf(previous) === '听过';
+    const completed = stateOf(previous) === "completed";
     const oldDate = recordDate(previous);
     const storedValues = service.notes.values(id);
-    const recordItem = completed || storedValues?.state === '听过'
-        ? { ...item, state: '听过' as const, date: oldDate || storedValues?.listened || item.date } : item;
-    if (rules.some(rule => rule.id === 'catalog') && item.state === '听过' && completed && oldDate !== item.date && diaries.length !== 1) throw new Error(t("已在 {0} 记录过这一集。记录重听需要开启日记联动，并先准备 {1} 的日记。", oldDate || t("之前"), item.date));
+    const recordItem = completed || storedValues?.state === "completed"
+        ? { ...item, state: "completed" as const, date: oldDate || storedValues?.listened || item.date } : item;
+    if (rules.some(rule => rule.id === 'catalog') && item.state === "completed" && completed && oldDate !== item.date && diaries.length !== 1) throw new Error(t("已在 {0} 记录过这一集。记录重听需要开启日记联动，并先准备 {1} 的日记。", oldDate || t("之前"), item.date));
 
     // Prepare every destination before writing any of them.
     const plans: Plan[] = [];
@@ -109,8 +110,8 @@ export async function saveCapture(service: CaptureService, input: CaptureItem): 
         const stored = service.notes.values(id);
         if (!stored || rules.some(rule => rule.mode === 'append')) {
             stage = t("保存单集信息");
-            const state = stored?.state === '听过' ? '听过' : item.state;
-            const date = stored?.state === '听过' && stored.listened ? stored.listened : completed && oldDate ? oldDate : item.date;
+            const state = stored?.state === "completed" ? "completed" : item.state;
+            const date = stored?.state === "completed" && stored.listened ? stored.listened : completed && oldDate ? oldDate : item.date;
             const values = noteValues({ ...item, state, date }, id, cover.path, stored?.currentdate || localDate(), service.config.playbackIntegration);
             await service.notes.remember(id, { ...values, description: values.description || stored?.description || '', published: values.published || stored?.published || '' });
         }
@@ -121,7 +122,7 @@ export async function saveCapture(service: CaptureService, input: CaptureItem): 
         return { hasCover: !!cover.path, coverPath: cover.path, coverError: cover.error, coverSource: cover.source,
             ...(note ? { notePath: note.path, noteCreated: note.created } : {}),
             message: (note ? saved.map(result => result.kind === 'catalog' ? t("清单已保存") : result.created ? t("已保存到{0}", result.name) : t("已找到已有{0}", result.name)).join(' · ')
-                : completed ? t("已保留原记录") : t("已添加到媒体记录")) + (item.state === '听过' ? ` · ${item.date}` : ` · ${t(item.state)}`) + (cover.error ? t("（封面未获取到：{0}）", cover.error) : '') };
+                : completed ? t("已保留原记录") : t("已添加到媒体记录")) + (item.state === "completed" ? ` · ${item.date}` : ` · ${mediaStateLabel(item.state, item.provider === "youtube" || item.provider === "bilibili")}`) + (cover.error ? t("（封面未获取到：{0}）", cover.error) : '') };
     } catch (error) {
         const prefix = saved.some(result => result.kind !== 'catalog') ? t("单集笔记已保存，") : saved.some(result => result.kind === 'catalog') ? t("清单已保存，") : '';
         const detail = saved.length ? t("\n已保存：") + saved.map(result => result.name + ' → ' + result.path).join('；') + t("。再次保存可复用。") : '';

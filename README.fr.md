@@ -26,7 +26,7 @@ Lors d’une mise à jour, remplacez les trois fichiers d’exécution et rechar
 2. Collez un lien de partage de podcast ou de vidéo et choisissez **Récupérer les informations**.
 3. Vérifiez l’émission ou la chaîne, le titre, la date de suivi, le statut et le préréglage de sortie, puis choisissez **Enregistrer**.
 
-Les podcasts affichent **Écouté**, **En cours d’écoute** et **À écouter**. Les vidéos affichent **Vu**, **En cours de visionnage** et **À regarder**. Les identifiants stockés restent `听过`, `在听` et `想听` dans toutes les langues, y compris dans `{{state}}`. Les médias terminés reçoivent la date choisie. Si l’intégration au journal est activée, ouvrir la fenêtre depuis une note quotidienne du dossier configuré reprend la date de cette note.
+Les podcasts affichent **Écouté**, **En cours d’écoute** et **À écouter**. Les vidéos affichent **Vu**, **En cours de visionnage** et **À regarder**. Les identifiants stockés restent `completed`, `in-progress` et `wishlist` dans toutes les langues, y compris dans `{{state}}`. Les médias terminés reçoivent la date choisie. Si l’intégration au journal est activée, ouvrir la fenêtre depuis une note quotidienne du dossier configuré reprend la date de cette note.
 
 Pour Apple Podcasts, partagez un épisode : une adresse d’émission sans paramètre `i` est refusée. Si les informations ne sont pas disponibles, saisissez le titre manuellement. Un échec de téléchargement de couverture n’empêche pas l’enregistrement.
 
@@ -175,6 +175,10 @@ Sur une même plateforme, l’identifiant de l’épisode ou de la vidéo sert �
 
 #### Données et intégration au coffre
 
+Les commentaires `media-state`, les métadonnées capturées, les sorties gérées, les événements et `{{state}}` utilisent les identifiants fixes `completed`, `in-progress` et `wishlist`. Seuls les libellés affichés sont traduits. Les statuts des collections d’œuvres Douban suivent un format distinct et restent inchangés.
+
+Les paramètres utilisent le schéma 3 ; les enregistrements utilisent le schéma 2.
+
 La sortie est du Markdown ordinaire. Les scripts du coffre gèrent les sections quotidiennes, les activités, les synthèses et les styles de fin. Les chemins, modèles, propriétés et événements constituent les points d’intégration.
 
 Après enregistrement, `media-capture:updated` fournit `path`, `blockId`, `state` et `date`. Les captures de notes ajoutent `notePath` et `output` ; `blockId` est vide sans ligne de journal. Le type `CaptureUpdatedEvent` est défini dans `src/types.ts`.
@@ -182,9 +186,9 @@ Après enregistrement, `media-capture:updated` fournit `path`, `blockId`, `state
 | Fichier installé | Contenu | Usage |
 | --- | --- | --- |
 | `data.json` | `{schemaVersion: 3, settings}`, identifiants compris | Paramètres locaux |
-| `records.json` | Version 1 : index, métadonnées sources et ajouts gérés | Retrouver les sorties, détecter les modifications, appliquer les modèles |
+| `records.json` | Version 2 : index, métadonnées sources et ajouts gérés | Retrouver les sorties, détecter les modifications, appliquer les modèles |
 
-Les liens, images Markdown, identifiants de plateforme et champs de date dérivés sont reconstruits à la lecture. Un contenu inchangé n’est pas réécrit ; les mises à jour des enregistrements passent par un fichier temporaire vérifié. Les formats non pris en charge sont refusés sans migration. Une nouvelle installation ne crée `records.json` qu’après une capture. Les réponses d’API, données d’apprentissage, progressions et lieux n’y sont pas enregistrés. Synchronisez les deux fichiers avec les notes entre appareils et gardez les identifiants hors des dépôts publics.
+Les liens, images Markdown, identifiants de plateforme et champs de date dérivés sont reconstruits à la lecture. Un contenu inchangé n’est pas réécrit ; les mises à jour des enregistrements passent par un fichier temporaire vérifié. Une nouvelle installation ne crée `records.json` qu’après une capture. Les réponses d’API, données d’apprentissage, progressions et lieux n’y sont pas enregistrés. Synchronisez les deux fichiers avec les notes entre appareils et gardez les identifiants hors des dépôts publics.
 
 #### Partager une configuration
 

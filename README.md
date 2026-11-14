@@ -28,7 +28,7 @@ The plugin ID and installation directory are `media-capture`. Only runtime files
 2. Paste a podcast or video share link and select **Fetch media information**.
 3. Confirm the show or channel, title, record date, status, and output preset, then select **Save**.
 
-Podcast statuses display **Listened**, **Listening**, and **Want to listen**. Videos display **Watched**, **Watching**, and **Want to watch**. Stored status identifiers remain `听过`, `在听`, and `想听` in every interface language, including the `{{state}}` variable. Completed records receive the selected date. With daily integration enabled, opening the dialog from a dated note in the configured daily folder uses that note's date.
+Podcast statuses display **Listened**, **Listening**, and **Want to listen**. Videos display **Watched**, **Watching**, and **Want to watch**. Stored status identifiers remain `completed`, `in-progress`, and `wishlist` in every interface language, including the `{{state}}` variable. Completed records receive the selected date. With daily integration enabled, opening the dialog from a dated note in the configured daily folder uses that note's date.
 
 For Apple Podcasts, share an individual episode. A show URL without an `i` episode parameter is rejected. If metadata cannot be fetched, enter the title manually. A failed cover download does not prevent saving.
 
@@ -183,6 +183,10 @@ Records from the same platform are matched by episode or video ID. Across platfo
 
 #### Data format and vault integration
 
+Media states use the fixed identifiers `completed`, `in-progress`, and `wishlist` in `media-state` comments, captured metadata, managed outputs, events, and `{{state}}`. Labels are translated only for display. Douban work-collection statuses use their own format and remain unchanged.
+
+Settings use schema 3; capture records use schema 2.
+
 The plugin manages capture, write rules, local cover files, associations, and optional links to daily notes. Vault scripts or configuration manage diary sections, activity classification, summaries, and completion styling. Paths, templates, daily fields, and workspace events provide the integration points. Existing handwritten formatting is preserved.
 
 The output is ordinary Markdown and can be read directly or used by optional tracking tools. After saving, the plugin emits `media-capture:updated` with `path`, `blockId`, `state`, and `date`. Note captures also include `notePath` and `output`; `blockId` is empty when no log row exists. `CaptureUpdatedEvent` in `src/types.ts` defines the payload. Log-only tracking integrations count records from the configured logs.
@@ -190,11 +194,11 @@ The output is ordinary Markdown and can be read directly or used by optional tra
 | Installation file | Content | When needed |
 | --- | --- | --- |
 | `data.json` | `{schemaVersion: 3, settings}`, including configured credentials | Plugin settings and service access |
-| `records.json` | Schema version 1: output indexes, compact source metadata, and managed append entries | Capture output lookup, edit detection, and template updates |
+| `records.json` | Schema version 2: output indexes, compact source metadata, and managed append entries | Capture output lookup, edit detection, and template updates |
 
 Generated links, image markup, provider identifiers, and duplicate date fields are reconstructed when loading. Unchanged records are not rewritten; record updates are verified in a temporary file before replacement. Credentials are stored as plain text in `data.json`; masking the settings field only hides them on screen. Keep that file out of public repositories.
 
-Synchronize both files with the notes when moving to another device. Unsupported formats are rejected before writing; the plugin does not migrate them. Fresh installations create `records.json` only after capturing content. Template refresh reports missing source metadata per file. API responses, study snapshots, viewing progress, and place records are not added to these files.
+Synchronize both files with the notes when moving to another device. Fresh installations create `records.json` only after capturing content. Template refresh reports missing source metadata per file. API responses, study snapshots, viewing progress, and place records are not added to these files.
 
 #### Sharing configuration
 

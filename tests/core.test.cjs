@@ -65,7 +65,17 @@ function appFixture(source, dates = ["2026-11-03", "2026-11-04"]) {
 }
 
 const base = "### Podcasts\n\n#### Entries\n\n#### Quotes\n\n手写摘抄与 [[已有笔记]]\n";
-const item = { provider: "douban", blockId: "douban-509937", id: "509937", url: "https://www.douban.com/podcast_episode/509937", title: "无人知晓 · E46 我们从未看见彼此", state: "听过", date: "2026-11-03", cover: "https://img3.doubanio.com/mpic/cover.jpg" };
+const item = { provider: "douban", blockId: "douban-509937", id: "509937", url: "https://www.douban.com/podcast_episode/509937", title: "无人知晓 · E46 我们从未看见彼此", state: "completed", date: "2026-11-03", cover: "https://img3.doubanio.com/mpic/cover.jpg" };
+
+test('media markers and template values use canonical states without accepting retired markers',()=>{
+    const {entryLine,stateOf}=load()._internals;
+    for(const state of ['completed','in-progress','wishlist']){
+        const row=entryLine({...item,state},'');
+        assert.equal(stateOf(row),state);
+        assert(row.includes(`media-state: ${state}`));
+    }
+    for(const state of ['听过','在听','想听']) assert.throws(()=>stateOf(`<!-- media-state: ${state} -->`));
+});
 
 test('same-show artwork tolerates compression but rejects changed art and cropping', () => {
     const { sameArtwork } = load()._internals;
@@ -138,7 +148,7 @@ test("元信息兼容属性顺序、HTML 实体和节目名称，识别拦截页
 
 test("插入与更新只影响对应作品行，保留摘抄及原记录日期", () => {
     const { updateCatalog } = load()._internals;
-    const first = updateCatalog(base, { ...item, state: "在听" }, "").text;
+    const first = updateCatalog(base, { ...item, state: "in-progress" }, "").text;
     assert(first.includes("手写摘抄与 [[已有笔记]]"));
     const second = updateCatalog(first, item, "追踪/image/cover.jpg").text;
     assert.equal((second.match(/\^douban-509937/g) || []).length, 1);
@@ -184,13 +194,13 @@ test("重听写入新日期日记，保留首次收听日；没有目标日记�
 
 test("在听与想听记录不写入完成日期或日记属性", async () => {
     const Plugin = load(); const fixture = appFixture(base); const plugin = new Plugin(); plugin.settings = { ...Plugin._internals.FIXTURE_SETTINGS }; plugin.app = fixture.app; plugin.queue = Promise.resolve();
-    await plugin.capture({ ...item, state: "想听", cover: "" });
+    await plugin.capture({ ...item, state: "wishlist", cover: "" });
     assert(!fixture.contents.get("追踪/播客.md").includes("2026-11-03"));
     assert.equal(fixture.frontmatter.get("daily/2026/2026-11/2026-11-03.md").播客.length, 0);
-    await plugin.capture({ ...item, state: "在听", cover: "" });
-    assert(fixture.contents.get("追踪/播客.md").includes("media-state: 在听"));
+    await plugin.capture({ ...item, state: "in-progress", cover: "" });
+    assert(fixture.contents.get("追踪/播客.md").includes("media-state: in-progress"));
     await plugin.capture({ ...item, cover: "" });
-    assert(fixture.contents.get("追踪/播客.md").includes("media-state: 听过"));
+    assert(fixture.contents.get("追踪/播客.md").includes("media-state: completed"));
 });
 
 const xyzUrl = "https://www.xiaoyuzhoufm.com/episode/6ae9d09e97726cd4675c34fd";
@@ -246,12 +256,12 @@ test("跨平台相同节目和单集复用旧行、旧封面与日记块链接",
 
 test("跨平台在听转为听过仍保留原始标识，防止历史日记断链", () => {
     const { entryLine, episodeUrl, updateCatalog } = load()._internals;
-    const pending = { ...item, ...episodeUrl(xyzUrl), state: "在听" };
+    const pending = { ...item, ...episodeUrl(xyzUrl), state: "in-progress" };
     const original = base.replace("#### Entries", "#### Entries\n\n" + entryLine(pending, ""));
     const updated = updateCatalog(original, { ...item, ...episodeUrl(appleUrl) }, "").text;
     assert(updated.includes("^xiaoyuzhou-6ae9d09e97726cd4675c34fd"));
     assert(!updated.includes("^apple-"));
-    assert(updated.includes("media-state: 听过"));
+    assert(updated.includes("media-state: completed"));
 });
 
 test("三平台自动获取使用公开网页或目录，无需账号信息", async () => {

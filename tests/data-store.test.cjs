@@ -23,7 +23,23 @@ function fixture() {
         loadData: async () => settings, saveData: async value => { settingsWrites++; settings = value; }};
     return {plugin, adapter, files, writes, store: new CaptureDataStore(plugin), settings: () => settings, settingsWrites: () => settingsWrites};
 }
-const sample = noteValues({...episodeUrl('https://www.douban.com/podcast_episode/123'), title: 'Show · Episode', state: '听过', date: '2026-11-09', description: 'Original description'}, 'douban-123', 'image/Show.jpg', '2026-11-08');
+const sample = noteValues({...episodeUrl('https://www.douban.com/podcast_episode/123'), title: 'Show · Episode', state: "completed", date: '2026-11-09', description: 'Original description'}, 'douban-123', 'image/Show.jpg', '2026-11-08');
+
+test('retired record schema and localized media states are rejected without migration or writes',async()=>{
+    const f=fixture();
+    await f.store.save({settings:{},noteMetadata:{'douban-123':sample}});
+    const original=f.files.get(recordPath);
+    for(const change of [data=>{data.schemaVersion=1;},data=>{data.noteMetadata['douban-123'].state='听过';},data=>{data.outputEntries=[{state:'在听'}];}]){
+        const data=JSON.parse(original);change(data);
+        const raw=JSON.stringify(data);f.files.set(recordPath,raw);
+        await assert.rejects(f.store.load());
+        await assert.rejects(f.store.save({settings:{},noteMetadata:{'douban-123':sample}}));
+        assert.equal(f.files.get(recordPath),raw);
+    }
+    f.files.set(recordPath,original);
+    await assert.rejects(f.store.save({settings:{},noteMetadata:{'douban-123':{...sample,state:'想听'}}}));
+    assert.equal(f.files.get(recordPath),original);
+});
 
 test('settings and compact capture records persist separately and survive reload', async () => {
     const f = fixture();

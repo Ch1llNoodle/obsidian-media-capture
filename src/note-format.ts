@@ -52,7 +52,7 @@ export function noteValues(item: CaptureItem, id: string, coverPath: string, cur
     return { ...mediaValues(item, playback), show: (item.show ?? split.show).replace(/\s+/g, ' ').trim(), title: (item.episodeTitle ?? split.episodeTitle).replace(/\s+/g, ' ').trim(), fulltitle: item.title,
         link: `[${markdown(item.title)}](<${item.url}>)`, url: item.url,
         cover: coverPath ? `![|120](<${coverPath}>)` : '', coverpath: coverPath, published: item.published ?? '',
-        listened: item.state === '听过' ? item.date : '', currentdate: currentDate, date: currentDate,
+        listened: item.state === "completed" ? item.date : '', currentdate: currentDate, date: currentDate,
         description: item.description ?? '', state: item.state, provider: item.provider, id };
 }
 

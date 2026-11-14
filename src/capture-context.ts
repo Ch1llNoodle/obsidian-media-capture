@@ -14,7 +14,7 @@ export function dailyNotes(service: CaptureService, item: CaptureItem): TFile[] 
 }
 
 export async function writeDailyLink(service: CaptureService, item: CaptureItem, files: TFile[], path: string, anchor = ''): Promise<void> {
-    if (item.repairOnly || item.state !== '听过' || files.length !== 1 || !files[0]) return;
+    if (item.repairOnly || item.state !== "completed" || files.length !== 1 || !files[0]) return;
     const target = path.replace(/\.md$/i, '') + (anchor ? '#^' + anchor : '');
     const label = Array.from(item.title).map(character => '\r\n|[]'.includes(character) ? ' ' : character).join('');
     const link = `[[${target}|${label}]]`;

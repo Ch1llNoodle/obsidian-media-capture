@@ -29,5 +29,5 @@ export function mediaValues(item: Pick<CaptureItem, 'url' | 'state' | 'date'>, e
     try { video = !!videoUrl(new URL(item.url)); } catch { /* Non-video metadata remains usable. */ }
     const mediaurl = video && enabled ? 'obsidian://mx-open?url=' + encodeURIComponent(item.url) : '';
     return { mediaurl, medialink: mediaurl ? '[在 Obsidian 中播放](<' + mediaurl + '>)' : '',
-        kind: video ? 'video' : 'podcast', consumed: item.state === '听过' ? item.date : '' };
+        kind: video ? 'video' : 'podcast', consumed: item.state === "completed" ? item.date : '' };
 }

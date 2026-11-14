@@ -24,7 +24,7 @@ function episodeNotePath(settings, values) {
     const rule = settings.writeRules?.find(rule => rule.id === 'notes');
     return renderPath(rule?.folder ?? settings.notesFolder ?? '', rule?.pathTemplate ?? settings.notesPath, values);
 }
-const item = { provider: 'douban', blockId: 'douban-123', id: '123', url: 'https://www.douban.com/podcast_episode/123', title: '节目 · 单集', state: '听过', date: '2026-11-03', published: '2026-11-01' };
+const item = { provider: 'douban', blockId: 'douban-123', id: '123', url: 'https://www.douban.com/podcast_episode/123', title: '节目 · 单集', state: "completed", date: '2026-11-03', published: '2026-11-01' };
 
 function fixture(options = {}) {
     const files = new Map(), contents = new Map(), properties = new Map(), events = new Map(), updated = [];
@@ -183,7 +183,7 @@ test('YAML substitutions preserve quotes, multiline text and types without injec
 });
 
 test('publication, listen and creation dates remain separate with format support', () => {
-    const values = noteValues({ ...item, state: '在听' }, 'douban-123', '', '2026-11-06');
+    const values = noteValues({ ...item, state: "in-progress" }, 'douban-123', '', '2026-11-06');
     assert.equal(values.listened, ''); assert.equal(values.published, '2026-11-01'); assert.equal(values.currentdate, '2026-11-06');
     assert(renderEpisodeNote('{{published:YYYY.MM.DD}} / {{currentDate:YYYY-MM}} / {{listened}}', values).includes('2026.11.01 / 2026-11 /'));
     assert.equal(episodeNotePath({ notesFolder: '', notesPath: '{{currentDate:YYYY-MM-DD}}-{{id}}.md' }, values), '2026-11-06-douban-123.md');
@@ -207,10 +207,10 @@ test('both mode retains the original diary block link without adding a second no
 
 test('changing a log entry from in-progress to listened retains its note reference', async () => {
     const f = fixture({ preset: 'both' }); await f.service.initialize();
-    await f.service.capture({ ...item, state: '在听' });
+    await f.service.capture({ ...item, state: "in-progress" });
     await f.service.capture({ ...item, output: 'log' });
     const log = f.contents.get('Podcasts.md');
-    assert(log.includes('media-state: 听过')); assert(log.includes('[[Media/节目/单集|笔记]]'));
+    assert(log.includes('media-state: completed')); assert(log.includes('[[Media/节目/单集|笔记]]'));
 });
 
 test('a failed second write reports the saved side and retries without duplicating content', async () => {
@@ -452,7 +452,7 @@ test('retroactive catalog templates preserve work children, quotations, and epis
 });
 
 test('changing an in-progress append entry to listened preserves edited content by stopping with a detailed error', async () => {
-    const f = fixture(); await configure(f, 'show'); await f.service.capture({ ...item, state: '在听' });
+    const f = fixture(); await configure(f, 'show'); await f.service.capture({ ...item, state: "in-progress" });
     const p = 'Media/节目.md'; const original = f.contents.get(p).replace('### 单集', '### 单集\n\n手写'); f.contents.set(p, original);
     await assert.rejects(f.service.capture(item), /单集区域已手工修改/);
     assert.equal(f.contents.get(p), original);
@@ -515,7 +515,7 @@ test('several output rules fetch metadata and download the shared cover only onc
 
 test('video capture reuses write rules, diary links and identity after reload', async () => {
     const f = fixture({preset: 'show', dailyIntegration: true}); await f.service.initialize();
-    const video = {...sandbox.module.exports.episodeUrl('https://www.bilibili.com/video/BV1xx411c7mD?p=2'), title: 'Channel · Video', show: 'Channel', episodeTitle: 'Video', state: '听过', date: '2026-11-06'};
+    const video = {...sandbox.module.exports.episodeUrl('https://www.bilibili.com/video/BV1xx411c7mD?p=2'), title: 'Channel · Video', show: 'Channel', episodeTitle: 'Video', state: "completed", date: '2026-11-06'};
     f.add('Daily/2026-11-06.md', 'Diary');
     const result = await f.service.capture(video);
     assert(f.contents.get(result.notePath).includes('^bilibili-BV1xx411c7mD-p2-show'));

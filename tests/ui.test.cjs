@@ -30,7 +30,7 @@ for (const language of ['zh', 'en', 'fr']) test(`media settings and associations
     const events = new Map();
     const modals = [];
     const files = new Map([['Podcasts.md', { path: 'Podcasts.md', extension: 'md' }]]);
-    const content = new Map([['Podcasts.md', '- [节目 · 单集](<https://www.douban.com/podcast_episode/123>) <!-- media-state: 在听 --> ^douban-123\n- [另一个节目 · 单集](<https://podcasts.apple.com/us/podcast/id12?i=456>) <!-- media-state: 在听 --> ^apple-456'], ['Recommendations/Movies.md', '- [电影](<https://movie.douban.com/subject/100/>) <!-- douban-state: 想看 --> ^douban-100\n- [已完成](<https://movie.douban.com/subject/200/>) <!-- douban-state: 看过 --> ^douban-200\n- [正在看](<https://movie.douban.com/subject/300/>) <!-- douban-state: 在看 --> ^douban-300']]);
+    const content = new Map([['Podcasts.md', '- [节目 · 单集](<https://www.douban.com/podcast_episode/123>) <!-- media-state: in-progress --> ^douban-123\n- [另一个节目 · 单集](<https://podcasts.apple.com/us/podcast/id12?i=456>) <!-- media-state: in-progress --> ^apple-456'], ['Recommendations/Movies.md', '- [电影](<https://movie.douban.com/subject/100/>) <!-- douban-state: 想看 --> ^douban-100\n- [已完成](<https://movie.douban.com/subject/200/>) <!-- douban-state: 看过 --> ^douban-200\n- [正在看](<https://movie.douban.com/subject/300/>) <!-- douban-state: 在看 --> ^douban-300']]);
     files.set('Recommendations/Movies.md', { path: 'Recommendations/Movies.md', extension: 'md' });
     const stored = new Map();
     const app = { vault: {
@@ -270,7 +270,7 @@ for (const language of ['zh', 'en', 'fr']) test(`media settings and associations
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(all(modals.at(-1).contentEl).find(node => node.tag === 'textarea').value, originalNote);
     await plugin.service.saveSettings({ ...plugin.service.config, writeRules: plugin.service.config.writeRules.map(rule => ({ ...rule, enabled: rule.id === 'show' })) });
-    const grouped = await plugin.service.capture({ url: 'https://podcasts.apple.com/us/podcast/id12?i=456', title: '另一个节目 · 单集', id: '456', state: '听过', date: '2026-11-03' });
+    const grouped = await plugin.service.capture({ url: 'https://podcasts.apple.com/us/podcast/id12?i=456', title: '另一个节目 · 单集', id: '456', state: "completed", date: '2026-11-03' });
     const groupText = content.get(grouped.notePath);
     view.visibleRanges = [{ from: 0, to: groupText.length }];
     view.state.field = field => field === editorInfo ? { file: { path: grouped.notePath } } : true;

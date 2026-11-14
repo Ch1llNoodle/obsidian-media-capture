@@ -1,7 +1,8 @@
+import { MEDIA_STATES, isMediaState, mediaStateLabel } from './media-state';
 import { t } from './i18n';
 import { Modal, Notice } from 'obsidian';
 import { videoUrl } from './media';
-import { STATES, isListeningState, validDate, localDate, episodeUrl } from './core';
+import { validDate, localDate, episodeUrl } from './core';
 import type { CaptureService } from './service';
 import type { CaptureItem, CapturePreset, Episode, EpisodeMetadata } from './types';
 import { capturePresets, isCapturePreset, noteValues, splitEpisodeTitle } from './note-format';
@@ -46,8 +47,8 @@ export class CaptureModal extends Modal {
             return wrapper.createEl('select');
         };
         this.stateInput = choice(t("状态"));
-        for (const state of STATES) this.stateInput.createEl('option', { text: t(state), value: state });
-        this.stateInput.value = '听过';
+        for (const state of MEDIA_STATES) this.stateInput.createEl('option', { text: mediaStateLabel(state), value: state });
+        this.stateInput.value = "completed";
         this.outputInput = choice(t("写入预设"));
         for (const [value, text] of Object.entries(capturePresets)) this.outputInput.createEl('option', { value, text: t(text) });
         this.outputInput.value = this.preset?.output ?? 'custom';
@@ -67,7 +68,7 @@ export class CaptureModal extends Modal {
         actions.createEl('button', { text: t("取消") }).addEventListener('click', () => this.close());
         actions.createEl('button', { text: t("保存"), cls: 'mod-cta' }).addEventListener('click', () => { void this.save(); });
         for (const control of [this.showInput, this.titleInput, this.dateInput, this.publishedInput]) control.addEventListener('input', () => this.updatePreview());
-        this.stateInput.addEventListener('change', () => { this.dateInput.disabled = this.stateInput.value !== '听过'; this.updatePreview(); });
+        this.stateInput.addEventListener('change', () => { this.dateInput.disabled = this.stateInput.value !== "completed"; this.updatePreview(); });
         this.outputInput.addEventListener('change', () => this.updatePreview());
         this.urlInput.addEventListener('input', () => {
             this.loaded = null;
@@ -87,7 +88,7 @@ export class CaptureModal extends Modal {
             this.descriptionInput.value = item.description ?? '';
             if (item.url) this.loaded = { ...episodeUrl(item.url), title: item.title, cover: item.cover ?? '' };
         }
-        this.dateInput.disabled = this.stateInput.value !== '听过';
+        this.dateInput.disabled = this.stateInput.value !== "completed";
         this.updatePreview();
         this.urlInput.focus();
     }
@@ -99,7 +100,7 @@ export class CaptureModal extends Modal {
         const title = split.show === show ? split.episodeTitle : this.titleInput.value.trim();
         const state = this.stateInput.value;
         const output = this.outputInput.value;
-        if (!isListeningState(state) || !isCapturePreset(output)) throw new Error(t("请选择有效的状态和保存方式。"));
+        if (!isMediaState(state) || !isCapturePreset(output)) throw new Error(t("请选择有效的状态和保存方式。"));
         return { ...episode, title: show ? show + ' · ' + title : title, show, episodeTitle: title,
             date: this.dateInput.value, state, output, published: this.publishedInput.value,
             description: this.descriptionInput.value, cover: this.loaded?.blockId === episode.blockId ? this.loaded.cover : '' };
@@ -109,7 +110,7 @@ export class CaptureModal extends Modal {
         try {
             const item = this.item();
             const video = !!videoUrl(new URL(item.url));
-            for (const option of Array.from(this.stateInput.querySelectorAll<HTMLOptionElement>('option'))) option.text = t(video ? ({ '听过': '看过', '在听': '在看', '想听': '想看' }[option.value] ?? option.value) : option.value);
+            for (const option of Array.from(this.stateInput.querySelectorAll<HTMLOptionElement>('option'))) option.text = mediaStateLabel(option.value, video);
             const values = noteValues(item, episodeUrl(item.url).blockId, '', localDate());
             const rules = rulesFor(this.plugin.config, item.output);
             this.preview.setText(rules.length ? t("新记录目标：\n") + rules.map(rule => rule.name + ' → ' + (rule.id === 'catalog' ? this.plugin.catalogPathFor(item) : rulePath(rule, values))).join('\n') : t("没有启用的写入规则。"));
@@ -157,7 +158,7 @@ export class CaptureModal extends Modal {
     setBusy(value: boolean): void {
         this.busy = value;
         this.contentEl.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLButtonElement>('input, select, textarea, button').forEach(control => { control.disabled = value; });
-        if (!value) this.dateInput.disabled = this.stateInput.value !== '听过';
+        if (!value) this.dateInput.disabled = this.stateInput.value !== "completed";
     }
     override onClose(): void { this.contentEl.empty(); }
 }

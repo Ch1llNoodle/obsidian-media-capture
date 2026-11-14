@@ -71,7 +71,7 @@ export function recommendationEditor(service: RecommendationService): ViewPlugin
                     if (source) {
                         ranges.push(Decoration.widget({ widget: new EpisodeAction(service, source, true), side: 2 }).range(line.to));
                         const identity = entryIdentity(line.text);
-                        const media = identity ? mediaValues({ url: identity.url, state: '在听', date: '' }, service.podcast.config.playbackIntegration) : null;
+                        const media = identity ? mediaValues({ url: identity.url, state: "in-progress", date: '' }, service.podcast.config.playbackIntegration) : null;
                         if (media?.mediaurl) ranges.push(Decoration.widget({ widget: new MediaAction(media.mediaurl), side: 3 }).range(line.to));
                     }
                 }

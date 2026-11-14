@@ -6,11 +6,21 @@ const vm = require('node:vm');
 const ts = require('typescript');
 const {buildSync} = require('esbuild');
 const root = path.resolve(__dirname, '..');
-const bundle = buildSync({stdin:{contents: `export * from './src/i18n'; export {en} from './src/locales/en'; export {fr} from './src/locales/fr';`, resolveDir:root, loader:'ts'},bundle:true,format:'cjs',platform:'browser',external:['obsidian'],write:false}).outputFiles[0].text;
+const bundle = buildSync({stdin:{contents: `export * from './src/i18n'; export * from './src/media-state'; export {en} from './src/locales/en'; export {fr} from './src/locales/fr';`, resolveDir:root, loader:'ts'},bundle:true,format:'cjs',platform:'browser',external:['obsidian'],write:false}).outputFiles[0].text;
 let language = 'en';
 const context = {module:{exports:{}},require:()=>({getLanguage:()=>language})};
 vm.runInNewContext(bundle,context);
 const {translate,t,resolveLocale,en,fr} = context.module.exports;
+
+test('media status identifiers stay canonical while podcast and video labels follow the language',()=>{
+    const {MEDIA_STATES,isMediaState,mediaStateLabel}=context.module.exports;
+    assert.deepEqual(Array.from(MEDIA_STATES),['completed','in-progress','wishlist']);
+    for(const value of ['听过','在听','想听','看过','在看','想看','done','doing','wish',null]) assert.equal(isMediaState(value),false);
+    for(const value of MEDIA_STATES) assert.equal(isMediaState(value),true);
+    language='zh'; assert.equal(mediaStateLabel('completed'),'听过'); assert.equal(mediaStateLabel('completed',true),'看过');
+    language='en'; assert.equal(mediaStateLabel('in-progress'),'Listening'); assert.equal(mediaStateLabel('in-progress',true),'Watching');
+    language='fr'; assert.equal(mediaStateLabel('wishlist'),'À écouter'); assert.equal(mediaStateLabel('wishlist',true),'À regarder');
+});
 
 test('locale follows Obsidian language, handles regional codes and defaults to English',()=>{
     for(const [code,expected] of [['zh-CN','zh'],['zh_TW','zh'],['fr-CA','fr'],['FR','fr'],['en-GB','en'],['de','en'],['','en']]) assert.equal(resolveLocale(code),expected);

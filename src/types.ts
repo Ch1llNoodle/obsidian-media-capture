@@ -1,5 +1,5 @@
 export type Provider = 'douban' | 'xiaoyuzhou' | 'apple' | 'youtube' | 'bilibili';
-export type ListeningState = '听过' | '在听' | '想听';
+export type MediaState = "completed" | "in-progress" | "wishlist";
 export type CapturePreset = 'log' | 'note' | 'both' | 'show' | 'custom';
 export interface WriteRule {
     id: string;
@@ -18,7 +18,7 @@ export interface StoredEntry {
     id: string;
     path: string;
     content: string;
-    state: ListeningState;
+    state: MediaState;
     date: string;
 }
 export type RecommendationKind = 'book' | 'movie' | 'teleplay' | 'music' | 'game' | 'theater';
@@ -108,7 +108,7 @@ export interface EntryIdentity {
 export interface CaptureItem extends EntryIdentity {
     url: string;
     title: string;
-    state: ListeningState;
+    state: MediaState;
     date: string;
     cover?: string;
     repairOnly?: boolean;
@@ -158,7 +158,7 @@ export interface SavedDataPatch {
 export interface CaptureUpdatedEvent {
     path: string;
     blockId: string;
-    state: ListeningState;
+    state: MediaState;
     date: string;
     notePath?: string;
     output?: CapturePreset;

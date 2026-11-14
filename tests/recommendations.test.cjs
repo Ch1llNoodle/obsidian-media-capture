@@ -198,7 +198,7 @@ test('新关联逐项追加在播客下方，不重复，重存播客仍保留�
     const second = api.linkEpisodeWork(first, source, {...item,id:'200',url:'https://movie.douban.com/subject/200/',title:'第二部'});
     assert(second.includes('\n  - [[Recommendations/Movies#^douban-100|电影]] <!-- media-work -->\n  - [[Recommendations/Movies#^douban-200|第二部]]'));
     assert.equal(api.linkEpisodeWork(second, source, item), second);
-    const saved = api.updateCatalog(second, {id:'123',provider:'douban',blockId:'douban-123',url:'https://www.douban.com/podcast_episode/123',title:source.title,state:'听过',date:'2026-11-04'}, '').text;
+    const saved = api.updateCatalog(second, {id:'123',provider:'douban',blockId:'douban-123',url:'https://www.douban.com/podcast_episode/123',title:source.title,state:"completed",date:'2026-11-04'}, '').text;
     assert(saved.includes('\n  - [[Recommendations/Movies#^douban-200|第二部]]'));
 });
 

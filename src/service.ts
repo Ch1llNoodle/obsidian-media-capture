@@ -1,7 +1,8 @@
+import { isMediaState } from './media-state';
 import { t } from './i18n';
 import { ruleTargets, validateSettings } from './settings';
 import { Modal, Notice, type App, type Plugin, type TFile } from "obsidian";
-import { isListeningState, recordDate, entryIdentity, stateOf } from "./core";
+import { recordDate, entryIdentity, stateOf } from "./core";
 import { ensureFolder, isMarkdownFile } from "./storage";
 
 import type { CaptureSettingsData, CaptureItem, CaptureResult, CoverFailure, CoverRepairResult, EpisodeMetadata, SavedDataPatch } from "./types";
@@ -97,7 +98,7 @@ export class CaptureService {
         for (const { line, identity } of missing) {
             if (this.unloaded) return;
             const state = stateOf(line);
-            if (!identity || !isListeningState(state)) continue;
+            if (!identity || !isMediaState(state)) continue;
             try {
                 const result = await this.capture({ ...identity, state, date: recordDate(line), repairOnly: true });
                 if (result.hasCover) repaired++;

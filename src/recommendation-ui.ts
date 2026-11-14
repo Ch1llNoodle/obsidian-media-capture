@@ -45,7 +45,7 @@ class EpisodeButtons extends MarkdownRenderChild {
             if (nested) row.insertBefore(note, nested);
             this.registerDomEvent(note, 'click', () => { void openEpisodeNote(this.service.podcast, selected).catch((error: unknown) => new Notice(errorMessage(error))); });
             this.buttons.push(note);
-            const media = mediaValues({ url: link.href, state: '在听', date: '' }, this.service.podcast.config.playbackIntegration);
+            const media = mediaValues({ url: link.href, state: "in-progress", date: '' }, this.service.podcast.config.playbackIntegration);
             if (media.mediaurl) {
                 const play = row.createEl('a', { text: t("在 Obsidian 中播放"), cls: 'media-note-button', attr: { href: media.mediaurl } });
                 if (nested) row.insertBefore(play, nested);

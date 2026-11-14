@@ -1,8 +1,9 @@
+import { isMediaState } from './media-state';
 import { t } from './i18n';
 import type { Plugin } from 'obsidian';
 import type { CaptureService } from './service';
 import type { CaptureItem, StoredEntry, WriteRule } from './types';
-import { isListeningState, localDate } from './core';
+import { localDate } from './core';
 import { noteValues, relativeNotePath, renderTemplateBody, withCoverWidth } from './note-format';
 import { rulePath, ruleTemplate } from './write-rules';
 import { ensureFolder, isMarkdownFile } from './storage';
@@ -44,7 +45,7 @@ export class AppendOutputs {
         for (const entry of value as unknown[]) {
             if (!isRecord(entry) || typeof entry.ruleId !== 'string' || !/^[a-z][a-z0-9-]{0,39}$/.test(entry.ruleId)
                 || typeof entry.id !== 'string' || !/^(douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?)$/.test(entry.id)
-                || typeof entry.path !== 'string' || typeof entry.content !== 'string' || typeof entry.date !== 'string' || !isListeningState(entry.state)) continue;
+                || typeof entry.path !== 'string' || typeof entry.content !== 'string' || typeof entry.date !== 'string' || !isMediaState(entry.state)) continue;
             try { const path = relativeNotePath(entry.path); this.entries.push({ ruleId: entry.ruleId, id: entry.id, path, content: entry.content, state: entry.state, date: entry.date }); this.paths.add(path); }
             catch { /* Invalid persisted paths are never used for writes. */ }
         }
@@ -81,7 +82,7 @@ export class AppendOutputs {
             const current = entryBlock(source, rule.id, id);
             if (previous && !current) throw new Error(t("原单集区域已移除：{0}，请恢复区域标记后重试。", path));
             if (!current) insertEntry(source, rule.heading, '');
-            if (current && previous && previous.state !== item.state && previous.state !== '听过' && current !== previous.content) throw new Error(t("单集区域已手工修改：{0}。保留原文，请使用模板更新预览处理。", path));
+            if (current && previous && previous.state !== item.state && previous.state !== "completed" && current !== previous.content) throw new Error(t("单集区域已手工修改：{0}。保留原文，请使用模板更新预览处理。", path));
         }
         return { rule, path, template, previous, item, id };
     }
@@ -100,14 +101,14 @@ export class AppendOutputs {
         let created = false;
         await vault.process(file, source => {
             const current = entryBlock(source, rule.id, id);
-            if (current && (!plan.previous || plan.previous.state === '听过' || plan.previous.state === item.state)) { content = current; return source; }
+            if (current && (!plan.previous || plan.previous.state === "completed" || plan.previous.state === item.state)) { content = current; return source; }
             if (current && current !== plan.previous?.content) throw new Error(t("单集区域在保存前已修改，原文保留，请重新预览。"));
             if (plan.previous && !current) throw new Error(t("单集区域在保存前已删除，原文保留。"));
             created = !current;
             return current ? source.replace(current, () => content) : insertEntry(source, rule.heading, content);
         });
-        const state = plan.previous?.state === '听过' ? '听过' : item.state;
-        const date = plan.previous?.state === '听过' ? plan.previous.date : item.date;
+        const state = plan.previous?.state === "completed" ? "completed" : item.state;
+        const date = plan.previous?.state === "completed" ? plan.previous.date : item.date;
         try { await this.remember({ ruleId: rule.id, id, path: plan.path, content, state, date }); }
         catch (error) { throw new Error(t("追加内容已保存，但索引保存失败：{0}；{1}", plan.path, error instanceof Error ? error.message : String(error))); }
         return { path: plan.path, anchor: id + '-' + rule.id, created };
