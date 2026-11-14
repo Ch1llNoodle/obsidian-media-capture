@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { parseYaml, stringifyYaml } from 'obsidian';
 import type { CaptureItem, CapturePreset } from './types';
 import { mediaValues } from './media';
@@ -12,7 +13,7 @@ export function relativeNotePath(value: string, allowEmpty = false): string {
     if (!path && allowEmpty) return '';
     const protectedFolders = ['.git', '.codex', '.agents', '.aws'];
     if (!path || /[:<>\r\n"|?*#]/.test(path) || path.includes('[') || path.includes(']') || path.startsWith('/') || path.split('/').some(part => !part || /[. ]$/.test(part) || /^(?:con|prn|aux|nul|com[0-9]|lpt[0-9])(?:\.|$)/i.test(part) || protectedFolders.includes(part.toLowerCase()))) {
-        throw new Error('笔记路径必须位于库内，不能包含 ..、空目录或配置目录。');
+        throw new Error(t("笔记路径必须位于库内，不能包含 ..、空目录或配置目录。"));
     }
     return path;
 }
@@ -20,12 +21,12 @@ export function relativeNotePath(value: string, allowEmpty = false): string {
 const variables = new Set(['show', 'title', 'fulltitle', 'link', 'url', 'cover', 'coverpath', 'published', 'listened', 'currentdate', 'date', 'description', 'state', 'provider', 'id', 'mediaurl', 'medialink', 'consumed', 'kind']);
 const pathVariables = new Set(['show', 'title', 'published', 'listened', 'currentdate', 'date', 'provider', 'id', 'consumed', 'kind']);
 export function validateNoteTemplate(template: string, path = false): void {
-    if (/\{\{|\}\}/.test(template.replace(/\{\{[^{}]+\}\}/g, ''))) throw new Error('模板变量的双花括号不完整。');
+    if (/\{\{|\}\}/.test(template.replace(/\{\{[^{}]+\}\}/g, ''))) throw new Error(t("模板变量的双花括号不完整。"));
     for (const match of template.matchAll(/\{\{([^{}]+)\}\}/g)) {
         const [key = '', format] = (match[1] ?? '').trim().split(':');
-        if (!(path ? pathVariables : variables).has(key.toLowerCase())) throw new Error(`未知笔记模板变量：${match[0]}`);
+        if (!(path ? pathVariables : variables).has(key.toLowerCase())) throw new Error(t("未知笔记模板变量：{0}", match[0]));
         if ((match[1] ?? '').split(':').length > 2 || format !== undefined && (!['published', 'listened', 'currentdate', 'date'].includes(key.toLowerCase()) || !/^(?:YYYY|MM|DD|[-_. /])+$/.test(format))) {
-            throw new Error(`不支持的日期格式：${match[0]}，可用 YYYY、MM、DD。`);
+            throw new Error(t("不支持的日期格式：{0}，可用 YYYY、MM、DD。", match[0]));
         }
     }
 }
@@ -46,7 +47,7 @@ function safeName(value: string): string {
 
 export type NoteValues = Record<string, string>;
 export function noteValues(item: CaptureItem, id: string, coverPath: string, currentDate: string, playback = false): NoteValues {
-    if (!item.provider) throw new Error('Missing canonical provider.');
+    if (!item.provider) throw new Error(t("Missing canonical provider."));
     const split = splitEpisodeTitle(item.title);
     return { ...mediaValues(item, playback), show: (item.show ?? split.show).replace(/\s+/g, ' ').trim(), title: (item.episodeTitle ?? split.episodeTitle).replace(/\s+/g, ' ').trim(), fulltitle: item.title,
         link: `[${markdown(item.title)}](<${item.url}>)`, url: item.url,
@@ -70,7 +71,7 @@ export function episodeNotePath(folder: string, pathTemplate: string, values: No
         return safeName(value || (token.trim().toLowerCase() === 'show' ? 'Unsorted' : 'Untitled'));
     });
     const result = relativeNotePath([folder, rendered].filter(Boolean).join('/'));
-    if (!result.toLowerCase().endsWith('.md')) throw new Error('生成的笔记路径不是 Markdown 文件。');
+    if (!result.toLowerCase().endsWith('.md')) throw new Error(t("生成的笔记路径不是 Markdown 文件。"));
     return result;
 }
 
@@ -95,7 +96,7 @@ export function renderEpisodeNote(template: string, values: NoteValues, ruleId =
     template = template.replace(/^\uFEFF/, '');
     validateNoteTemplate(template);
     const frontmatter = /^---\r?\n((?:[\s\S]*?\r?\n)?)---(?:\r?\n|$)/.exec(template);
-    if (/^---\r?\n/.test(template) && !frontmatter) throw new Error('模板的笔记属性缺少结束分隔符。');
+    if (/^---\r?\n/.test(template) && !frontmatter) throw new Error(t("模板的笔记属性缺少结束分隔符。"));
     let properties: Record<string, unknown> = {};
     let body = template;
     if (frontmatter) {
@@ -106,19 +107,19 @@ export function renderEpisodeNote(template: string, values: NoteValues, ruleId =
             return key;
         });
         const parsed: unknown = parseYaml(header);
-        if (parsed != null && !isRecord(parsed)) throw new Error('模板的笔记属性必须是 YAML 映射。');
+        if (parsed != null && !isRecord(parsed)) throw new Error(t("模板的笔记属性必须是 YAML 映射。"));
         const seen = new Set<object>();
         const replace = (value: unknown, depth = 0): unknown => {
-            if (depth > 20) throw new Error('模板的笔记属性嵌套过深。');
+            if (depth > 20) throw new Error(t("模板的笔记属性嵌套过深。"));
             if (typeof value === 'string') {
                 return value.replace(/MEDIA_CAPTURE_SLOT_\d+_END/g, key => slots.get(key) ?? key);
             }
             if (value && typeof value === 'object') {
-                if (seen.has(value)) throw new Error('模板的笔记属性不能包含循环引用。');
+                if (seen.has(value)) throw new Error(t("模板的笔记属性不能包含循环引用。"));
                 seen.add(value);
                 const result: unknown = Array.isArray(value) ? value.map((item: unknown) => replace(item, depth + 1))
                     : value instanceof Date ? value : Object.fromEntries(Object.entries(value).map(([key, item]) => {
-                        if (/MEDIA_CAPTURE_SLOT_\d+_END/.test(key)) throw new Error('模板变量只能用于属性值，不能用于属性名。');
+                        if (/MEDIA_CAPTURE_SLOT_\d+_END/.test(key)) throw new Error(t("模板变量只能用于属性值，不能用于属性名。"));
                         return [key, replace(item, depth + 1)];
                     }));
                 seen.delete(value);
@@ -141,6 +142,6 @@ export function noteProperties(source: string): Record<string, unknown> {
     if (header === undefined) return {};
     const parsed: unknown = parseYaml(header);
     if (parsed == null) return {};
-    if (!isRecord(parsed)) throw new Error('Note properties must be a YAML mapping.');
+    if (!isRecord(parsed)) throw new Error(t("Note properties must be a YAML mapping."));
     return parsed;
 }

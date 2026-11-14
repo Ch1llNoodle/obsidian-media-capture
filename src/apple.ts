@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import type { RequestUrlParam, RequestUrlResponse } from 'obsidian';
 import type { Episode, EpisodeMetadata } from './types';
 import { coverUrl, plain, publicationDate } from './metadata-helpers';
@@ -40,12 +41,12 @@ export async function fetchAppleLookup(episode: Episode, request: Request): Prom
         lookup.search = new URLSearchParams({ id, entity: 'podcastEpisode', country, limit: '200' }).toString();
         try {
             const response = await request({ url: lookup.href, throw: false });
-            if (response.status !== 200) throw new Error(`HTTP ${response.status}`);
+            if (response.status !== 200) throw new Error(t("HTTP {0}", response.status));
             const info = appleLookupMetadata(parseJson(response.text), episode);
             if (info?.cover) return info;
             partial ??= info;
         } catch (error) { errors.push(errorMessage(error)); }
     }
     if (partial) return partial;
-    throw new Error(`Apple 公开目录未返回匹配的单集${errors.length ? `（${errors.join('；')}）` : ''}。`);
+    throw new Error(t("Apple 公开目录未返回匹配的单集{0}。", errors.length ? `（${errors.join('；')}）` : ''));
 }

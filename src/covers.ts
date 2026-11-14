@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { requestUrl, type App, type RequestUrlParam } from 'obsidian';
 import { safeCover } from './metadata-helpers';
 import { relativeNotePath } from './note-format';
@@ -7,23 +8,23 @@ import { readArtwork, sameArtwork } from './artwork';
 
 export async function cacheCover(app: App, input: string, folder: string, stem: string, candidates: readonly string[] = [], showCandidates: readonly string[] = []): Promise<string> {
     const url = safeCover(input);
-    if (!url) throw new Error('封面地址无效。');
+    if (!url) throw new Error(t("封面地址无效。"));
     const name = Array.from(stem.normalize('NFKC')).filter(character => character.charCodeAt(0) >= 32).join('').replace(/[\\/:*?"<>|#[\]]/g, '_').replace(/\s+/g, ' ').trim().replace(/[. ]+$/, '').slice(0, 120) || '封面';
     const safeName = /^(?:con|prn|aux|nul|com[0-9]|lpt[0-9])(?:\.|$)/i.test(name) ? '_' + name : name;
     const options: RequestUrlParam = { url, throw: false };
     if (new URL(url).hostname.endsWith('.doubanio.com')) options.headers = { Referer: 'https://www.douban.com/' };
     let response;
     try { response = await requestUrl(options); }
-    catch (error) { throw new Error(`下载封面失败：${errorMessage(error)}`); }
-    if (response.status !== 200) throw new Error(`下载封面失败：图片服务器返回 HTTP ${response.status}`);
+    catch (error) { throw new Error(t("下载封面失败：{0}", errorMessage(error))); }
+    if (response.status !== 200) throw new Error(t("下载封面失败：图片服务器返回 HTTP {0}", response.status));
     const bytes = new Uint8Array(response.arrayBuffer);
     const extension = bytes[0] === 0xff && bytes[1] === 0xd8 ? 'jpg'
         : bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 ? 'png'
         : String.fromCharCode(...bytes.slice(0, 4)) === 'RIFF' && String.fromCharCode(...bytes.slice(8, 12)) === 'WEBP' ? 'webp'
         : /^GIF8[79]a$/.test(String.fromCharCode(...bytes.slice(0, 6))) ? 'gif'
         : String.fromCharCode(...bytes.slice(4, 8)) === 'ftyp' && /^(avif|avis)$/.test(String.fromCharCode(...bytes.slice(8, 12))) ? 'avif' : '';
-    if (!extension) throw new Error(`图片服务器返回了无法识别的图片格式（${bytes.length} 字节）`);
-    if (bytes.length > 10 * 1024 * 1024) throw new Error('封面超过 10 MB，未保存');
+    if (!extension) throw new Error(t("图片服务器返回了无法识别的图片格式（{0} 字节）", bytes.length));
+    if (bytes.length > 10 * 1024 * 1024) throw new Error(t("封面超过 10 MB，未保存"));
     // Reuse reads within this operation only; no persistent artwork cache.
     const images = new Map<string, ArrayBuffer>();
     const readImage = async (path: string): Promise<ArrayBuffer | undefined> => {

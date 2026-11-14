@@ -133,6 +133,12 @@ Collections use single-line Markdown list entries, for example:
 
 Custom sync tools must preserve the span between `media-sources:start` and `media-sources:end` when rewriting a matching work. Douban collection synchronization is handled by external tools.
 
+#### Interface language
+
+The interface supports Simplified Chinese, English, and French. On Obsidian 1.8.7 or newer it follows the application language, including regional language codes; other languages and older Obsidian versions use English. Reload the plugin after changing the application language to refresh registered command names.
+
+Settings, dialogs, buttons, notices, and plugin-generated errors are translated. Existing templates, rule names, property names, credential names and values, note content, and stored status identifiers remain unchanged. Platform or operating-system errors retain their original text. Source messages are translation keys; English and French catalogs are maintained in `src/locales`, and `src/i18n.ts` handles language selection and placeholder substitution.
+
 #### Settings
 
 | Setting | Default | Behavior |

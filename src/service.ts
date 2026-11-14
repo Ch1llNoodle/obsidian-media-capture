@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { ruleTargets, validateSettings } from './settings';
 import { Modal, Notice, type App, type Plugin, type TFile } from "obsidian";
 import { isListeningState, recordDate, entryIdentity, stateOf } from "./core";
@@ -28,7 +29,7 @@ export class CaptureService {
         this.queue = Promise.resolve();
         this.dataQueue = Promise.resolve();
         const data = record(await this.loadData());
-        if (data.settings && data.schemaVersion !== 3) throw new Error('Unsupported saved data. Use schemaVersion 3 and records.json.');
+        if (data.settings && data.schemaVersion !== 3) throw new Error(t("Unsupported saved data. Use schemaVersion 3 and records.json."));
         this.settings = validateSettings(data.settings ?? {});
         this.notes.initialize(data.noteIndex, data.noteMetadata);
         this.appends.initialize(data.outputEntries);
@@ -64,7 +65,7 @@ export class CaptureService {
         return item.provider === 'youtube' || item.provider === 'bilibili' ? this.config.videoCatalogPath : this.config.catalogPath;
     }
     async ensureCatalog(path = this.config.catalogPath): Promise<TFile> {
-        if (!this.isCatalog(path)) throw new Error('未配置该记录文件。');
+        if (!this.isCatalog(path)) throw new Error(t("未配置该记录文件。"));
         this.notes.checkPath(path, true);
         let file = this.app.vault.getAbstractFileByPath(path);
         if (!file) {
@@ -72,7 +73,7 @@ export class CaptureService {
             if (folder) await ensureFolder(this.app.vault, folder);
             file = await this.app.vault.create(path, `### ${path === this.config.videoCatalogPath ? "Videos" : "Podcasts"}\n\n#### ${this.config.entryHeading}\n\n`);
         }
-        if (!isMarkdownFile(file)) throw new Error("媒体记录路径不是 Markdown 文件。");
+        if (!isMarkdownFile(file)) throw new Error(t("媒体记录路径不是 Markdown 文件。"));
         return file;
     }
     capture(item: CaptureItem): Promise<CaptureResult> {
@@ -81,7 +82,7 @@ export class CaptureService {
         return work;
     }
     async repairCovers(silent = false): Promise<CoverRepairResult | undefined> {
-        if (!this.config.downloadCovers) { if (!silent) new Notice("本地封面下载已关闭，可在插件设置中开启。"); return; }
+        if (!this.config.downloadCovers) { if (!silent) new Notice(t("本地封面下载已关闭，可在插件设置中开启。")); return; }
         const sources: string[] = [];
         for (const path of this.catalogPaths) {
             const file = this.app.vault.getAbstractFileByPath(path) ?? null;
@@ -90,7 +91,7 @@ export class CaptureService {
         const source = sources.join('\n');
         const missing = source.split(/\r?\n/).filter(line => line.startsWith("- ") && !/!\[(?:cover)?\|\d+\]\(</.test(line))
             .map(line => ({ line, identity: entryIdentity(line) })).filter(entry => entry.identity);
-        if (!missing.length) { if (!silent) new Notice("媒体封面已齐全。"); return; }
+        if (!missing.length) { if (!silent) new Notice(t("媒体封面已齐全。")); return; }
         let repaired = 0;
         const failures: CoverFailure[] = [];
         for (const { line, identity } of missing) {
@@ -100,18 +101,18 @@ export class CaptureService {
             try {
                 const result = await this.capture({ ...identity, state, date: recordDate(line), repairOnly: true });
                 if (result.hasCover) repaired++;
-                else failures.push({ title: identity.title, url: identity.url, imageUrl: result.coverSource, error: result.coverError || "未获取到封面" });
+                else failures.push({ title: identity.title, url: identity.url, imageUrl: result.coverSource, error: result.coverError || t("未获取到封面") });
             } catch (error) { failures.push({ title: identity.title, url: identity.url, error: errorMessage(error) }); }
         }
-        if (!silent || repaired) new Notice(`已补全 ${repaired} 个媒体封面${repaired < missing.length ? `，${missing.length - repaired} 个暂未获取到` : ""}。`);
+        if (!silent || repaired) new Notice(t("已补全 {0} 个媒体封面{1}。", repaired, repaired < missing.length ? t("，{0} 个暂未获取到", missing.length - repaired) : ""));
         if (!silent && failures.length) {
             const modal = new Modal(this.app);
-            modal.contentEl.createEl("h2", { text: "封面未补全的原因" });
+            modal.contentEl.createEl("h2", { text: t("封面未补全的原因") });
             for (const failure of failures) {
                 modal.contentEl.createEl("h3", { text: failure.title });
                 modal.contentEl.createEl("p", { text: failure.error });
                 if (failure.imageUrl) {
-                    const link = modal.contentEl.createEl("a", { text: "打开封面原图", attr: { href: failure.imageUrl, target: "_blank", rel: "noopener" } });
+                    const link = modal.contentEl.createEl("a", { text: t("打开封面原图"), attr: { href: failure.imageUrl, target: "_blank", rel: "noopener" } });
                     link.addClass("external-link");
                 }
             }

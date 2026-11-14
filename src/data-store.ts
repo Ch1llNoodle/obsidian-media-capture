@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { normalizePath, type Plugin } from 'obsidian';
 import { episodeUrl, isListeningState } from './core';
 import { noteValues } from './note-format';
@@ -24,7 +25,7 @@ export function unpackMetadata(input: unknown, playback: boolean): Record<string
     const result: Record<string, Record<string, string>> = {};
     for (const [id, inputValues] of Object.entries(record(input))) {
         const values = record(inputValues);
-        if (typeof values.url !== 'string' || typeof values.title !== 'string' || !isListeningState(values.state)) throw new Error(`Invalid stored capture: ${id}`);
+        if (typeof values.url !== 'string' || typeof values.title !== 'string' || !isListeningState(values.state)) throw new Error(t("Invalid stored capture: {0}", id));
         const source = episodeUrl(values.url);
         const show = typeof values.show === 'string' ? values.show : '';
         const title = typeof values.fulltitle === 'string' ? values.fulltitle : show ? `${show} · ${values.title}` : values.title;
@@ -48,7 +49,7 @@ export class CaptureDataStore {
         const raw: unknown = await this.plugin.loadData();
         if (raw == null) return {};
         if (!isRecord(raw) || raw.schemaVersion !== 3 || !isRecord(raw.settings) || Object.keys(raw).some(key => !['schemaVersion', 'settings'].includes(key))) {
-            throw new Error('Unsupported saved data. Use schemaVersion 3 settings and records.json; convert existing data outside the plugin.');
+            throw new Error(t("Unsupported saved data. Use schemaVersion 3 settings and records.json; convert existing data outside the plugin."));
         }
         return raw;
     }
@@ -57,9 +58,9 @@ export class CaptureDataStore {
         const adapter = this.plugin.app.vault.adapter;
         if (!await adapter.exists(this.path)) return {};
         const raw = parseJson(await adapter.read(this.path));
-        if (!isRecord(raw) || raw.schemaVersion !== 1 || Object.keys(raw).some(key => !['schemaVersion', 'noteIndex', 'noteMetadata', 'outputEntries'].includes(key))) throw new Error('Invalid records.json. Capture records were not changed.');
+        if (!isRecord(raw) || raw.schemaVersion !== 1 || Object.keys(raw).some(key => !['schemaVersion', 'noteIndex', 'noteMetadata', 'outputEntries'].includes(key))) throw new Error(t("Invalid records.json. Capture records were not changed."));
         if (raw.noteIndex !== undefined && !isRecord(raw.noteIndex) || raw.noteMetadata !== undefined && !isRecord(raw.noteMetadata)
-            || raw.outputEntries !== undefined && !Array.isArray(raw.outputEntries)) throw new Error('Invalid capture record structure.');
+            || raw.outputEntries !== undefined && !Array.isArray(raw.outputEntries)) throw new Error(t("Invalid capture record structure."));
         return raw;
     }
 
@@ -85,7 +86,7 @@ export class CaptureDataStore {
             const text = JSON.stringify(records, null, 2) + '\n';
             try {
                 await adapter.write(temporary, text);
-                if (await adapter.read(temporary) !== text) throw new Error('Capture records verification failed; records.json was not replaced.');
+                if (await adapter.read(temporary) !== text) throw new Error(t("Capture records verification failed; records.json was not replaced."));
                 await adapter.rename(temporary, this.path);
             } catch (error) {
                 try { if (await adapter.exists(temporary)) await adapter.remove(temporary); } catch { /* Keep the original storage error. */ }

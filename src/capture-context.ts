@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import type { TFile } from 'obsidian';
 import type { CaptureService } from './service';
 import type { CaptureItem } from './types';
@@ -33,9 +34,9 @@ export async function captureCover(service: CaptureService, item: CaptureItem, i
                 try {
                     const info = await service.fetchMetadata(item.url);
                     source = info.cover;
-                } catch (cause) { throw new Error('获取单集页面失败：' + errorMessage(cause)); }
+                } catch (cause) { throw new Error(t("获取单集页面失败：") + errorMessage(cause)); }
             }
-            if (!source) throw new Error('页面未提供可识别的封面');
+            if (!source) throw new Error(t("页面未提供可识别的封面"));
             const data = record(await service.loadData());
             const candidates = new Set<string>();
             const showCandidates = new Set<string>();

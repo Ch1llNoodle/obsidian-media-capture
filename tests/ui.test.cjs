@@ -5,8 +5,8 @@ const vm = require('node:vm');
 const { buildSync } = require('esbuild');
 const yaml = require('js-yaml');
 
-test('播客条目固定来源，只有待看作品下拉框，没有搜索或播客选择', async () => {
-    const bundle = buildSync({ entryPoints: [path.join(__dirname, '../src/main.ts')], bundle: true,
+for (const language of ['zh', 'en', 'fr']) test(`media settings and associations work in ${language}`, async () => {
+    const bundle = buildSync({ stdin: { contents: `export {default} from './src/main'; export {translate} from './src/i18n';`, resolveDir: path.resolve(__dirname, '..'), loader: 'ts' }, bundle: true,
         external: ['obsidian', '@codemirror/state', '@codemirror/view'], platform: 'browser', format: 'cjs', target: 'es2021', minify: true, write: false }).outputFiles[0].text;
     const all = node => [node, ...node.children.flatMap(all)];
     function element(tag = 'div', options = {}) {
@@ -108,13 +108,14 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
             };
             if (name === '@codemirror/state') return {};
             assert.equal(name, 'obsidian');
-            return { editorInfoField: editorInfo, editorLivePreviewField: livePreviewInfo, Plugin, Modal,
+            return { getLanguage: () => language, editorInfoField: editorInfo, editorLivePreviewField: livePreviewInfo, Plugin, Modal,
                 FuzzySuggestModal: class extends Modal { setPlaceholder() {} onOpen() {} }, MarkdownRenderChild, Notice: class {},
                 PluginSettingTab: class { constructor() { this.containerEl = element(); } },
                 parseYaml: yaml.load, stringifyYaml: yaml.dump,
                 Setting, normalizePath: p => p, requestUrl: async () => { throw new Error('Unexpected request'); } };
         } };
     vm.runInNewContext(bundle, sandbox);
+    const label = key => sandbox.module.exports.translate(language, key);
     const plugin = new sandbox.module.exports.default();
     assert.throws(() => plugin.getCredential('example'), /Media Capture/);
     await plugin.onload();
@@ -128,7 +129,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     const credentialInputs = all(plugin.settingsTab.containerEl).filter(node => node.tag === 'input' && node.type === 'password');
     assert.equal(credentialInputs.length, 1);
     assert(credentialInputs.every(node => node.autocomplete === 'off' && typeof node.change === 'function'));
-    const credentialNameInput = all(plugin.settingsTab.containerEl).find(node => node['aria-label'] === '凭证字段名');
+    const credentialNameInput = all(plugin.settingsTab.containerEl).find(node => node['aria-label'] === label('凭证字段名'));
     credentialNameInput.value = 'renamed'; credentialNameInput.change();
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(plugin.getCredential('example'), '');
@@ -137,7 +138,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     valueInput.value = 'updated-secret'; valueInput.change();
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(plugin.getCredential('renamed'), 'updated-secret');
-    const credentialRow = plugin.settingsTab.containerEl.children.find(row => all(row).some(node => node['aria-label'] === '凭证字段名'));
+    const credentialRow = plugin.settingsTab.containerEl.children.find(row => all(row).some(node => node['aria-label'] === label('凭证字段名')));
     all(credentialRow).find(node => node.tag === 'button').click();
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(plugin.getCredential('renamed'), '');
@@ -168,7 +169,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     let component;
     plugin.processor(container, { sourcePath: 'Podcasts.md', addChild: child => { component = child; child.onload(); } });
     await new Promise(resolve => setImmediate(resolve));
-    assert.equal(row.children[0].text, '添加关联');
+    assert.equal(row.children[0].text, label('添加关联'));
     row.children[0].click();
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(modals[1].source.blockId, 'apple-456');
@@ -196,7 +197,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     assert(editor.decorations.filter(range => range.hidden).length >= 3);
     const widget = editor.decorations.find(range => range.widget).widget;
     const editorButton = widget.toDOM(view);
-    assert.equal(editorButton.textContent, '添加关联');
+    assert.equal(editorButton.textContent, label('添加关联'));
     editorButton.onclick({ preventDefault() {} });
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(modals.at(-1).source.blockId, 'douban-123');
@@ -222,7 +223,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     commands.find(command => command.id === 'create-media-note').callback();
     assert.equal(modals.at(-1).outputInput.value, 'note');
     assert.equal(modals.at(-1).urlInput.value, '');
-    assert.equal(row.children[1].text, '写笔记');
+    assert.equal(row.children[1].text, label('写笔记'));
     // A row opens a prefilled note dialog without choosing the episode again.
     await row.children[1].click();
     await new Promise(resolve => setImmediate(resolve));
@@ -234,15 +235,15 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     assert(files.has('Media/另一个节目/单集.md'));
     plugin.settingsTab.display();
     const noteSettings = all(plugin.settingsTab.containerEl).find(node => node['data-rule-id'] === 'notes');
-    const nameInput = all(noteSettings).find(node => node.name === '名称').children.find(node => node.tag === 'input');
-    const folderInput = all(noteSettings).find(node => node.name === '目录').children.find(node => node.tag === 'input');
+    const nameInput = all(noteSettings).find(node => node.name === label('名称')).children.find(node => node.tag === 'input');
+    const folderInput = all(noteSettings).find(node => node.name === label('目录')).children.find(node => node.tag === 'input');
     nameInput.value = 'Episode notes'; nameInput.change();
     folderInput.value = 'Episodes'; folderInput.change();
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(plugin.service.config.writeRules.find(rule => rule.id === 'notes').name, 'Episode notes');
     assert.equal(plugin.service.config.writeRules.find(rule => rule.id === 'notes').folder, 'Episodes');
-    const templateSetting = all(noteSettings).find(node => node.name === 'Markdown 模板文件');
-    templateSetting.children.find(node => node.text === '选择').click();
+    const templateSetting = all(noteSettings).find(node => node.name === label('Markdown 模板文件'));
+    templateSetting.children.find(node => node.text === label('选择')).click();
     const picker = modals.at(-1);
     assert(picker.getItems().some(file => file.path === 'Media/另一个节目/单集.md'));
     picker.onChooseItem(files.get('Media/另一个节目/单集.md'));
@@ -253,7 +254,7 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     await new Promise(resolve => setImmediate(resolve));
     const refresh = modals.at(-1);
     assert.equal(refresh.selected.size, 1);
-    assert(refresh.entries.find(entry => entry.path === "Podcasts.md").error.includes("Missing captured metadata"));
+    assert(refresh.entries.find(entry => entry.path === "Podcasts.md").error.includes(label("Missing captured metadata for {0}. Old notes are not reconstructed from body text or log headings.").split("{0}")[0]));
     const checkboxes = all(refresh.contentEl).filter(node => node.type === 'checkbox');
     for (const checkbox of checkboxes) { checkbox.checked = false; checkbox.change(); }
     assert.equal(refresh.applyButton.disabled, true);
@@ -264,8 +265,8 @@ test('播客条目固定来源，只有待看作品下拉框，没有搜索或�
     const originalNote = content.get('Media/另一个节目/单集.md');
     await refresh.apply();
     assert(content.get('Media/另一个节目/单集.md').includes('Changed 单集'));
-    assert(all(refresh.contentEl).some(node => node.tag === 'textarea' && node.value.includes('已更新')));
-    all(refresh.contentEl).find(node => node.tag === 'button' && node.text === '查看备份').click();
+    assert(all(refresh.contentEl).some(node => node.tag === 'textarea' && node.value.includes(label('已更新'))));
+    all(refresh.contentEl).find(node => node.tag === 'button' && node.text === label('查看备份')).click();
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(all(modals.at(-1).contentEl).find(node => node.tag === 'textarea').value, originalNote);
     await plugin.service.saveSettings({ ...plugin.service.config, writeRules: plugin.service.config.writeRules.map(rule => ({ ...rule, enabled: rule.id === 'show' })) });

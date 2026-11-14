@@ -12,7 +12,7 @@ export * from './src/write-rules';
 export * from './src/note-format'; export * from './src/core'; export * from './src/settings';`, resolveDir: path.resolve(__dirname, '..'), loader: 'ts' },
     bundle: true, platform: 'browser', format: 'cjs', target: 'es2021', external: ['obsidian'], write: false }).outputFiles[0].text;
 let imageResponse = null, imageRequests = 0;
-const sandbox = { module: { exports: {} }, URL, URLSearchParams, Uint8Array, Date, console, require: () => ({
+const sandbox = { module: { exports: {} }, URL, URLSearchParams, Uint8Array, Date, console, require: () => ({getLanguage: () => 'zh',
     parseYaml: yaml.load, stringifyYaml: yaml.dump, normalizePath: p => p.replace(/\\/g, '/'),
     requestUrl: async () => { if (imageResponse) { imageRequests++; return imageResponse; } throw new Error('offline'); }, Modal: class {}, Notice: class {},
 }) };

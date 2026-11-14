@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { editorInfoField, editorLivePreviewField, Notice } from 'obsidian';
 import { Decoration, type DecorationSet, EditorView, ViewPlugin, type ViewUpdate, WidgetType } from '@codemirror/view';
 import type { Range } from '@codemirror/state';
@@ -13,7 +14,7 @@ import { errorMessage } from './validation';
 class EpisodeAction extends WidgetType {
     private readonly label: string;
     constructor(private readonly service: RecommendationService, private readonly source: RecommendationSource, private readonly note = false) {
-        super(); this.label = note ? (service.podcast.notes.known(source.blockId) ? '打开笔记' : '写笔记') : '添加关联';
+        super(); this.label = note ? (service.podcast.notes.known(source.blockId) ? t('打开笔记') : t('写笔记')) : t('添加关联');
     }
     override eq(other: EpisodeAction): boolean { return this.source.path === other.source.path && this.source.blockId === other.source.blockId && this.note === other.note && this.label === other.label; }
     override toDOM(view: EditorView): HTMLElement {
@@ -39,7 +40,7 @@ class MediaAction extends WidgetType {
     override eq(other: MediaAction): boolean { return this.url === other.url; }
     override toDOM(view: EditorView): HTMLElement {
         const link = view.dom.ownerDocument.createElement('a');
-        link.textContent = '在 Obsidian 中播放'; link.href = this.url; link.className = 'media-note-button';
+        link.textContent = t("在 Obsidian 中播放"); link.href = this.url; link.className = 'media-note-button';
         return link;
     }
     override ignoreEvent(): boolean { return true; }

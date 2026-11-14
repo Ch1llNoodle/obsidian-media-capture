@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { FuzzySuggestModal, Notice, type App, type TFile } from 'obsidian';
 import type { CaptureService } from './service';
 import type { RecommendationSource } from './types';
@@ -9,7 +10,7 @@ import { errorMessage } from './validation';
 export class NoteTemplatePicker extends FuzzySuggestModal<TFile> {
     constructor(private readonly podcast: { readonly app: App }, private readonly changed: () => void, private readonly select: (path: string) => Promise<void>) {
         super(podcast.app);
-        this.setPlaceholder('选择内容模板');
+        this.setPlaceholder(t("选择内容模板"));
     }
     getItems(): TFile[] { return this.podcast.app.vault.getMarkdownFiles(); }
     getItemText(file: TFile): string { return file.path; }
@@ -20,16 +21,16 @@ export class NoteTemplatePicker extends FuzzySuggestModal<TFile> {
 }
 
 export async function openEpisodeNote(podcast: CaptureService, source: Pick<RecommendationSource, 'path' | 'blockId'>): Promise<void> {
-    if (podcast.unloaded || !podcast.isCatalog(source.path)) throw new Error('请从媒体记录选择单集。');
+    if (podcast.unloaded || !podcast.isCatalog(source.path)) throw new Error(t("请从媒体记录选择单集。"));
     const existing = await podcast.notes.find(source.blockId);
     if (existing) { await podcast.app.workspace.getLeaf(false).openFile(existing); return; }
     const file = podcast.app.vault.getAbstractFileByPath(source.path);
-    if (!isMarkdownFile(file)) throw new Error('找不到媒体记录文件。');
+    if (!isMarkdownFile(file)) throw new Error(t("找不到媒体记录文件。"));
     const line = (await podcast.app.vault.read(file)).split(/\r?\n/).find(line => line.trimEnd().endsWith('^' + source.blockId));
     const identity = line ? entryIdentity(line) : null;
-    if (!identity || !line) throw new Error('单集记录已变化，请重新选择。');
+    if (!identity || !line) throw new Error(t("单集记录已变化，请重新选择。"));
     const state = stateOf(line);
-    if (!isListeningState(state)) throw new Error('Unsupported log row: missing media-state marker.');
+    if (!isListeningState(state)) throw new Error(t("Unsupported log row: missing media-state marker."));
     new CaptureModal(podcast, { output: 'note', item: { ...identity, state,
         date: recordDate(line) || localDate(), cover: line.match(/!\[(?:cover)?\|\d+\]\(<([^>]+)>\)/)?.[1] ?? '' } }).open();
 }

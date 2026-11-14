@@ -20,7 +20,7 @@ function load(request = async () => { throw new Error('offline'); }) {
     const sandbox = { module: { exports: {} }, URL, URLSearchParams, Date, console, Uint8Array,
         require: name => {
             assert.equal(name, 'obsidian');
-            return { Modal: class {}, Notice: class {}, requestUrl: request, normalizePath: p => p.replace(/\\/g, '/') };
+            return { getLanguage: () => 'zh', Modal: class {}, Notice: class {}, requestUrl: request, normalizePath: p => p.replace(/\\/g, '/') };
         } };
     vm.runInNewContext(bundle, sandbox);
     return sandbox.module.exports;

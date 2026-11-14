@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { Notice, Plugin } from 'obsidian';
 import { CaptureService } from './service';
 import { CaptureModal } from './capture-modal';
@@ -11,7 +12,7 @@ export default class MediaCapture extends Plugin {
     readonly supportsRecommendations = true;
 
     private get activeSettings(): CaptureSettingsData {
-        if (!this.service || this.service.unloaded) throw new Error('请重新启用 Media Capture。');
+        if (!this.service || this.service.unloaded) throw new Error(t("请重新启用 Media Capture。"));
         return this.service.config;
     }
 
@@ -27,28 +28,28 @@ export default class MediaCapture extends Plugin {
         this.addSettingTab(new CaptureSettings(this.app, this.service));
         registerRecommendationUI(this, this.service);
         this.addCommand({
-            id: 'capture-media', name: '采集媒体',
+            id: 'capture-media', name: t("采集媒体"),
             callback: () => new CaptureModal(this.service).open(),
         });
         this.addCommand({
-            id: 'create-media-note', name: '创建媒体笔记',
+            id: 'create-media-note', name: t("创建媒体笔记"),
             callback: () => new CaptureModal(this.service, { output: 'note', item: {
                 id: '', url: '', title: '', state: '听过', date: '',
             } }).open(),
         });
         this.addCommand({
-            id: 'apply-note-template', name: '将模板应用到已有记录',
+            id: 'apply-note-template', name: t("将模板应用到已有记录"),
             callback: () => new NoteRefreshModal(this.service).open(),
         });
         this.addCommand({
-            id: 'open-media-log', name: '打开媒体记录',
+            id: 'open-media-log', name: t("打开媒体记录"),
             callback: async () => {
                 const file = await this.service.ensureCatalog();
                 await this.app.workspace.getLeaf(false).openFile(file);
             },
         });
         this.addCommand({
-            id: 'repair-covers', name: '补全缺失封面',
+            id: 'repair-covers', name: t("补全缺失封面"),
             callback: () => {
                 void this.service.repairCovers().catch((error: unknown) => {
                     new Notice(error instanceof Error ? error.message : String(error));

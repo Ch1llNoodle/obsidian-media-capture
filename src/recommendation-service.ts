@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import type { CaptureService } from './service';
 import type { RecommendationSource, RecommendationWork } from './types';
 import { isMarkdownFile } from './storage';
@@ -27,25 +28,25 @@ export class RecommendationService {
 
     link(item: RecommendationWork, selected: RecommendationSource, reason = ''): Promise<void> {
         const work = this.podcast.queue.then(async () => {
-            if (this.podcast.unloaded) throw new Error('插件已卸载，请重新启用后重试。');
+            if (this.podcast.unloaded) throw new Error(t("插件已卸载，请重新启用后重试。"));
             const source = (await this.sources()).find(source => source.path === selected.path && source.blockId === selected.blockId);
-            if (!source) throw new Error('来源播客已变化，请重新选择。');
+            if (!source) throw new Error(t("来源播客已变化，请重新选择。"));
             const allowed = recommendationKinds.some(kind => this.podcast.config[`${kind}Path`] === item.path);
-            if (!allowed || this.podcast.isCatalog(item.path)) throw new Error('请从已配置的作品清单中选择。');
+            if (!allowed || this.podcast.isCatalog(item.path)) throw new Error(t("请从已配置的作品清单中选择。"));
             const file = this.podcast.app.vault.getAbstractFileByPath(item.path);
-            if (!isMarkdownFile(file)) throw new Error('作品清单已变化，请重新选择。');
-            if (this.podcast.unloaded) throw new Error('插件已卸载，请重新启用后重试。');
+            if (!isMarkdownFile(file)) throw new Error(t("作品清单已变化，请重新选择。"));
+            if (this.podcast.unloaded) throw new Error(t("插件已卸载，请重新启用后重试。"));
             await this.podcast.app.vault.process(file, text => {
-                if (recommendationIndex(text, item) < 0) throw new Error('作品已移除，请同步清单后重新选择。');
+                if (recommendationIndex(text, item) < 0) throw new Error(t("作品已移除，请同步清单后重新选择。"));
                 const current = catalogWorks(text, item.path, item.kind).find(work => work.url === item.url);
-                if (!current || !isWanted(current)) throw new Error('作品已不在想读、想看、想听或想玩清单中，请重新选择。');
+                if (!current || !isWanted(current)) throw new Error(t("作品已不在想读、想看、想听或想玩清单中，请重新选择。"));
                 return linkWorkSource(text, { ...item, cover: '' }, source, reason);
             });
             try {
                 const catalog = this.podcast.app.vault.getAbstractFileByPath(source.path);
-                if (!isMarkdownFile(catalog)) throw new Error('媒体记录文件不存在。');
+                if (!isMarkdownFile(catalog)) throw new Error(t("媒体记录文件不存在。"));
                 await this.podcast.app.vault.process(catalog, text => linkEpisodeWork(text, source, item, reason));
-            } catch (error) { throw new Error(`作品侧关联已保存，但播客行更新失败：${errorMessage(error)}。可再次保存补全。`); }
+            } catch (error) { throw new Error(t("作品侧关联已保存，但播客行更新失败：{0}。可再次保存补全。", errorMessage(error))); }
         });
         this.podcast.queue = work.catch(() => {});
         return work;

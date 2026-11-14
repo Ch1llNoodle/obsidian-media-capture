@@ -33,7 +33,7 @@ function load(request = async () => { throw new Error("offline"); }, browser = {
     const sandbox = { module: { exports: {} }, URL, URLSearchParams, console, Uint8Array, Date, ...browser,
         require: name => {
             assert.equal(name, "obsidian");
-            return { Plugin: class {}, Modal: class {}, Notice: class {}, PluginSettingTab: class {}, Setting: class {}, requestUrl: request, normalizePath: value => value.replace(/\\/g, "/") };
+            return { getLanguage: () => 'zh', Plugin: class {}, Modal: class {}, Notice: class {}, PluginSettingTab: class {}, Setting: class {}, requestUrl: request, normalizePath: value => value.replace(/\\/g, "/") };
         } };
     vm.runInNewContext(testBundle, sandbox);
     return sandbox.module.exports;

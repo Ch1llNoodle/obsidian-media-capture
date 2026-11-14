@@ -1,3 +1,4 @@
+import { t } from './i18n';
 type Artwork = { ratio: number; pixels: Uint8ClampedArray };
 
 // Conservative comparison for resized/recompressed covers of the same show.
@@ -21,9 +22,9 @@ export async function readArtwork(bytes: ArrayBuffer): Promise<Artwork | null> {
     let timer: number | undefined;
     try {
         await new Promise<void>((resolve, reject) => {
-            timer = window.setTimeout(() => reject(new Error('Image decode timed out')), 5000);
+            timer = window.setTimeout(() => reject(new Error(t("Image decode timed out"))), 5000);
             image.onload = () => resolve();
-            image.onerror = () => reject(new Error('Image decode failed'));
+            image.onerror = () => reject(new Error(t("Image decode failed")));
             image.src = url;
         });
         if (!image.naturalWidth || !image.naturalHeight) return null;

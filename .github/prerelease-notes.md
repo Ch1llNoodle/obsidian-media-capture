@@ -1,7 +1,9 @@
-### Media Capture 0.15.1
+### Media Capture 0.15.2
 
-Separate configuration defaults and validation from media parsing, and make credential and rule editors depend on a small settings interface. Configuration types distinguish shareable preferences from local credentials and derived fields. Both README files explain which rules, templates, and paths can be shared.
+Add Simplified Chinese, English, and French interface translations for settings, commands, dialogs, notices, and plugin-generated errors. Obsidian 1.8.7 and newer follows the application language; other languages and older versions use English. Reload the plugin after changing language to refresh command names.
 
-Move platform metadata requests into a dedicated module. Cover comparison reuses image reads within each capture operation and computes filename digests only for naming conflicts, without adding a persistent cache.
+Translation catalogs and placeholder substitution are maintained separately from feature code. Existing templates, rule names, credential fields and values, note content, and stored status identifiers remain unchanged. External service and system errors retain their original text.
 
-The stored settings and record formats remain unchanged. Keep data.json and records.json when updating. Build and type checks pass; 114 automated tests pass and three optional vault integration checks are skipped. Local ESLint validation remains blocked by the execution environment; the release workflow runs its own lint check before publishing assets.
+Build and type checks pass; 119 tests pass and three optional vault integration checks are skipped. Tests cover all three interface languages and catalog completeness. Local ESLint remains blocked by the execution environment; the release workflow runs lint before publishing.
+
+Keep data.json and records.json when updating.

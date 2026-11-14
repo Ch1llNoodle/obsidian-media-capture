@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import type { CaptureItem, Episode } from './types';
 
 /** Normalize supported video pages without accepting arbitrary network destinations. */
@@ -14,7 +15,7 @@ export function videoUrl(url: URL): Episode | null {
         id = /^\/video\/(BV[A-Za-z0-9]{10}|av\d+)\/?$/.exec(url.pathname)?.[1] ?? '';
         if (!id) return null;
         const part = url.searchParams.get('p');
-        if (part && (!/^[1-9]\d{0,5}$/.test(part))) throw new Error('Bilibili 分 P 参数 p 必须是正整数。');
+        if (part && (!/^[1-9]\d{0,5}$/.test(part))) throw new Error(t("Bilibili 分 P 参数 p 必须是正整数。"));
         const suffix = part && part !== '1' ? '-p' + part : '';
         return { provider: 'bilibili', id: id + suffix, blockId: 'bilibili-' + id + suffix,
             url: 'https://www.bilibili.com/video/' + id + (suffix ? '?p=' + part : '') };

@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import type { CaptureService } from './service';
 import type { NoteValues } from './note-format';
 import type { StoredEntry } from './types';
@@ -32,7 +33,7 @@ async function backup(podcast: CaptureService, entry: NoteRefreshEntry): Promise
     let path = `${base}.media-capture-backup`;
     for (let index = 1; vault.getAbstractFileByPath(path); index++) path = `${base}-${index}.media-capture-backup`;
     const file = await vault.create(path, entry.original);
-    if (await vault.read(file) !== entry.original) throw new Error(`备份内容校验失败：${path}。原笔记未替换。`);
+    if (await vault.read(file) !== entry.original) throw new Error(t("备份内容校验失败：{0}。原笔记未替换。", path));
     return path;
 }
 
@@ -40,32 +41,32 @@ export function applyNoteRefresh(podcast: CaptureService, entries: readonly Note
     const work = podcast.queue.then(async () => {
         const results: NoteRefreshResult[] = [];
         for (const entry of entries) {
-            let stage = '检查目标';
+            let stage = t("检查目标");
             const result: NoteRefreshResult = { path: entry.path, status: 'failed', backupPath: '', error: '' };
             try {
                 if (entry.error) throw new Error(entry.error);
-                if (podcast.unloaded) throw new Error('插件已卸载，后续文件均未更新。');
+                if (podcast.unloaded) throw new Error(t("插件已卸载，后续文件均未更新。"));
                 podcast.notes.checkPath(entry.path, entry.ruleId === 'catalog' && podcast.isCatalog(entry.path));
                 const templates = podcast.config.writeRules.map(rule => rule.templateFile);
-                if (templates.some(path => path.toLowerCase() === entry.path.toLowerCase())) throw new Error('目标已被设为模板文件，请重新预览。');
+                if (templates.some(path => path.toLowerCase() === entry.path.toLowerCase())) throw new Error(t("目标已被设为模板文件，请重新预览。"));
                 const file = podcast.app.vault.getAbstractFileByPath(entry.path);
-                if (!isMarkdownFile(file)) throw new Error('文件已移动或删除，请重新预览。');
-                if (await podcast.app.vault.read(file) !== entry.original) throw new Error('文件在预览后已修改，请重新预览；保留当前内容。');
+                if (!isMarkdownFile(file)) throw new Error(t("文件已移动或删除，请重新预览。"));
+                if (await podcast.app.vault.read(file) !== entry.original) throw new Error(t("文件在预览后已修改，请重新预览；保留当前内容。"));
                 if (entry.original === entry.replacement) { result.status = 'unchanged'; results.push(result); continue; }
-                stage = '保存备份';
+                stage = t("保存备份");
                 result.backupPath = await backup(podcast, entry);
-                stage = '替换正文';
-                if (podcast.unloaded) throw new Error('插件已卸载，原笔记未替换。');
+                stage = t("替换正文");
+                if (podcast.unloaded) throw new Error(t("插件已卸载，原笔记未替换。"));
                 await podcast.app.vault.process(file, current => {
-                    if (current !== entry.original) throw new Error('备份期间文件已修改，原笔记未替换，请重新预览。');
+                    if (current !== entry.original) throw new Error(t("备份期间文件已修改，原笔记未替换，请重新预览。"));
                     return entry.replacement;
                 });
                 result.status = 'updated';
-                stage = '保存单集信息';
+                stage = t("保存单集信息");
                 if (entry.id) await podcast.notes.remember(entry.id, entry.values);
                 for (const record of entry.records ?? []) await podcast.notes.remember(record.id, record.values);
                 for (const update of entry.updates ?? []) await podcast.appends.remember(update);
-            } catch (error) { result.error = `${stage}失败：${errorMessage(error)}`; }
+            } catch (error) { result.error = t("{0}失败：{1}", stage, errorMessage(error)); }
             results.push(result);
         }
         return results;

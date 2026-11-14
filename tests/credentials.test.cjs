@@ -4,7 +4,7 @@ const vm = require('node:vm');
 const path = require('node:path');
 const {buildSync} = require('esbuild');
 const source = buildSync({stdin:{contents:"export {validateSettings} from './src/settings';",resolveDir:path.resolve(__dirname,'..'),loader:'ts'},bundle:true,format:'cjs',platform:'browser',external:['obsidian'],write:false}).outputFiles[0].text;
-const context = {module:{exports:{}},URL,URLSearchParams,require:()=>({normalizePath:value=>value})};
+const context = {module:{exports:{}},URL,URLSearchParams,require:()=>({getLanguage: () => 'zh', normalizePath:value=>value})};
 vm.runInNewContext(source,context);
 const {validateSettings} = context.module.exports;
 

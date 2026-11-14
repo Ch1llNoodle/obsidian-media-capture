@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import type { CaptureItem, CaptureSettingsData, CatalogUpdate, EntryIdentity, Episode, ListeningState } from "./types";
 import { videoUrl } from "./media";
 import { decode } from "./metadata-helpers";
@@ -50,15 +51,15 @@ function episodeUrl(input: string): Episode {
                 const country = /^\/([a-z]{2})\//i.exec(url.pathname)?.[1]?.toLowerCase() ?? "us";
                 return { provider: "apple", id, blockId: `apple-${id}`, url: `https://podcasts.apple.com/${country}/podcast/id${show[1]}?i=${id}` };
             }
-            if (show) throw new Error("这是 Apple Podcasts 的节目主页，请在某一集的分享菜单中复制单集链接。");
+            if (show) throw new Error(t("这是 Apple Podcasts 的节目主页，请在某一集的分享菜单中复制单集链接。"));
         }
     }
-    throw new Error("请粘贴豆瓣、小宇宙、Apple Podcasts 单集，或 YouTube、Bilibili 视频链接。Bilibili 请使用含 BV 或 av 编号的完整视频链接。");
+    throw new Error(t("请粘贴豆瓣、小宇宙、Apple Podcasts 单集，或 YouTube、Bilibili 视频链接。Bilibili 请使用含 BV 或 av 编号的完整视频链接。"));
 }
 
 function blockId(item: EntryIdentity): string {
     if (item.blockId) return item.blockId;
-    if (!item.provider) throw new Error('Missing provider or blockId.');
+    if (!item.provider) throw new Error(t("Missing provider or blockId."));
     return `${item.provider}-${item.id}`;
 }
 
@@ -97,7 +98,7 @@ function findEntry(source: string, item: EntryIdentity): string | undefined {
 
 function entryLine(item: CaptureItem, cover: string, settings: Readonly<CaptureSettingsData> = DEFAULT_SETTINGS, createdDate = localDate()): string {
     const rule = settings.writeRules.find(rule => rule.id === 'catalog');
-    if (!rule) throw new Error('集中清单写入规则缺失。');
+    if (!rule) throw new Error(t("集中清单写入规则缺失。"));
     const values = withCoverWidth(noteValues(item, blockId(item), cover, createdDate, settings.playbackIntegration), rule.coverWidth);
     const row = renderTemplateBody(rule.template, values).trimEnd();
     const date = values.listened ? ` <!-- media-date: ${values.listened} -->` : "";
@@ -121,7 +122,7 @@ function updateCatalog(source: string, item: CaptureItem, cover: string, setting
     if (existing) return { text: source.replace(existing, () => row), existing, preserved: false };
     const lines = source.split(/\r?\n/);
     const heading = lines.findIndex(line => /^#{1,6}\s+/.test(line) && line.replace(/^#{1,6}\s+/, "").trim() === (settings.writeRules.find(rule => rule.id === 'catalog')?.heading ?? ''));
-    if (heading < 0) throw new Error(`记录文件缺少 ${(settings.writeRules.find(rule => rule.id === 'catalog')?.heading ?? '')} 标题，请添加该标题或调整设置。`);
+    if (heading < 0) throw new Error(t("记录文件缺少 {0} 标题，请添加该标题或调整设置。", (settings.writeRules.find(rule => rule.id === 'catalog')?.heading ?? '')));
     lines.splice(heading + 1, 0, "", row);
     return { text: lines.join("\n"), existing: null, preserved: false };
 }

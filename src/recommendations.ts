@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { vaultPath } from './settings';
 import type { RecommendationItem, RecommendationKind, RecommendationSource, RecommendationWork } from './types';
 import { entryIdentity, markdownText } from './core';
@@ -13,7 +14,7 @@ const workMarker = '<!-- media-work -->';
 
 function episodeWorksBlock(lines: string[], index: number): { start: number; end: number; entries: string[] } {
     const start = index + 1;
-    if (lines[index]?.includes('<!-- media-works:') || lines[start]?.trim().startsWith('<!-- media-works:')) throw new Error('Unsupported association format. Expected nested media-work rows.');
+    if (lines[index]?.includes('<!-- media-works:') || lines[start]?.trim().startsWith('<!-- media-works:')) throw new Error(t("Unsupported association format. Expected nested media-work rows."));
     let end = start;
     const entries: string[] = [];
     while (lines[end]?.startsWith('  - ') && lines[end]?.trimEnd().endsWith(workMarker)) {
@@ -35,12 +36,12 @@ function workRows(entries: string[]): string[] {
 
 export function linkEpisodeWork(text: string, source: RecommendationSource, work: RecommendationWork, reason = ''): string {
     const path = vaultPath(work.path, '.md').replace(/\.md$/i, '');
-    if (['[', ']', '|', '#'].some(character => path.includes(character))) throw new Error('作品清单路径不支持块链接。');
+    if (['[', ']', '|', '#'].some(character => path.includes(character))) throw new Error(t("作品清单路径不支持块链接。"));
     const key = '[[' + path + '#^douban-' + recommendationUrl(work.url, work.kind).id + '|';
     const link = key + work.title.replaceAll('[', ' ').replaceAll(']', ' ').replace(/[|\r\n]/g, ' ').replaceAll('<', '&lt;').replaceAll('>', '&gt;').trim() + ']]';
     const lines = text.split(/\r?\n/);
     const index = lines.findIndex(line => episodeSource(line, source.path)?.blockId === source.blockId);
-    if (index < 0) throw new Error('来源播客已变化，请重新选择。');
+    if (index < 0) throw new Error(t("来源播客已变化，请重新选择。"));
     const block = episodeWorksBlock(lines, index);
     if (block.entries.some(entry => entry.includes(key))) return text;
     const note = reason.trim() ? '（' + markdownText(reason) + '）' : '';
@@ -75,13 +76,13 @@ export function recommendationUrl(input: string, preferred: RecommendationKind):
             if (theater) return { id: theater, kind: 'theater', url: `https://www.douban.com/location/drama/${theater}/` };
         } catch { /* Try the next URL from the shared text. */ }
     }
-    throw new Error('作品清单中的豆瓣链接无效。');
+    throw new Error(t("作品清单中的豆瓣链接无效。"));
 }
 
 function sourceLink(source: RecommendationSource): string {
     const path = vaultPath(source.path, '.md').replace(/\.md$/i, '');
     if (['[', ']', '|', '#'].some(character => path.includes(character)) || !/^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?)$/.test(source.blockId)) {
-        throw new Error('媒体来源路径或块标识无效。');
+        throw new Error(t("媒体来源路径或块标识无效。"));
     }
     const label = source.title.replaceAll('[', ' ').replaceAll(']', ' ').replaceAll('|', ' ').replace(/[\r\n]/g, ' ').replaceAll('<', '&lt;').replaceAll('>', '&gt;').trim();
     return `[[${path}#^${source.blockId}|${label}]]`;
@@ -117,7 +118,7 @@ export function recommendationIndex(text: string, item: Pick<RecommendationItem,
 
 export function linkWorkSource(text: string, item: RecommendationItem, source: RecommendationSource, reason = ''): string {
     const title = item.title.replace(/\s+/g, " ").trim();
-    if (!title) throw new Error('请填写作品名称。');
+    if (!title) throw new Error(t("请填写作品名称。"));
     const identity = recommendationUrl(item.url, item.kind);
     const lines = text.split(/\r?\n/);
     const index = recommendationIndex(text, item);
@@ -128,7 +129,7 @@ export function linkWorkSource(text: string, item: RecommendationItem, source: R
         lines[index] = next;
         return lines.join('\n');
     }
-    throw new Error('作品已移除，请同步清单后重新选择。');
+    throw new Error(t("作品已移除，请同步清单后重新选择。"));
 }
 
 export function isWanted(work: Pick<RecommendationWork, 'kind' | 'state'>): boolean {

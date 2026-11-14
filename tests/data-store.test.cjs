@@ -6,7 +6,7 @@ const { buildSync } = require('esbuild');
 const yaml = require('js-yaml');
 const bundle = buildSync({ stdin: { contents: `export * from './src/data-store'; export {CaptureService} from './src/service'; export {noteValues} from './src/note-format'; export {episodeUrl} from './src/core';`,
     resolveDir: path.resolve(__dirname, '..'), loader: 'ts' }, bundle: true, platform: 'browser', format: 'cjs', external: ['obsidian'], write: false }).outputFiles[0].text;
-const sandbox = { module: { exports: {} }, URL, URLSearchParams, console, Uint8Array, require: () => ({normalizePath: p => p.replace(/\\/g, '/'), parseYaml: yaml.load, stringifyYaml: yaml.dump}) };
+const sandbox = { module: { exports: {} }, URL, URLSearchParams, console, Uint8Array, require: () => ({getLanguage: () => 'zh', normalizePath: p => p.replace(/\\/g, '/'), parseYaml: yaml.load, stringifyYaml: yaml.dump}) };
 vm.runInNewContext(bundle, sandbox);
 const {CaptureDataStore, CaptureService, noteValues, episodeUrl} = sandbox.module.exports;
 const recordPath = '.obsidian/plugins/media-capture/records.json';
