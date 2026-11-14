@@ -1,11 +1,10 @@
-import { Modal, Notice, requestUrl, type App, type Plugin, type TFile } from "obsidian";
-import { ruleTargets, isListeningState, validateSettings, recordDate, episodeUrl, metadata, entryIdentity, stateOf } from "./core";
+import { Modal, Notice, type App, type Plugin, type TFile } from "obsidian";
+import { ruleTargets, isListeningState, validateSettings, recordDate, entryIdentity, stateOf } from "./core";
 import { ensureFolder, isMarkdownFile } from "./storage";
 
 import type { CaptureSettingsData, CaptureItem, CaptureResult, CoverFailure, CoverRepairResult, EpisodeMetadata, SavedDataPatch } from "./types";
-import { coverUrl } from "./metadata-helpers";
 import { record, errorMessage } from "./validation";
-import { fetchAppleLookup } from "./apple";
+import { fetchMediaMetadata } from "./fetch-metadata";
 import { AppendOutputs } from "./append-output";
 
 import { EpisodeNotes } from "./episode-notes";
@@ -55,37 +54,8 @@ export class CaptureService {
         await this.updateData({ settings, schemaVersion: 3 });
         this.settings = settings;
     }
-    async fetchMetadata(url: string): Promise<EpisodeMetadata> {
-        const episode = episodeUrl(url);
-        if (episode.provider === 'youtube') {
-            const endpoint = 'https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(episode.url);
-            try {
-                const response = await requestUrl({ url: endpoint, throw: false });
-                if (response.status !== 200) throw new Error(`YouTube oEmbed 返回 HTTP ${response.status}`);
-                const data = record(response.json);
-                if (typeof data.title !== 'string' || !data.title.trim()) throw new Error('YouTube 未返回视频标题');
-                const show = typeof data.author_name === 'string' ? data.author_name : '';
-                return { title: show ? show + ' · ' + data.title : data.title, episodeTitle: data.title, show,
-                    cover: coverUrl(data.thumbnail_url) };
-            } catch (error) { throw new Error('获取 YouTube 信息失败：' + errorMessage(error) + '。可手动填写标题后保存。'); }
-        }
-        let lookup: EpisodeMetadata | undefined;
-        let lookupError = "";
-        if (episode.provider === "apple") {
-            try {
-                lookup = await fetchAppleLookup(episode, requestUrl);
-                if (lookup.cover) return lookup;
-            } catch (error) { lookupError = errorMessage(error); }
-        }
-        try {
-            const response = await requestUrl({ url: episode.url, headers: { Referer: new URL(episode.url).origin + "/" }, throw: false });
-            if (response.status !== 200) throw new Error(`平台返回 ${response.status}，可稍后重试或手动填写名称。`);
-            const page = metadata(response.text, episode);
-            return lookup ? { ...page, ...lookup, cover: page.cover } : page;
-        } catch (error) {
-            if (lookup) return lookup;
-            throw new Error([lookupError, errorMessage(error)].filter(Boolean).join("；"));
-        }
+    fetchMetadata(url: string): Promise<EpisodeMetadata> {
+        return fetchMediaMetadata(url);
     }
     get catalogPaths(): string[] { return [this.config.catalogPath, this.config.videoCatalogPath].filter(Boolean); }
     isCatalog(path: string | undefined): boolean { return path !== undefined && this.catalogPaths.includes(path); }

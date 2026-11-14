@@ -95,13 +95,13 @@ test('cross-platform podcast cover uses same-show log references without a URL c
     const coverPath = 'image/media/Show.jpg';
     const file = { path: coverPath, extension: 'jpg' };
     const log = { path: 'Podcasts.md', extension: 'md' };
-    let writes = 0;
+    let writes = 0, reads = 0;
     const service = {
         config: { downloadCovers: true, imageFolder: 'image/media' }, catalogPaths: ['Podcasts.md'],
         loadData: async () => ({}), updateData: async () => { throw new Error("Cover lookup must not persist a cache"); },
         app: { vault: {
             getAbstractFileByPath: path => path === coverPath ? file : path === log.path ? log : path === 'image/media' ? { path } : null,
-            readBinary: async () => savedBytes,
+            readBinary: async () => { reads++; return savedBytes; },
             createFolder: async () => {},
             read: async () => '- ![|24](<image/media/Show.jpg>) [Show · Earlier episode](<https://www.xiaoyuzhoufm.com/episode/6aec66196381f0f964c44d72>)',
             createBinary: async () => { writes++; },
@@ -109,9 +109,11 @@ test('cross-platform podcast cover uses same-show log references without a URL c
     };
     const result = await captureCover(service, { ...item, title: 'Show · New episode', show: 'Show' }, item.id, '', true);
     assert.equal(result.error, ''); assert.equal(result.path, coverPath); assert.equal(writes, 0);
+    assert.equal(reads, 1, 'byte and visual comparisons reuse the same disk read');
     assert.equal(revoked, 2);
     const other = await captureCover(service, { ...item, title: 'Other · Episode', show: 'Other' }, item.id, '', true);
     assert.equal(other.error, ''); assert.notEqual(other.path, coverPath); assert.equal(writes, 1);
+    assert.equal(reads, 2, 'a later capture reads the current file instead of keeping a cache');
 });
 
 test("分享链接归一化，拒绝仿冒域名与非法日期", () => {

@@ -24,17 +24,24 @@ export async function cacheCover(app: App, input: string, folder: string, stem: 
         : String.fromCharCode(...bytes.slice(4, 8)) === 'ftyp' && /^(avif|avis)$/.test(String.fromCharCode(...bytes.slice(8, 12))) ? 'avif' : '';
     if (!extension) throw new Error(`图片服务器返回了无法识别的图片格式（${bytes.length} 字节）`);
     if (bytes.length > 10 * 1024 * 1024) throw new Error('封面超过 10 MB，未保存');
-    await ensureFolder(app.vault, folder);
-    let first = 2166136261;
-    for (const byte of bytes) { first = Math.imul(first ^ byte, 16777619); }
-    const digest = (first >>> 0).toString(16).padStart(8, '0');
-    const sameBytes = async (path: string): Promise<boolean> => {
+    // Reuse reads within this operation only; no persistent artwork cache.
+    const images = new Map<string, ArrayBuffer>();
+    const readImage = async (path: string): Promise<ArrayBuffer | undefined> => {
+        const cached = images.get(path);
+        if (cached) return cached;
         const file = app.vault.getAbstractFileByPath(path);
-        if (!isVaultFile(file)) return false;
-        const saved = new Uint8Array(await app.vault.readBinary(file));
+        if (!isVaultFile(file)) return;
+        const saved = await app.vault.readBinary(file);
+        images.set(path, saved);
+        return saved;
+    };
+    const sameBytes = async (path: string): Promise<boolean> => {
+        const image = await readImage(path);
+        if (!image) return false;
+        const saved = new Uint8Array(image);
         return saved.length === bytes.length && saved.every((value, index) => value === bytes[index]);
     };
-    // Only images referenced by this plugin's configured logs, metadata or URL cache are candidates.
+    // Only images referenced by this plugin's configured logs or metadata are candidates.
     for (const candidate of new Set(candidates)) {
         try { relativeNotePath(candidate); } catch { continue; }
         if (candidate.startsWith(folder + '/') && await sameBytes(candidate)) return candidate;
@@ -44,18 +51,25 @@ export async function cacheCover(app: App, input: string, folder: string, stem: 
         if (incoming) for (const candidate of new Set(showCandidates)) {
             try { relativeNotePath(candidate); } catch { continue; }
             if (!candidate.startsWith(folder + '/')) continue;
-            const file = app.vault.getAbstractFileByPath(candidate);
-            if (!isVaultFile(file)) continue;
-            const saved = await readArtwork(await app.vault.readBinary(file));
+            const image = await readImage(candidate);
+            if (!image) continue;
+            const saved = await readArtwork(image);
             if (saved && sameArtwork(incoming, saved)) return candidate;
         }
     }
     const base = `${folder}/${safeName}`;
     let path = `${base}.${extension}`;
+    let digest: string | undefined;
     for (let suffix = 1; app.vault.getAbstractFileByPath(path); suffix++) {
         if (await sameBytes(path)) return path;
-        path = `${base}-${digest.slice(0, 8)}${suffix > 1 ? "-" + suffix : ""}.${extension}`;
+        if (!digest) {
+            let first = 2166136261;
+            for (const byte of bytes) first = Math.imul(first ^ byte, 16777619);
+            digest = (first >>> 0).toString(16).padStart(8, '0');
+        }
+        path = `${base}-${digest}${suffix > 1 ? "-" + suffix : ""}.${extension}`;
     }
+    await ensureFolder(app.vault, folder);
     await app.vault.createBinary(path, response.arrayBuffer);
     return path;
 }
