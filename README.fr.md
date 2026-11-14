@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md) · [English](README.md) · Français
 
-Media Capture enregistre en Markdown les informations des podcasts Douban, Xiaoyuzhou et Apple Podcasts, ainsi que des vidéos YouTube et Bilibili. Les règles d’écriture permettent de créer un journal avec une ligne par média, des notes séparées ou un fichier par émission ou chaîne. Par défaut, les podcasts et les vidéos utilisent deux journaux distincts. L’interface existe en chinois simplifié, en anglais et en français ; à partir d’Obsidian 1.8.7, elle suit la langue de l’application.
+Media Capture enregistre en Markdown les informations des podcasts Douban, Xiaoyuzhou et Apple Podcasts, ainsi que des vidéos YouTube et Bilibili. Les règles d’écriture permettent de créer un journal avec une ligne par média, des notes séparées ou un fichier par émission ou chaîne. Par défaut, les podcasts et les vidéos utilisent deux journaux distincts. L’interface existe en chinois simplifié, en anglais et en français et suit la langue de l’application.
 
 Les liens vers le journal quotidien, les associations d’œuvres et la lecture dans Obsidian sont facultatifs. Les identifiants personnalisés offrent aux scripts du coffre un emplacement commun pour leurs champs et valeurs. Les intégrations d’API, boutons du journal, grilles d’épisodes, cartes et calendriers d’activité sont gérés par la configuration du coffre.
 
@@ -16,7 +16,7 @@ Les liens vers le journal quotidien, les associations d’œuvres et la lecture 
 
 Sur iPhone ou ordinateur, installez [BRAT](https://github.com/TfTHacker/obsidian42-brat) depuis les plugins communautaires d’Obsidian, puis ajoutez le dépôt `Ch1llNoodle/obsidian-media-capture`. Choisissez une version publiée ou une préversion et activez Media Capture. BRAT installe et met à jour les fichiers dans Obsidian.
 
-Obsidian 1.5.0 ou ultérieur est requis. Pour une installation manuelle, téléchargez `main.js`, `manifest.json` et `styles.css` depuis les [versions GitHub](https://github.com/Ch1llNoodle/obsidian-media-capture/releases), placez-les dans `<Coffre>/.obsidian/plugins/media-capture/`, puis activez Media Capture dans les paramètres des plugins communautaires. Une compilation du code source produit ces fichiers dans `release/media-capture/`.
+Obsidian 1.8.7 ou ultérieur est requis. Pour une installation manuelle, téléchargez `main.js`, `manifest.json` et `styles.css` depuis les [versions GitHub](https://github.com/Ch1llNoodle/obsidian-media-capture/releases), placez-les dans `<Coffre>/.obsidian/plugins/media-capture/`, puis activez Media Capture dans les paramètres des plugins communautaires. Une compilation du code source produit ces fichiers dans `release/media-capture/`.
 
 Lors d’une mise à jour, remplacez les trois fichiers d’exécution et rechargez le plugin. Conservez `data.json`, qui contient les paramètres, et `records.json`, qui contient les enregistrements. L’identifiant et le dossier d’installation du plugin sont `media-capture`. Le code source et `node_modules` restent hors de ce dossier.
 
@@ -131,7 +131,7 @@ Format d’une ligne de collection :
 
 #### Langue de l’interface
 
-Le chinois simplifié, l’anglais et le français sont disponibles. Obsidian 1.8.7 ou ultérieur fournit la langue de l’application ; les codes régionaux sont reconnus. Les autres langues et les versions antérieures utilisent l’anglais. Rechargez le plugin après un changement de langue pour actualiser les noms de commandes.
+Le chinois simplifié, l’anglais et le français sont disponibles. L’interface suit la langue de l’application ; les codes régionaux sont reconnus. Les autres langues utilisent l’anglais. Rechargez le plugin après un changement de langue pour actualiser les noms de commandes.
 
 Les paramètres, fenêtres, boutons, notifications et erreurs générées par le plugin sont traduits. Les modèles existants, noms de règles, propriétés, noms et valeurs d’identifiants, contenu des notes et statuts stockés restent inchangés. Les erreurs des plateformes et du système conservent leur texte d’origine. Les messages sources servent de clés ; les catalogues anglais et français sont dans `src/locales`, et `src/i18n.ts` gère la langue et la substitution des paramètres.
 

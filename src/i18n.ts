@@ -19,5 +19,5 @@ export function translate(language: string, key: string, ...values: unknown[]): 
 }
 
 export function t(key: string, ...values: unknown[]): string {
-    return translate(typeof getLanguage === 'function' ? getLanguage() : 'en', key, ...values);
+    return translate(getLanguage(), key, ...values);
 }

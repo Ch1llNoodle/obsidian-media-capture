@@ -2,7 +2,7 @@
 
 简体中文 · [English](README.md) · [Français](README.fr.md)
 
-Media Capture 将豆瓣、小宇宙、Apple Podcasts 的播客信息及 YouTube、Bilibili 的视频信息保存为 Markdown。写入规则支持一行清单、独立笔记和按节目／频道集中记录。默认每条一行，播客与视频分别保存到各自清单。界面支持简体中文、英文和法语，在 Obsidian 1.8.7 及以上版本中跟随应用语言。
+Media Capture 将豆瓣、小宇宙、Apple Podcasts 的播客信息及 YouTube、Bilibili 的视频信息保存为 Markdown。写入规则支持一行清单、独立笔记和按节目／频道集中记录。默认每条一行，播客与视频分别保存到各自清单。界面支持简体中文、英文和法语，自动跟随应用语言。
 
 日记链接、作品关联和库内播放均可选。自定义凭证为笔记脚本提供统一的字段和值存储入口；API 联动、日记按钮、集数格子、地图和热力图由笔记库配置维护。
 
@@ -16,7 +16,7 @@ Media Capture 将豆瓣、小宇宙、Apple Podcasts 的播客信息及 YouTube�
 
 在 iPhone 或电脑上测试时，从 Obsidian 社区插件安装并启用 [BRAT](https://github.com/TfTHacker/obsidian42-brat)，添加测试插件仓库 `Ch1llNoodle/obsidian-media-capture`，选择已发布版本或预发布版本，然后启用 Media Capture。BRAT 在 Obsidian 内完成文件安装和后续更新。
 
-插件要求 Obsidian 1.5.0 或更高版本。手动安装时，从 [GitHub 发布页](https://github.com/Ch1llNoodle/obsidian-media-capture/releases)下载 `main.js`、`manifest.json`、`styles.css`，放入 `<笔记库>/.obsidian/plugins/media-capture/`，在 **设置 → 第三方插件**中启用 **Media Capture**。从源码构建时，三个文件生成于 `release/media-capture/`。
+插件要求 Obsidian 1.8.7 或更高版本。手动安装时，从 [GitHub 发布页](https://github.com/Ch1llNoodle/obsidian-media-capture/releases)下载 `main.js`、`manifest.json`、`styles.css`，放入 `<笔记库>/.obsidian/plugins/media-capture/`，在 **设置 → 第三方插件**中启用 **Media Capture**。从源码构建时，三个文件生成于 `release/media-capture/`。
 
 更新时替换这三个文件，重新加载插件。保留 `data.json`（设置）和 `records.json`（采集记录）。
 
@@ -135,7 +135,7 @@ tags: [podcast]
 
 #### 界面语言
 
-界面支持简体中文、英文和法语。Obsidian 1.8.7 及以上版本自动跟随应用语言，并识别地区语言代码；其他语言及更早版本使用英文。修改应用语言后重新加载插件，使已注册的命令名称更新。
+界面支持简体中文、英文和法语。自动跟随应用语言，并识别地区语言代码；其他语言使用英文。修改应用语言后重新加载插件，使已注册的命令名称更新。
 
 设置、弹窗、按钮、提示和插件生成的错误信息均使用对应语言。已有模板、规则名称、属性名、凭证字段及其值、笔记正文和持久化状态标识保持原样；平台或操作系统返回的错误保留原文。源码文案作为翻译键，英文和法语词典集中在 `src/locales`，由 `src/i18n.ts` 处理语言选择与占位符替换。
 

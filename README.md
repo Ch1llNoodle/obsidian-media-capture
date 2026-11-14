@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md) · English · [Français](README.fr.md)
 
-Media Capture saves podcast and video information from Douban, Xiaoyuzhou, Apple Podcasts, YouTube, and Bilibili as Markdown. Write rules support one-line logs, separate notes, and files grouped by show or channel. The default is one line per record, with separate podcast and video logs. The interface supports Simplified Chinese, English, and French, following the Obsidian language on version 1.8.7 and newer.
+Media Capture saves podcast and video information from Douban, Xiaoyuzhou, Apple Podcasts, YouTube, and Bilibili as Markdown. Write rules support one-line logs, separate notes, and files grouped by show or channel. The default is one line per record, with separate podcast and video logs. The interface supports Simplified Chinese, English, and French, following the Obsidian language.
 
 Daily-note links, work associations, and in-app playback are optional. Custom credentials give vault scripts a single place to store field/value pairs. API integrations, diary buttons, episode grids, maps, and heatmaps belong to the vault configuration.
 
@@ -16,7 +16,7 @@ Daily-note links, work associations, and in-app playback are optional. Custom cr
 
 For iPhone and desktop testing, install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Obsidian's community plugins, then add `Ch1llNoodle/obsidian-media-capture` as a beta plugin. Choose a published release or prerelease and enable Media Capture. BRAT installs and updates the release files inside Obsidian.
 
-Obsidian 1.5.0 or later is required. For manual installation, download `main.js`, `manifest.json`, and `styles.css` from a [GitHub release](https://github.com/Ch1llNoodle/obsidian-media-capture/releases), place them in `<Vault>/.obsidian/plugins/media-capture/`, then enable **Media Capture** under **Settings → Community plugins**. Source builds place these files in `release/media-capture/`.
+Obsidian 1.8.7 or later is required. For manual installation, download `main.js`, `manifest.json`, and `styles.css` from a [GitHub release](https://github.com/Ch1llNoodle/obsidian-media-capture/releases), place them in `<Vault>/.obsidian/plugins/media-capture/`, then enable **Media Capture** under **Settings → Community plugins**. Source builds place these files in `release/media-capture/`.
 
 When updating, replace those three files and reload the plugin. Keep both `data.json` (settings) and `records.json` (capture records).
 
@@ -135,7 +135,7 @@ Custom sync tools must preserve the span between `media-sources:start` and `medi
 
 #### Interface language
 
-The interface supports Simplified Chinese, English, and French. On Obsidian 1.8.7 or newer it follows the application language, including regional language codes; other languages and older Obsidian versions use English. Reload the plugin after changing the application language to refresh registered command names.
+The interface supports Simplified Chinese, English, and French. It follows the application language, including regional language codes; other languages use English. Reload the plugin after changing the application language to refresh registered command names.
 
 Settings, dialogs, buttons, notices, and plugin-generated errors are translated. Existing templates, rule names, property names, credential names and values, note content, and stored status identifiers remain unchanged. Platform or operating-system errors retain their original text. Source messages are translation keys; English and French catalogs are maintained in `src/locales`, and `src/i18n.ts` handles language selection and placeholder substitution.
 

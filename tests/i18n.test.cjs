@@ -6,6 +6,15 @@ const vm = require('node:vm');
 const ts = require('typescript');
 const {buildSync} = require('esbuild');
 const root = path.resolve(__dirname, '..');
+test('release metadata requires the Obsidian version that provides the language API',()=>{
+    const manifest=JSON.parse(fs.readFileSync(path.join(root,'manifest.json'),'utf8'));
+    const minimum=manifest.minAppVersion.split('.').map(Number);
+    const required=[1,8,7];
+    const difference=minimum.map((value,index)=>value-required[index]).find(value=>value!==0)??0;
+    assert(difference>=0,'getLanguage requires Obsidian 1.8.7');
+    const versions=JSON.parse(fs.readFileSync(path.join(root,'versions.json'),'utf8'));
+    assert.equal(versions[manifest.version],manifest.minAppVersion);
+});
 const bundle = buildSync({stdin:{contents: `export * from './src/i18n'; export * from './src/media-state'; export {en} from './src/locales/en'; export {fr} from './src/locales/fr';`, resolveDir:root, loader:'ts'},bundle:true,format:'cjs',platform:'browser',external:['obsidian'],write:false}).outputFiles[0].text;
 let language = 'en';
 const context = {module:{exports:{}},require:()=>({getLanguage:()=>language})};
