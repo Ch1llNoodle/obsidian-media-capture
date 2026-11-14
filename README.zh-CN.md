@@ -1,8 +1,8 @@
 ### Media Capture
 
-简体中文 · [English](README.md)
+简体中文 · [English](README.md) · [Français](README.fr.md)
 
-Media Capture 将豆瓣、小宇宙、Apple Podcasts 的播客信息及 YouTube、Bilibili 的视频信息保存为 Markdown。写入规则支持一行清单、独立笔记和按节目／频道集中记录。默认每条一行，播客与视频分别保存到各自清单。插件界面目前使用中文。
+Media Capture 将豆瓣、小宇宙、Apple Podcasts 的播客信息及 YouTube、Bilibili 的视频信息保存为 Markdown。写入规则支持一行清单、独立笔记和按节目／频道集中记录。默认每条一行，播客与视频分别保存到各自清单。界面支持简体中文、英文和法语，在 Obsidian 1.8.7 及以上版本中跟随应用语言。
 
 日记链接、作品关联和库内播放均可选。自定义凭证为笔记脚本提供统一的字段和值存储入口；API 联动、日记按钮、集数格子、地图和热力图由笔记库配置维护。
 
@@ -16,7 +16,7 @@ Media Capture 将豆瓣、小宇宙、Apple Podcasts 的播客信息及 YouTube�
 
 在 iPhone 或电脑上测试时，从 Obsidian 社区插件安装并启用 [BRAT](https://github.com/TfTHacker/obsidian42-brat)，添加测试插件仓库 `Ch1llNoodle/obsidian-media-capture`，选择已发布版本或预发布版本，然后启用 Media Capture。BRAT 在 Obsidian 内完成文件安装和后续更新。
 
-插件要求 Obsidian 1.5.0 或更高版本。将 `main.js`、`manifest.json`、`styles.css` 放入 `<笔记库>/.obsidian/plugins/media-capture/`，在 **设置 → 第三方插件**中启用 **Media Capture**。从源码构建时，三个文件生成于 `release/media-capture/`。
+插件要求 Obsidian 1.5.0 或更高版本。手动安装时，从 [GitHub 发布页](https://github.com/Ch1llNoodle/obsidian-media-capture/releases)下载 `main.js`、`manifest.json`、`styles.css`，放入 `<笔记库>/.obsidian/plugins/media-capture/`，在 **设置 → 第三方插件**中启用 **Media Capture**。从源码构建时，三个文件生成于 `release/media-capture/`。
 
 更新时替换这三个文件，重新加载插件。保留 `data.json`（设置）和 `records.json`（采集记录）。
 
@@ -51,7 +51,7 @@ Apple Podcasts 使用单集分享链接；缺少 `i` 单集参数的节目主页
 | 集中清单 | 播客写入 `Podcasts.md`，视频写入 `Videos.md` 的 Entries 下 | 每集一行 |
 | 每条一篇 | 新建 `Media/{{show}}/{{title}}.md` | 独立单集笔记 |
 | 清单与独立笔记 | 同时执行上面两条规则 | 一行记录与一篇笔记 |
-| 按节目／频道追加 | 追加到 `Media/{{show}}.md` 的 Episodes 下 | 同一节目多集保存在一篇笔记中 |
+| 按节目／频道追加 | 追加到 `Media/{{show}}.md` 的 Entries 下 | 同一节目多集保存在一篇笔记中 |
 
 在设置中应用预设，或逐条编辑名称、启用状态、写入方式、目录、路径模板、目标标题、模板文件、内置内容和封面宽度。可添加或移除规则，最多 20 条。应用预设替换规则配置，已有文件保留。添加窗口中的**使用已启用规则**执行配置的规则；选择某个预设则只覆盖本次选择。
 

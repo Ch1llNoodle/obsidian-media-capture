@@ -1,8 +1,8 @@
 ### Media Capture
 
-[简体中文](README.zh-CN.md) · English
+[简体中文](README.zh-CN.md) · English · [Français](README.fr.md)
 
-Media Capture saves podcast and video information from Douban, Xiaoyuzhou, Apple Podcasts, YouTube, and Bilibili as Markdown. Write rules support one-line logs, separate notes, and files grouped by show or channel. The default is one line per record, with separate podcast and video logs. The interface currently uses Chinese.
+Media Capture saves podcast and video information from Douban, Xiaoyuzhou, Apple Podcasts, YouTube, and Bilibili as Markdown. Write rules support one-line logs, separate notes, and files grouped by show or channel. The default is one line per record, with separate podcast and video logs. The interface supports Simplified Chinese, English, and French, following the Obsidian language on version 1.8.7 and newer.
 
 Daily-note links, work associations, and in-app playback are optional. Custom credentials give vault scripts a single place to store field/value pairs. API integrations, diary buttons, episode grids, maps, and heatmaps belong to the vault configuration.
 
@@ -16,7 +16,7 @@ Daily-note links, work associations, and in-app playback are optional. Custom cr
 
 For iPhone and desktop testing, install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Obsidian's community plugins, then add `Ch1llNoodle/obsidian-media-capture` as a beta plugin. Choose a published release or prerelease and enable Media Capture. BRAT installs and updates the release files inside Obsidian.
 
-Obsidian 1.5.0 or later is required. Place `main.js`, `manifest.json`, and `styles.css` in `<Vault>/.obsidian/plugins/media-capture/`, then enable **Media Capture** under **Settings → Community plugins**. Source builds place these files in `release/media-capture/`.
+Obsidian 1.5.0 or later is required. For manual installation, download `main.js`, `manifest.json`, and `styles.css` from a [GitHub release](https://github.com/Ch1llNoodle/obsidian-media-capture/releases), place them in `<Vault>/.obsidian/plugins/media-capture/`, then enable **Media Capture** under **Settings → Community plugins**. Source builds place these files in `release/media-capture/`.
 
 When updating, replace those three files and reload the plugin. Keep both `data.json` (settings) and `records.json` (capture records).
 
@@ -24,15 +24,15 @@ The plugin ID and installation directory are `media-capture`. Only runtime files
 
 #### Capture media
 
-1. Open the command palette and run **Media Capture: 采集媒体** (capture media).
-2. Paste a podcast or video share link and select **获取媒体信息** (fetch media information).
-3. Confirm the show or channel, title, record date, state, and write preset, then select **保存** (save).
+1. Open the command palette and run **Media Capture: Capture media**.
+2. Paste a podcast or video share link and select **Fetch media information**.
+3. Confirm the show or channel, title, record date, status, and output preset, then select **Save**.
 
-Podcast states are `听过` (listened), `在听` (in progress), and `想听` (wishlist). Videos display `看过` (watched), `在看` (in progress), and `想看` (watchlist). Completed records receive the selected date. With daily integration enabled, opening the dialog from a dated note in the configured daily folder uses that note's date.
+Podcast statuses display **Listened**, **Listening**, and **Want to listen**. Videos display **Watched**, **Watching**, and **Want to watch**. Stored status identifiers remain `听过`, `在听`, and `想听` in every interface language, including the `{{state}}` variable. Completed records receive the selected date. With daily integration enabled, opening the dialog from a dated note in the configured daily folder uses that note's date.
 
 For Apple Podcasts, share an individual episode. A show URL without an `i` episode parameter is rejected. If metadata cannot be fetched, enter the title manually. A failed cover download does not prevent saving.
 
-**打开媒体记录** opens the configured log. **补全缺失封面** retries missing covers and reports the failure stage; when an image URL is available, the report links to the original image.
+**Open media log** opens the configured log. **Repair missing covers** retries missing covers and reports the failure stage; when an image URL is available, the report links to the original image.
 
 #### Video records and optional playback
 
@@ -48,12 +48,12 @@ All outputs use the same media metadata and template variables. Each write rule 
 
 | Preset | Destination | Content |
 | --- | --- | --- |
-| 集中清单 | Append under Entries in `Podcasts.md` for podcasts or `Videos.md` for videos | One list row |
-| 每条一篇 | Create `Media/{{show}}/{{title}}.md` | An episode note |
-| 清单与独立笔记 | Run the two rules above | A row and a note |
-| 按节目／频道追加 | Append under Episodes in `Media/{{show}}.md` | Multiple episode sections in one show file |
+| Log | Append under Entries in `Podcasts.md` for podcasts or `Videos.md` for videos | One list row |
+| One note per item | Create `Media/{{show}}/{{title}}.md` | An episode note |
+| Log and separate notes | Run the two rules above | A row and a note |
+| Append by show / channel | Append under Entries in `Media/{{show}}.md` | Multiple episode sections in one show file |
 
-In settings, apply a preset or edit individual rules: name, enabled state, write method, folder, path template, target heading, template file, inline content, and cover width. Rules can be added or removed, up to 20. Applying a preset replaces rule configuration and keeps existing files. In the capture dialog, **使用已启用规则** runs the configured rules; a named preset overrides the selection for that capture.
+In settings, apply a preset or edit individual rules: name, enabled state, write method, folder, path template, target heading, template file, inline content, and cover width. Rules can be added or removed, up to 20. Applying a preset replaces rule configuration and keeps existing files. In the capture dialog, **Use enabled rules** runs the configured rules; a named preset overrides the selection for that capture.
 
 A fixed path collects episodes in one file; `{{show}}.md` groups them by show; `{{show}}/{{title}}.md` creates one file per episode when used with create mode. Empty folders use the vault root. Missing shows use Unsorted. Unsupported filename characters are replaced. Create mode reopens an identified episode file or adds an ID suffix for a foreign filename collision. Append mode reuses the target file and creates it when absent; an existing file must contain the configured heading, unless the heading is empty. Two enabled rules targeting the same file are rejected before writing.
 
@@ -97,17 +97,17 @@ tags: [podcast]
 #### Quotes
 ```
 
-**创建媒体笔记** opens the capture dialog with the per-episode preset. **写笔记** beside a log row preselects that episode; **打开笔记** reopens its primary episode note. The log also keeps a link to the first additional output, including a show file when selected. Reading mode and the editor provide row actions without hotkeys. Work associations and log-based tracking still use the concentrated log rule; arbitrary output files are not automatically included by external trackers.
+**Create media note** opens the capture dialog with the per-episode preset. **Write note** beside a log row preselects that episode; **Open note** reopens its primary episode note. The log also keeps a link to the first additional output, including a show file when selected. Reading mode and the editor provide row actions without hotkeys. Work associations and log-based tracking still use the concentrated log rule; arbitrary output files are not automatically included by external trackers.
 
 Every created file contains both `media_capture_id` and `media_capture_rule`. Output indexes use the single `ruleId::recordId` key format. Append indexes follow file renames; if a tracked file or its region disappears, saving reports the missing target rather than recreating it elsewhere. Keep data.json and records.json with the vault for cross-device continuity.
 
 #### Apply templates to existing records
 
-Template edits apply to new records by default. Use **将模板应用到已有记录 → 预览并选择** in settings, or the command of the same name, to preview updates and select files.
+Template edits apply to new records by default. Use **Apply templates to existing records → Preview and select** in settings, or the command of the same name, to preview updates and select files.
 
 Create outputs are regenerated in full, including properties and handwritten sections. Append outputs replace only managed rows or episode regions, retaining surrounding text, work children, and quotations. A show file containing several episodes is updated once and backed up once. File names and locations remain unchanged.
 
-Before replacing a file, the plugin saves and verifies a timestamped text backup beside it with the `.media-capture-backup` extension. Results provide **查看备份** inside Obsidian; copy the original text back to restore it. Keep backups until no longer needed.
+Before replacing a file, the plugin saves and verifies a timestamped text backup beside it with the `.media-capture-backup` extension. Results provide **View backup** inside Obsidian; copy the original text back to restore it. Keep backups until no longer needed.
 
 Stored capture metadata retains dates and descriptions; explicit properties in current notes can override it. Template updates require this metadata and do not reconstruct old notes from links, headings or log text. Missing optional fields are shown before updating. Missing essential links, duplicate identities, removed rules, and damaged region markers produce errors. No network requests are made during template updates.
 
@@ -117,7 +117,7 @@ Reports identify each file, failed stage, reason, update status, and backup path
 
 Mark a work as wanted on Douban, then import it into a Markdown collection with your own Douban sync tool. Set the six collection paths to your existing books, movies, series, music, games, and theater lists. Defaults are under `Recommendations/`; this plugin reads existing files only.
 
-In either media log (editing or reading mode), select **添加关联** beside a record. Choose a wanted work from the dropdown, optionally enter an excerpt, and select **保存关联**. The selected record supplies the source. Available works are marked 想读, 想看, 想听, or 想玩 for their respective media types. The **打开媒体关联入口** command opens the podcast log; video rows provide their own association action.
+In either media log (editing or reading mode), select **Add association** beside a record. Choose a wanted work from the dropdown, optionally enter an excerpt, and select **Save association**. The selected record supplies the source. Available works are marked 想读, 想看, 想听, or 想玩 for their respective media types. The **Open media associations** command opens the podcast log; video rows provide their own association action.
 
 The work row links to the source record; linked works and excerpts appear as indented child items beneath the podcast or video. Inline comments identify managed links. Live Preview hides management comments and block IDs in configured media logs; source mode shows the Markdown. Existing titles, dates, states, covers, and handwritten formatting are preserved. Multiple sources share one work row, and repeated saves reuse the same association.
 
