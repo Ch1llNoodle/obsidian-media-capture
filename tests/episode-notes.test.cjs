@@ -9,7 +9,7 @@ const bundle = buildSync({ stdin: { contents: `export {CaptureService} from './s
 export {appleLookupMetadata} from './src/apple';
 export * from './src/note-refresh';
 export * from './src/write-rules';
-export * from './src/note-format'; export * from './src/core';`, resolveDir: path.resolve(__dirname, '..'), loader: 'ts' },
+export * from './src/note-format'; export * from './src/core'; export * from './src/settings';`, resolveDir: path.resolve(__dirname, '..'), loader: 'ts' },
     bundle: true, platform: 'browser', format: 'cjs', target: 'es2021', external: ['obsidian'], write: false }).outputFiles[0].text;
 let imageResponse = null, imageRequests = 0;
 const sandbox = { module: { exports: {} }, URL, URLSearchParams, Uint8Array, Date, console, require: () => ({

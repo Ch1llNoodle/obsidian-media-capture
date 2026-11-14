@@ -1,5 +1,6 @@
+import { ruleTargets, validateSettings } from './settings';
 import { Modal, Notice, type App, type Plugin, type TFile } from "obsidian";
-import { ruleTargets, isListeningState, validateSettings, recordDate, entryIdentity, stateOf } from "./core";
+import { isListeningState, recordDate, entryIdentity, stateOf } from "./core";
 import { ensureFolder, isMarkdownFile } from "./storage";
 
 import type { CaptureSettingsData, CaptureItem, CaptureResult, CoverFailure, CoverRepairResult, EpisodeMetadata, SavedDataPatch } from "./types";

@@ -1,4 +1,4 @@
-import { FuzzySuggestModal, Notice, type TFile } from 'obsidian';
+import { FuzzySuggestModal, Notice, type App, type TFile } from 'obsidian';
 import type { CaptureService } from './service';
 import type { RecommendationSource } from './types';
 import { CaptureModal } from './capture-modal';
@@ -7,7 +7,7 @@ import { isMarkdownFile } from './storage';
 import { errorMessage } from './validation';
 
 export class NoteTemplatePicker extends FuzzySuggestModal<TFile> {
-    constructor(private readonly podcast: CaptureService, private readonly changed: () => void, private readonly select: (path: string) => Promise<void>) {
+    constructor(private readonly podcast: { readonly app: App }, private readonly changed: () => void, private readonly select: (path: string) => Promise<void>) {
         super(podcast.app);
         this.setPlaceholder('选择内容模板');
     }

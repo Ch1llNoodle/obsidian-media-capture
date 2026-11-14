@@ -8,9 +8,10 @@ const { buildSync } = require('esbuild');
 const bundle = buildSync({
     stdin: { contents: `import * as recommendations from './src/recommendations';
 import * as core from './src/core';
+import * as settings from './src/settings';
 import { CaptureService } from './src/service';
 import { RecommendationService } from './src/recommendation-service';
-module.exports = {...recommendations, ...core, CaptureService, RecommendationService};`,
+module.exports = {...recommendations, ...core, ...settings, CaptureService, RecommendationService};`,
     resolveDir: path.resolve(__dirname, '..'), loader: 'ts' },
     bundle: true, platform: 'browser', format: 'cjs', target: 'es2021', external: ['obsidian'], write: false,
 }).outputFiles[0].text;

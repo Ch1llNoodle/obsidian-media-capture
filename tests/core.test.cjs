@@ -10,6 +10,7 @@ const testBundle = buildSync({
     stdin: {
         contents: `import { CaptureService } from "./src/service";
 import * as core from "./src/core";
+import * as settings from './src/settings';
 import * as artwork from "./src/artwork";
 import { captureCover } from "./src/capture-context";
 class TestService extends CaptureService {
@@ -20,7 +21,7 @@ class TestService extends CaptureService {
     onload() { return this.initialize(); }
 }
 module.exports = TestService;
-module.exports._internals = {...core, ...artwork, captureCover, FIXTURE_SETTINGS: core.validateSettings({...core.DEFAULT_SETTINGS, writeRules: core.DEFAULT_SETTINGS.writeRules.map(rule => rule.id === 'catalog' ? {...rule, folder: '', pathTemplate: '追踪/播客.md'} : rule), videoCatalogPath: '追踪/视频.md', imageFolder: '追踪/image', repairOnStartup: true, dailyIntegration: true, dailyFolder: 'daily', dailyProperty: '播客'})};`,
+module.exports._internals = {...core, ...settings, ...artwork, captureCover, FIXTURE_SETTINGS: settings.validateSettings({...settings.DEFAULT_SETTINGS, writeRules: settings.DEFAULT_SETTINGS.writeRules.map(rule => rule.id === 'catalog' ? {...rule, folder: '', pathTemplate: '追踪/播客.md'} : rule), videoCatalogPath: '追踪/视频.md', imageFolder: '追踪/image', repairOnStartup: true, dailyIntegration: true, dailyFolder: 'daily', dailyProperty: '播客'})};`,
         resolveDir: path.resolve(__dirname, ".."),
         loader: "ts",
     },

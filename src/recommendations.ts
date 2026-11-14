@@ -1,5 +1,6 @@
+import { vaultPath } from './settings';
 import type { RecommendationItem, RecommendationKind, RecommendationSource, RecommendationWork } from './types';
-import { entryIdentity, markdownText, vaultPath } from './core';
+import { entryIdentity, markdownText } from './core';
 
 export function episodeSource(line: string, path: string): RecommendationSource | null {
     if (!line.startsWith('- ')) return null;

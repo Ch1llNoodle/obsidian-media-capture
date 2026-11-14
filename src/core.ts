@@ -1,82 +1,15 @@
-import { validateCredentials } from './credentials';
 import type { CaptureItem, CaptureSettingsData, CatalogUpdate, EntryIdentity, Episode, ListeningState } from "./types";
 import { videoUrl } from "./media";
-import { record } from "./validation";
 import { decode } from "./metadata-helpers";
 import { noteValues, renderTemplateBody, withCoverWidth } from "./note-format";
-import { validateRules, defaultRules } from './write-rules';
+import { DEFAULT_SETTINGS } from './settings';
 export { decode, plain, safeCover, coverUrl } from "./metadata-helpers";
 export { metadata } from "./metadata";
 
-function ruleTargets(settings: Omit<CaptureSettingsData, 'catalogPath' | 'entryHeading'>): CaptureSettingsData {
-    return Object.defineProperties(settings, {
-        catalogPath: { configurable: true, get: () => { const rule = settings.writeRules.find(rule => rule.id === 'catalog'); return rule ? [rule.folder, rule.pathTemplate].filter(Boolean).join('/') : ''; } },
-        entryHeading: { configurable: true, get: () => settings.writeRules.find(rule => rule.id === 'catalog')?.heading ?? '' },
-    }) as CaptureSettingsData;
-}
-
-const DEFAULT_SETTINGS: Readonly<CaptureSettingsData> = Object.freeze(ruleTargets({
-    writeRules: defaultRules(),
-    videoCatalogPath: 'Videos.md',
-    playbackIntegration: false,
-    imageFolder: 'image/media',
-    downloadCovers: true,
-    repairOnStartup: false,
-    dailyIntegration: false,
-    dailyFolder: 'Daily',
-    dailyProperty: 'media',
-    credentials: [],
-    bookPath: 'Recommendations/Books.md',
-    moviePath: 'Recommendations/Movies.md',
-    teleplayPath: 'Recommendations/Series.md',
-    musicPath: 'Recommendations/Music.md',
-    gamePath: 'Recommendations/Games.md',
-    theaterPath: 'Recommendations/Theater.md',
-}));
 const STATES: readonly ListeningState[] = ["听过", "在听", "想听"];
 
 export function isListeningState(value: unknown): value is ListeningState {
     return STATES.some(state => state === value);
-}
-
-function vaultPath(value: unknown, extension = ""): string {
-    if (typeof value !== "string") throw new Error("路径必须是文本。");
-    const path = value.trim().replace(/\\/g, "/");
-    if (!path || path.startsWith("/") || /[:\r\n<>]/.test(path) || path.split("/").some(part => !part || part === "." || part === "..")) throw new Error("路径必须是库内相对路径，不能包含空目录、冒号或 ..。");
-    if (extension && !path.toLowerCase().endsWith(extension)) throw new Error(`文件路径必须以 ${extension} 结尾。`);
-    return path;
-}
-
-function validateSettings(settings: unknown): CaptureSettingsData {
-    const supplied = record(settings);
-    const result = ruleTargets({ ...DEFAULT_SETTINGS, writeRules: defaultRules(), credentials: [] });
-    for (const key of Object.keys(supplied)) if (!Object.prototype.hasOwnProperty.call(DEFAULT_SETTINGS, key) || ['catalogPath', 'entryHeading'].includes(key)) throw new Error(`Unknown settings field: ${key}.`);
-    for (const key of ['videoCatalogPath', 'imageFolder', 'dailyFolder', 'dailyProperty', 'bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const) {
-        if (supplied[key] !== undefined) {
-            if (typeof supplied[key] !== 'string') throw new Error(`Setting ${key} must be text.`);
-            result[key] = supplied[key];
-        }
-    }
-    for (const key of ['downloadCovers', 'repairOnStartup', 'dailyIntegration', 'playbackIntegration'] as const) {
-        if (supplied[key] !== undefined) {
-            if (typeof supplied[key] !== 'boolean') throw new Error(`Setting ${key} must be boolean.`);
-            result[key] = supplied[key];
-        }
-    }
-    if (supplied.credentials !== undefined) result.credentials = validateCredentials(supplied.credentials);
-    if (supplied.writeRules !== undefined) result.writeRules = validateRules(supplied.writeRules);
-    result.videoCatalogPath = vaultPath(result.videoCatalogPath, '.md');
-    result.imageFolder = vaultPath(result.imageFolder);
-    result.dailyFolder = vaultPath(result.dailyFolder);
-    result.dailyProperty = result.dailyProperty.trim();
-    if (!result.dailyProperty || /[\r\n]/.test(result.dailyProperty) || ['__proto__', 'constructor', 'prototype'].includes(result.dailyProperty)) throw new Error('Invalid daily property name.');
-    const mediaPaths = [result.catalogPath, result.videoCatalogPath].filter(Boolean).map(path => path.toLowerCase());
-    if (new Set(mediaPaths).size !== mediaPaths.length) throw new Error('Podcast and video logs must use different paths.');
-    for (const key of ['bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const) {
-        result[key] = vaultPath(result[key], '.md');
-        if (mediaPaths.includes(result[key].toLowerCase())) throw new Error('Work collections must not use media log paths.');
-    }
-    return result;
 }
 
 function recordDate(line: string | null | undefined): string { return line?.match(/<!--\s*media-date:\s*(\d{4}-\d{2}-\d{2})\s*-->/)?.[1] ?? ""; }
@@ -194,4 +127,4 @@ function updateCatalog(source: string, item: CaptureItem, cover: string, setting
 }
 
 
-export { ruleTargets, DEFAULT_SETTINGS, STATES, vaultPath, validateSettings, recordDate, localDate, validDate, episodeUrl, blockId, stateOf, markdownText, entryIdentity, titleKey, findEntry, entryLine, updateCatalog };
+export { STATES, recordDate, localDate, validDate, episodeUrl, blockId, stateOf, markdownText, entryIdentity, titleKey, findEntry, entryLine, updateCatalog };

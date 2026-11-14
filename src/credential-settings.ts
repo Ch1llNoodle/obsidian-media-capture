@@ -1,9 +1,8 @@
 import { Setting, Notice } from 'obsidian';
-import type { CaptureService } from './service';
-import type { Credential } from './types';
+import type { Credential, SettingsAccess } from './types';
 import { errorMessage } from './validation';
 
-export function renderCredentials(container: HTMLElement, service: CaptureService, refresh: () => void): void {
+export function renderCredentials(container: HTMLElement, service: SettingsAccess, refresh: () => void): void {
     new Setting(container).setName('自定义凭证').setHeading();
     new Setting(container).setName('字段与值').setDesc('供笔记脚本按字段名读取。字段名区分大小写；值按密码显示，以明文保存在插件配置中。');
     const save = async (credentials: Credential[]) => {

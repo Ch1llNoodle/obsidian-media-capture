@@ -190,6 +190,14 @@ Generated links, image markup, provider identifiers, and duplicate date fields a
 
 Synchronize both files with the notes when moving to another device. Unsupported formats are rejected before writing; the plugin does not migrate them. Fresh installations create `records.json` only after capturing content. Template refresh reports missing source metadata per file. API responses, study snapshots, viewing progress, and place records are not added to these files.
 
+#### Sharing configuration
+
+Share write rules, their Markdown template files, and the vault-relative paths they require. Prepare a separate copy of the settings with credential values removed, and list the credential field names that scripts expect. Review template bodies and paths for personal content. Keep `records.json` with the original vault: it contains output indexes and capture history. There is currently no configuration import/export command; copying a template file alone does not configure its write rule or install vault scripts.
+
+#### Code organization
+
+`settings.ts` owns defaults, derived log targets, and configuration validation. `CapturePreferences` describes shareable configuration; `CaptureSettingsData` adds local credentials and derived fields. Credential and rule editors depend on `SettingsAccess` rather than the capture service. `core.ts` handles media identities and catalog rows, `fetch-metadata.ts` requests platform information, and `data-store.ts` persists local settings and records. Vault-specific views, service clients, and diary layouts are maintained with the vault.
+
 #### Development and validation
 
 Runtime source files are TypeScript. The compiler enables `strict`, unchecked indexed access checks, explicit override checks, and unused declaration checks; JavaScript source inclusion is disabled. ESLint rejects explicit `any` and unsafe assignments, arguments, calls, member access, and returns in runtime code. Persisted data and third-party JSON enter as `unknown` and are narrowed before use.

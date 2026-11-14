@@ -47,10 +47,9 @@ export interface Credential {
     value: string;
 }
 
-export interface CaptureSettingsData {
+/** Configuration that can be shared after reviewing vault-relative paths and templates. */
+export interface CapturePreferences {
     writeRules: WriteRule[];
-    readonly catalogPath: string;
-    readonly entryHeading: string;
     videoCatalogPath: string;
     playbackIntegration: boolean;
     imageFolder: string;
@@ -59,13 +58,24 @@ export interface CaptureSettingsData {
     dailyIntegration: boolean;
     dailyFolder: string;
     dailyProperty: string;
-    credentials: Credential[];
     bookPath: string;
     moviePath: string;
     teleplayPath: string;
     musicPath: string;
     gamePath: string;
     theaterPath: string;
+}
+
+/** Local persistence includes secrets; do not distribute this object as a preset. */
+export interface CaptureSettingsData extends CapturePreferences {
+    credentials: Credential[];
+    readonly catalogPath: string;
+    readonly entryHeading: string;
+}
+
+export interface SettingsAccess {
+    readonly config: Readonly<CaptureSettingsData>;
+    saveSettings(value: unknown): Promise<void>;
 }
 
 export type TextSettingKey = { [K in keyof CaptureSettingsData]-?: CaptureSettingsData[K] extends string ? K : never }[keyof CaptureSettingsData];
