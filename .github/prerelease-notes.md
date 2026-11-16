@@ -1,9 +1,7 @@
-### Media Capture 0.19.1
+### Media Capture 0.19.2
 
-Settings now open on Features with three primary tabs. A small help icon beside the title and the guide command provide onboarding on demand. Per-module instructions are collected in the guide rather than repeated in the settings cards.
+Settings use compact, separate groups with less padding and theme-aware dividers. Module details and the service action share one card, removing the joined rounded-corner artifact.
 
-The Exercise sample bundles licensed male/female front/back SVG body maps. Diagram regions and checkboxes share muscle selections, including keyboard interaction. Switching views preserves unsaved selections; saving and reloading restore highlights. Assets and the MIT attribution are included with the sample and loaded locally.
+The Chinese, English and French READMEs now focus on installation, first capture, examples, data and development. Detailed usage remains in the Wiki.
 
-The three-language samples correct the Chinese Daily template directory, update the guide entry point, and explain save destinations, repeat syncs and verification steps. Place deduplication and study sync failure handling have regression coverage.
-
-Requires Obsidian 1.8.7 or later. Live mobile and theme rendering checks remain pending.
+Requires Obsidian 1.8.7 or later. Mobile and native theme rendering remain pending device verification.

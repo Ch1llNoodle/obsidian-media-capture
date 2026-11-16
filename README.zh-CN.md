@@ -1,289 +1,59 @@
 ### Media Capture
 
-**[用户手册（Wiki）](https://github.com/Ch1llNoodle/obsidian-media-capture/wiki/Home-zh-CN)** · [文档源码](docs/wiki/Home-zh-CN.md) · [三语示例](sample/README.md)
+[用户手册](https://github.com/Ch1llNoodle/obsidian-media-capture/wiki/Home-zh-CN) · [示例](sample/README.md)
 
 简体中文 · [English](README.md) · [Français](README.fr.md)
 
-Media Capture 将豆瓣、小宇宙、Apple Podcasts 的播客信息及 YouTube、Bilibili 的视频信息保存为 Markdown。写入规则支持一行清单、独立笔记和按节目／频道集中记录。默认每条一行，播客与视频分别保存到各自清单。界面支持简体中文、英文和法语，自动跟随应用语言。
-
-日记链接、作品关联和库内播放均可选。Capture 提供服务访问和记录能力，笔记库维护交互布局与展示规则。
-
-| 插件负责 | 笔记库负责 |
-| --- | --- |
-| 媒体采集、写入规则、封面、作品关联 | 日记布局、活动分区与归类 |
-| 服务访问、校验与记录保存、凭证 | 字段、路径、提示词与交互布局 |
-| 地点笔记及可选的日记链接 | 地图视图、统计和热力图 |
+将豆瓣、小宇宙、Apple Podcasts 的播客及 YouTube、Bilibili 视频保存为 Markdown，支持集中清单、独立笔记和按节目／频道归档。默认播客写入 `Podcasts.md`，视频写入 `Videos.md`。
 
 #### 安装
 
-在 iPhone 或电脑上测试时，从 Obsidian 社区插件安装并启用 [BRAT](https://github.com/TfTHacker/obsidian42-brat)，添加测试插件仓库 `Ch1llNoodle/obsidian-media-capture`，选择已发布版本或预发布版本，然后启用 Media Capture。BRAT 在 Obsidian 内完成文件安装和后续更新。
+要求 Obsidian 1.8.7 或更高版本。
 
-插件要求 Obsidian 1.8.7 或更高版本。手动安装时，从 [GitHub 发布页](https://github.com/Ch1llNoodle/obsidian-media-capture/releases)下载 `main.js`、`manifest.json`、`styles.css`，放入 `<笔记库>/.obsidian/plugins/media-capture/`，在 **设置 → 第三方插件**中启用 **Media Capture**。从源码构建时，三个文件生成于 `release/media-capture/`。
+- **BRAT**：安装并启用 [BRAT](https://github.com/TfTHacker/obsidian42-brat)，添加仓库 `Ch1llNoodle/obsidian-media-capture`，选择已发布版本，再启用 Media Capture。
+- **手动安装**：从[发布页](https://github.com/Ch1llNoodle/obsidian-media-capture/releases)下载 `main.js`、`manifest.json`、`styles.css`，放入 `<笔记库>/.obsidian/plugins/media-capture/`，在第三方插件设置中启用。
 
-更新时替换这三个文件，重新加载插件。保留 `data.json`（设置）和 `records.json`（采集记录）。
+更新时替换这三个文件并重新加载插件，保留 `data.json` 和 `records.json`。
 
-插件 ID 与安装目录名为 `media-capture`。安装只需要运行文件，源码与 `node_modules` 不放入插件安装目录。
+#### 开始使用
 
-#### 第一次使用
+1. 点击侧栏采集图标，或运行“Media Capture: 采集媒体”。
+2. 粘贴播客单集或完整视频链接，选择“获取媒体信息”。
+3. 确认标题、状态、日期和保存位置，选择“保存并打开”。
 
-点击插件设置标题旁的帮助按钮，或从命令面板运行“打开使用指南”。点击侧栏采集图标，粘贴单集或完整视频分享链接，获取信息并确认窗口下方的保存位置，再选择“保存并打开”。默认播客写入 Podcasts.md，视频写入 Videos.md，无需 API Key；自定义规则以窗口显示的位置为准。
+媒体采集无需服务凭证。Apple Podcasts 使用单集链接；Bilibili 短链需展开后复制完整地址。信息获取失败时可手填标题，封面缺失不影响保存。
 
-完整的 [sample 示例](sample/README.md)包含可直接复制的 Capture Sample 文件夹。复制到笔记库根目录，打开 Start.md 选择中文、英文或法文。各示例列明依赖、需要开启的模块、凭证、操作步骤和保存位置，页面、按钮、提示和模板使用所选语言。追踪页使用 Dataview，日记来源使用 Templater；媒体采集本身不需要它们。
+在“功能 → 媒体采集 → 功能设置”中调整[保存方式](https://github.com/Ch1llNoodle/obsidian-media-capture/wiki/Save-layouts-zh-CN)。设置标题旁的帮助按钮可打开使用指南。
 
-使用指南的“各功能用法”说明准备、操作与结果。剧集、阅读、地点、学习、运动、豆瓣同步和日记来源需要配套页面或模板，开关与凭证不会自动生成这些页面。示例提供最小的配套页面，追踪数据只保存在 Capture Sample 内；媒体采集和任务记录沿用已有设置。
+#### 功能与示例
 
-#### 任务完成记录
+- **媒体记录**：自定义写入规则和 Markdown 模板，保存封面、关联作品及日记。库内播放需要另行配置兼容播放器。
+- **任务记录**：将完成的 Markdown 任务和来源链接写入当天日记，沿用核心日记配置。取消勾选保留日志，再次完成更新时间。
+- **追踪与同步**：按需开启剧集、阅读、地点、学习、运动、豆瓣收藏及日记来源。[功能模块](https://github.com/Ch1llNoodle/obsidian-media-capture/wiki/Modules-zh-CN)列出入口和依赖。
 
-在 Capture 的“功能”页开启“任务完成记录”，将完成的 Markdown 任务写入当天日记。此功能默认关闭。“任务记录标题”指定写入章节，默认为 `## Notes`。日记路径、日期格式和模板沿用 Obsidian 的日记配置。
+将 [Capture Sample](sample/README.md) 整个文件夹复制到笔记库根目录，打开 `Start.md` 选择语言。追踪页需要 Dataview 并启用 JavaScript Queries，日记来源模板使用 Templater，任务记录使用核心日记。运动示例附带人体图，脚本和素材随文件夹一起复制。
 
-每条记录包含任务内容、原任务链接和完成时刻。首次完成会给原任务添加稳定的块标识；从汇总清单勾选也链接到原任务。取消勾选保留记录，再次完成时更新时间并将记录移到当天日记。Tasks 继续管理截止日期和完成日期。启动时不会补记已有完成任务。日志保存在 Markdown 中，无须奖励文件。
+在“服务连接”填写已启用功能需要的[凭证](https://github.com/Ch1llNoodle/obsidian-media-capture/wiki/Service-connections-zh-CN)。豆瓣收藏同步使用 Douban 插件的登录状态。
 
-#### 采集媒体
+#### 数据与网络
 
-1. 打开命令面板，运行 **Media Capture: 采集媒体**。
-2. 粘贴播客或视频分享链接，选择**获取媒体信息**。
-3. 确认节目／频道、标题、记录日期、状态和写入预设，选择**保存**。
+`data.json` 保存设置和凭证，`records.json` 保存采集元信息及输出索引。跨设备同步时保留这两个文件，公开配置前移除凭证。示例追踪数据保存在 `Capture Sample` 内。
 
-播客状态包括 `completed`、`in-progress`、`wishlist`，视频显示 `看过`、`在看`、`想看`。完成状态保存所选日期。启用日记联动后，从配置目录中的日期日记打开添加窗口，默认采用该篇日记的日期。
+采集和补图访问媒体平台、公开目录及图片服务；启用的搜索、同步和日记来源访问对应服务。DeepSeek 接收模板提供的提示词，豆瓣收藏请求使用登录 Cookie。插件不含遥测。服务说明和排查步骤在[用户手册](https://github.com/Ch1llNoodle/obsidian-media-capture/wiki/Home-zh-CN)中。
 
-Apple Podcasts 使用单集分享链接；缺少 `i` 单集参数的节目主页不能作为单集记录。网页信息获取失败时，可手动填写名称；封面下载失败不阻止记录保存。
+界面跟随 Obsidian 语言，支持中文、英文和法文。插件允许在桌面及移动端启用；手机交互和播放兼容性仍待实机验证。
 
-**打开媒体记录**打开配置的记录文件。**补全缺失封面**重新获取缺失图片，并报告失败阶段；已取得图片地址时，报告提供原图链接。
-
-#### 视频记录与可选播放
-
-视频集中清单与播客分开配置。默认写入 `Videos.md`，也可配置其他库内路径。两类清单共用行模板与追加标题，独立笔记和按节目／频道追加按各自规则执行。
-
-支持 YouTube watch、shorts、live、embed、youtu.be 与 Bilibili 完整 BV／av 链接。Bilibili 保留分 P；短链需打开后复制完整地址。采集移除推广参数和起播时间，按整个视频或分 P 去重。元信息缺失时可手动填写。
-
-“在 Obsidian 中播放”默认关闭。配置支持 `obsidian://mx-open` 的兼容播放器后，可主动开启；视频清单显示同名入口，模板中的 `{{mediaLink}}`、`{{mediaUrl}}` 同时启用。关闭后两变量对新生成或主动更新的内容为空，平台链接始终保留。播客平台页不是音频直链，不生成播放入口。播放和时间戳由外部播放器负责，Bilibili 需配置桌面网页播放环境。实际播放与手机视频采集仍需设备验证。
-
-#### 模板与写入规则
-
-所有输出共用媒体信息和模板变量。每条写入规则选择内容模板、库内路径，以及“追加到文件”或“新建文件”。一次采集可执行多条已启用规则，共用一次封面下载和一个日记链接。
-
-| 预设 | 目标位置 | 内容 |
-| --- | --- | --- |
-| 集中清单 | 播客写入 `Podcasts.md`，视频写入 `Videos.md` 的 Entries 下 | 每集一行 |
-| 每条一篇 | 新建 `Media/{{show}}/{{title}}.md` | 独立单集笔记 |
-| 清单与独立笔记 | 同时执行上面两条规则 | 一行记录与一篇笔记 |
-| 按节目／频道追加 | 追加到 `Media/{{show}}.md` 的 Entries 下 | 同一节目多集保存在一篇笔记中 |
-
-在设置中应用预设，或逐条编辑名称、启用状态、写入方式、目录、路径模板、目标标题、模板文件、内置内容和封面宽度。可添加或移除规则，最多 20 条。应用预设替换规则配置，已有文件保留。添加窗口中的**使用已启用规则**执行配置的规则；选择某个预设则只覆盖本次选择。
-
-固定路径将单集集中在一个文件中；`{{show}}.md` 按节目分组；`{{show}}/{{title}}.md` 配合新建方式可每条一篇。目录留空使用库根目录，缺少节目名时使用 Unsorted，不支持的文件名字符自动替换。新建方式找回已有同集笔记，遇到其他文件占用路径时增加单集标识后缀。追加方式复用目标文件，不存在时创建；已有文件须包含指定标题，标题留空则追加到末尾。多条已启用规则指向同一文件时，在写入前报错。
-
-集中清单规则保留固定路径、目标标题，以及含 `{{link}}` 的单行列表模板，以兼容已有日记链接和作品关联。其他追加规则支持多行 Markdown，以 `media-entry` 注释界定各集的管理区域；应保留注释与块标识，手写内容放在区域外；实时预览在已跟踪的输出文件中隐藏这些管理标记。重复采集保留已完成区域，状态变化时若区域已经手工修改则停止写入并说明原因。
-
-每条规则均可选择库内 Markdown 模板，模板文件留空则使用内置内容。新建模板可以带 YAML 属性，追加模板使用正文。模板按文本渲染，其中的脚本不执行。
-
-| 变量 | 内容 |
-| --- | --- |
-| `{{show}}`、`{{title}}` | 节目名与单集标题 |
-| `{{fullTitle}}`、`{{link}}` | 合并后的“节目 · 单集”文本，或对应的 Markdown 单集链接 |
-| `{{mediaLink}}`、`{{mediaUrl}}` | 可选播放链接或协议地址；关闭播放或来源为播客页时为空 |
-| `{{kind}}`、`{{consumed}}` | `video` 或 `podcast`，以及完成状态下选择的记录日期 |
-| `{{url}}` | 规范化的平台单集链接 |
-| `{{cover}}`、`{{coverPath}}` | 按规则宽度显示的本地 Markdown 图片，或其库内路径；没有封面时为空 |
-| `{{published}}` | 平台提供的发布日期 |
-| `{{listened}}` | 听过或看过状态下选择的完成日期，其他状态为空 |
-| `{{currentDate}}`、`{{date}}` | 首次生成该单集记录时的本地日期，更新模板时保留 |
-| `{{description}}` | 已取得的平台描述，或手动填写的文字 |
-| `{{state}}`、`{{provider}}`、`{{id}}` | 状态、平台和稳定单集标识 |
-
-日期支持 YYYY、MM、DD，例如 `{{published:YYYY-MM-DD}}`。路径可用 show、title、published、listened、currentDate、date、provider、id，子目录之间使用普通斜杠。缺失的可选信息在正文中留空，在文件名中使用 Untitled。封面宽度为 16～600 像素，预设行记录为 24，单集内容为 120。
-
-一行模板可以使用 `- {{listened}} {{cover}} {{link}}`；多行追加模板可以包含标题、链接、描述和自定义章节。新建文件的 Markdown 模板可以带属性：
-
-```markdown
----
-show: "{{show}}"
-published: "{{published}}"
-listened: "{{listened}}"
-tags: [podcast]
----
-### {{title}}
-
-{{cover}}
-
-[单集链接](<{{url}}>)
-
-#### Notes
-
-#### Quotes
-```
-
-**创建媒体笔记**命令以每条一篇预设打开添加窗口。清单行旁的**写笔记**固定使用该集，**打开笔记**找回其主要单集笔记；清单还保留第一个额外输出的链接，选择按节目／频道追加时可链接到节目文件。阅读模式与编辑器均提供行内入口，不需要快捷键。作品关联和基于清单的追踪仍使用集中清单规则，其他输出文件不会自动加入外部追踪工具的统计。
-
-每个新建文件都写入 `media_capture_id` 和 `media_capture_rule`，输出索引统一使用 `规则ID::记录ID`。追加索引跟随文件改名；已跟踪文件或管理区域消失时，保存会说明缺失位置，不在其他位置重新创建。跨设备使用时将 data.json 和 records.json 与笔记库一并同步。
-
-#### 将模板应用到已有记录
-
-修改模板默认用于新增记录。设置中选择**将模板应用到已有记录 → 预览并选择**，或运行同名命令，可预览更新并选择文件。
-
-新建方式的输出重新生成全文，包括属性和手写区域；追加方式只替换对应条目或管理区域，保留外围正文、作品子项和摘抄。同一节目文件内的多集内容合并为一次更新和一次备份，文件名与位置不变。
-
-每个文件替换前，在原文件旁保存并校验带时间戳、后缀为 `.media-capture-backup` 的完整文本备份。结果中的**查看备份**直接在 Obsidian 内显示原文，将原文复制回笔记即可恢复；确认不再需要原文后再清理备份。
-
-模板更新必须使用已保存的采集元信息，当前笔记中的显式属性可覆盖对应值；不从旧链接、正文标题或清单文字重建元信息。缺失的可选字段在预览中列出；没有采集元信息、重复标识、原规则被移除或区域标记损坏时，说明原因并跳过。更新模板不发起网络请求。
-
-报告逐篇列出路径、失败阶段、原因、更新状态和备份位置。预览后被编辑的文件跳过，备份失败不替换原文，其余所选文件可继续处理。内容相同时不新增备份，关闭已启动的窗口不取消排队中的更新。
-
-#### 关联作品与媒体记录
-
-先在豆瓣标记想读、想看等状态，通过自己的豆瓣同步工具将作品导入 Markdown 清单。在设置中把书籍、电影、电视剧、音乐、游戏和舞台剧路径指向已有清单；默认路径位于 `Recommendations/`，插件只读取已存在的文件。
-
-在播客或视频清单的编辑模式或阅读模式中选择记录旁的**添加关联**。从作品下拉框选择想读、想看、想听或想玩的作品，填写可选摘记，再选择**保存关联**。所点记录作为关联来源。**打开媒体关联入口**命令打开播客清单；视频记录通过对应行的入口添加关联。
-
-作品行链接到来源记录，关联作品的链接及摘记在对应播客或视频下方按缩进子列表显示。行内注释标识受管理的链接。实时预览在配置的媒体清单中隐藏管理注释和块标识，源码模式显示 Markdown。已有标题、日期、状态、封面和手写格式均保留。多个来源共用同一作品行，重复保存复用已有关联。
-
-关联在离线状态下更新配置的本地清单。保存前重新检查作品及来源。两篇笔记分别更新；第二次写入失败时提示已保存的一侧，再次保存可补全且去重。工作区就绪后，已有作品侧关联会补回媒体记录下缺失的链接，后来已完成的作品也会继续显示。
-
-作品清单使用单行 Markdown 列表，例如：
-
-```markdown
-- [作品名称](<https://movie.douban.com/subject/123/>) <!-- douban-state: 想看 --> <!-- douban-type: movie --> ^douban-123
-```
-
-`douban-type` 可使用 `book`、`movie`、`teleplay`、`music`、`game`、`theater`，缺省时采用该清单配置的类型。可选工作区事件 `media-capture:recommend` 接收 `{ path, blockId }`，打开窗口并选中该来源记录；`supportsRecommendations` 表示接口可用。
-
-自定义同步脚本需要在同一作品的新行中保留 `media-sources:start` / `media-sources:end` 之间的来源信息。豆瓣收藏同步由外部工具负责。
-
-#### 界面语言
-
-界面支持简体中文、英文和法语。自动跟随应用语言，并识别地区语言代码；其他语言使用英文。修改应用语言后重新加载插件，使已注册的命令名称更新。
-
-设置、弹窗、按钮、提示和插件生成的错误信息均使用对应语言。已有模板、规则名称、属性名、凭证字段及其值、笔记正文和持久化状态标识保持原样；平台或操作系统返回的错误保留原文。源码文案作为翻译键，英文和法语词典集中在 `src/locales`，由 `src/i18n.ts` 处理语言选择与占位符替换。
-
-#### 设置
-
-设置页分为“功能”“服务连接”“维护”。功能页按模块启用媒体采集、任务完成记录、剧集、阅读、地点、学习、运动、豆瓣同步与日记信息，只有启用的模块才显示对应配置。新安装仅开启媒体采集。媒体采集模块内配置写入规则、播放、封面、日记联动和作品关联；维护页只提供已启用模块的操作。规则卡片使用主题背景，不增加外围描边。
-
-服务连接仅显示已启用功能实际使用的凭证，共用凭证只填写一次。关闭模块会隐藏相关设置并阻止对应接口执行，已保存的设置、凭证和记录保留。阅读、分集和肌群存储句柄每次操作都检查开关。日记信息中的定位、天气、月相、问候语和诗词分别选择“不使用”或当前支持的来源；默认全部不使用，关闭来源返回空值并沿用模板默认内容。
-
-| 设置 | 默认值 | 行为 |
-| --- | --- | --- |
-| 写入规则 | 启用集中清单 | 使用预设，或分别配置追加与新建规则 |
-| 视频清单 | `Videos.md` | 独立保存视频，共用集中清单的模板和标题 |
-| 在 Obsidian 中播放 | 关闭 | 通过已配置的兼容播放器打开视频播放链接 |
-| 封面目录 | `image/media` | 各规则共用本地封面目录 |
-| 保存本地封面 | 开启 | 采集或补图时下载缺失封面 |
-| 启动时补全封面 | 关闭 | 工作区就绪后补全集中清单的封面 |
-| 日记联动 | 关闭 | 将听过或看过的记录链接写入唯一匹配的已有日期日记 |
-| 服务凭证 | 空 | 仅显示已启用模块需要的服务，共用凭证只填写一次 |
-| 日记目录／属性 | `Daily`／`media` | 搜索子目录，保留其他属性 |
-| 作品清单路径 | `Recommendations/` 下的 `Books.md`、`Movies.md`、`Series.md`、`Music.md`、`Games.md`、`Theater.md` | 已有的想状态作品清单 |
-
-日记联动在配置目录及其子目录中，按 `YYYY-MM-DD` 文件名匹配已有日记。执行集中清单规则时使用清单块链接，否则使用第一个额外输出，节目文件的链接包含单集定位。从已有清单行创建笔记时沿用原活动来源。修改规则路径作用于新增输出，已有文件保留在原位置。
-
-#### 服务凭证
-
-凭证按服务名称填写，输入默认隐藏，可临时显示。剧集使用 TMDB，学习同步使用墨墨，地点搜索使用高德；日记定位、天气、问候语和诗词分别可使用腾讯地图、高德、DeepSeek 和今日诗词。月相来源 wttr.in 无需凭证。新配置使用 `modules` 和 `dailySources`，任务开关为 `modules.tasks`，不读取旧的 `taskCompletionLog`，不提供旧配置迁移。
-
-#### 记录标识与补图
-
-封面采用可读名称：播客优先使用节目名，视频使用标题，节目名缺失时使用记录标题。非法字符替换为下划线，同名不同图增加八位短后缀。候选图从配置清单和采集记录读取，字节一致时共用文件。播客同节目封面另做 32×32 像素视觉比较，画面一致的缩放或压缩版本复用原图；视频使用字节比较。新记录可能下载图片用于比较，相同图片复用本地文件。封面地址和补图报告仅用于当次操作，既有附件保留原名称和位置。
-
-补全封面时，若旧记录误存了通用 Apple 网页播放器标题，且取得了精确匹配的单集信息，会同时修正该标题；手写名称、原日期、块标识和摘抄保留。
-
-插件自动附加状态注释、已听过条目的日期注释和 Obsidian 块标识，用于去重、补全封面及日记链接。手动编辑时保留这些标记。单集行之外的笔记和摘抄保留原样。
-
-同平台按单集或视频编号去重；跨平台只有完整的“节目名 · 标题”经过大小写、空白和 Unicode 规范化后相同时，才复用原记录。完成记录保留首次日期。记录另一日重听或重看时，需要启用日记联动，并确保该日期已有唯一一篇日记；多个日期共用原清单行和封面。
-
-#### 记录接口与职责
-
-Capture 负责把外部信息和用户操作变成可靠的记录，笔记库决定怎样组织和展示这些记录。笔记脚本直接调用 `app.plugins.plugins['media-capture'].records`。
-
-| 接口 | 职责 |
-| --- | --- |
-| `services` | TMDB 搜索与季度、分集资料，高德地点查询，墨墨学习数据；读取 `tmdbToken`、`amapKey`、`maimemoToken` |
-| `reading(path)` | 阅读页码、跨日书签、历史记录 |
-| `series(path)` | 共享分集、当前进度、逐日快照；`change(context, action)` 处理关联、更新、取消与勾选 |
-| `selections(path)` | 按稳定标识保存字符串选择列表，例如视频肌群 |
-| `metadata(path, change)`、`link`、`moveLink` | 在最新日记属性上合并修改、增删链接和调整顺序 |
-| `place(folder, place)` | 按高德编号创建或复用地点笔记，保留 WGS84 坐标及来源信息 |
-| `syncStudy(path, fields, options)` | 校验当天学习数据并按传入字段写入，跨日或重复请求停止 |
-| `syncDouban(options, render)` | 分页读取豆瓣收藏、识别影视类型、保存封面，再以最新正文调用仓库提供的渲染函数；登录 Cookie 由调用方从 Douban 插件提供，不另行持久化 |
-| `daily()` | 单篇日记共用 15 秒请求预算；定位、天气、月相、问候语及诗词的校验结果，失败或缺少凭证时返回空值 |
-
-所有路径、日记字段、时区、栏目、提示词和渲染规则由笔记库显式提供。阅读、分集和选择记录仍保存在指定的库内 JSON，未移入插件 data.json 或 records.json。每个应用内同路径写入串行执行，格式损坏或保存前发生外部修改时停止；这不是跨设备事务。保存后发出 `media-capture:record-updated`，载荷为 `{path}`；Dataview 刷新由笔记库适配层处理。插件卸载后，旧接口停止工作。
-
-`daily()` 使用 `tencentMapKey`、`amapKey`、`deepseekKey`、`jinrishiciToken`。DeepSeek 收到仓库提供的提示词，包括其中的位置和天气。此接口仅读取服务，实际写入和输出仍由模板完成。TMDB、高德、墨墨和豆瓣同步均由调用方操作触发，没有定时轮询。服务模拟测试随插件维护；笔记库的集成测试通过 `MEDIA_CAPTURE_SOURCE_PATH` 指向源码检出目录，默认使用笔记库的同级 `obsidian-media-capture`。
-
-#### 数据格式与笔记库集成
-
-`media-state` 注释、采集元信息、受管理的输出、事件及 `{{state}}` 统一使用固定标识 `completed`、`in-progress`、`wishlist`，只在界面显示时翻译。豆瓣作品清单的收藏状态属于独立格式，保持原样。
-
-插件设置使用结构版本 3，采集记录使用结构版本 2。
-
-插件负责采集、写入规则、本地封面、作品关联及可选的日记链接。日记分区、活动归类、统计和完成样式由笔记库脚本或配置负责，路径、模板、日记字段与工作区事件提供联动接口。已有手写格式保留。
-
-输出为普通 Markdown，可直接阅读或交由可选的追踪工具使用。保存后发出 `media-capture:updated` 工作区事件，包含 `path`、`blockId`、`state`、`date`；保存笔记时另有 `notePath`、`output`，没有清单行时 `blockId` 为空。载荷类型由 `src/types.ts` 中的 `CaptureUpdatedEvent` 定义。基于清单的追踪工具按配置清单统计记录。
-
-| 安装目录中的文件 | 内容 | 用途 |
-| --- | --- | --- |
-| `data.json` | `{schemaVersion: 3, settings}`，包含已配置的凭证 | 插件设置与服务访问 |
-| `records.json` | 结构版本 2，包含输出索引、精简采集信息和受管理的追加记录 | 定位采集输出、识别改动和更新模板 |
-
-链接、图片标记、平台标识和重复日期字段在读取时生成。内容相同时保留文件不变，记录更新经临时文件校验后替换。凭证以明文保存在 `data.json`；密码输入框只隐藏屏幕显示，不对文件加密。此文件不应放入公开仓库。
-
-跨设备使用时，将两个文件与笔记一同同步。新安装在首次采集后生成 `records.json`；更新模板时缺失的采集信息按文件报告。接口响应、学习快照、观看进度和地点记录不写入这两个文件。
-
-#### 分享配置
-
-分享写入规则、对应的 Markdown 模板文件及所需的库内相对路径。另行准备移除凭证值的设置副本，并列出脚本所需的凭证字段名；分享前检查模板正文和路径中的个人内容。`records.json` 包含输出索引与采集历史，保留在原笔记库中。目前没有配置导入、导出命令；单独复制模板文件还需要配置对应写入规则，笔记库脚本也需另行安装。
-
-#### 代码职责
-
-`settings.ts` 集中维护默认值、派生清单路径与配置校验。`CapturePreferences` 表达可分享配置，`CaptureSettingsData` 在其上增加本地凭证和派生字段。凭证与规则编辑界面通过 `SettingsAccess` 读写配置，独立于采集服务。`core.ts` 处理媒体标识与清单行，`fetch-metadata.ts` 请求平台信息，`data-store.ts` 持久化本地设置和记录。`record-api.ts` 提供记录接口，`record-store.ts` 处理 JSON 保存与冲突校验；服务、分集、阅读、日记来源与豆瓣捕获各自独立。笔记库维护专用视图与日记布局。
-
-#### 开发与检查
-
-运行源码全部使用 TypeScript。编译器启用 `strict`、索引访问检查、显式覆盖检查和未使用声明检查，关闭 JavaScript 源码接入。ESLint 在运行代码中禁止显式 `any`，并检查不安全的赋值、传参、调用、成员访问和返回。持久化数据与第三方 JSON 以 `unknown` 进入，在使用前完成类型收窄。
-
-`src/main.ts` 管理生命周期和命令；`capture-output.ts` 执行统一采集流程，`capture-context.ts` 每次采集集中处理封面与日记链接。`write-rules.ts` 校验规则并解析预设，`note-format.ts` 渲染共享变量，`episode-notes.ts` 和 `append-output.ts` 分别处理新建与追加目标。`refresh-plan.ts` 按文件规划模板更新，`note-refresh.ts` 执行备份与替换。服务、设置页、平台解析和库操作分别保留独立职责，共享类型位于 `types.ts`。
+#### 开发
 
 ```sh
 npm ci
-npm run typecheck
 npm run build
 npm test
 npm run lint
 ```
 
-生产构建将运行代码打包为 `release/media-capture/main.js`，并在同目录暂存 manifest 和样式。测试使用 esbuild 编译 TypeScript 模块，再通过模拟的 Obsidian API 验证行为。可选的追踪视图集成测试由 `MEDIA_TRACKER_TEST_PATH` 指定脚本路径；未设置时跳过该项。`MEDIA_DOUBAN_SYNC_TEST_PATH` 可另外指定自定义豆瓣同步视图，验证来源保留与状态合并。`MEDIA_WORK_PRESENTATION_TEST_PATH` 可指定独立的笔记库展示脚本，验证完成标记和卸载清理。
-
-发布文件为 `main.js`、`manifest.json`、`styles.css`。源码仓库忽略生成的构建文件、依赖目录及个人 `data.json` 和 `records.json`。依赖安全检查使用 `npm audit`，与编译、功能测试分别执行。
-
-推送与 manifest、package 版本一致的标签后，发布工作流执行构建、测试和 ESLint，上传运行文件并发布可供 BRAT 安装的 GitHub 预发布版。该流程不提交 Obsidian 社区商店审核。
-
-#### 本地开发与部署
-
-源码仓库与安装目录分开管理；源码位于笔记库内时，在外层 Git 仓库忽略源码目录，运行文件和个人配置继续随笔记库备份。`release/media-capture/` 保存生成的安装文件，笔记库安装位置仍为 `.obsidian/plugins/media-capture/`。
-
-将 `.deploy.example.json` 复制为 `.deploy.local.json`，把 `vaultPath` 设置为已有笔记库的绝对路径。执行 `npm run deploy` 完成构建和运行文件复制，然后在 Obsidian 中重新加载插件。`npm run deploy -- --vault /absolute/path/to/vault` 可覆盖本机配置，也支持环境变量 `MEDIA_CAPTURE_VAULT`；取值优先级为命令参数、环境变量、本机配置。
-
-部署只复制 main.js、manifest.json 和可选的 styles.css，保留 data.json、records.json 及其他安装文件；写入前核对插件 ID 和构建版本，拒绝部署到源码仓库或通过符号链接安装目录写入。本机部署配置和 release 产物不进入 Git。`npm run dev` 监听源码并更新构建目录，不自动部署。
-
-#### 网络访问与移动端
-
-网络请求使用 Obsidian 请求接口。下表列出插件内置服务；自行编写的笔记库视图可能使用其他服务。
-
-| 功能 | 目标与请求 | 发送内容／认证 |
-| --- | --- | --- |
-| 播客元信息 | 豆瓣、小宇宙单集页；`itunes.apple.com` 查询及 Apple 单集页 | 单集或节目编号、地区；不使用平台登录态 |
-| 视频元信息 | `www.youtube.com/oembed`；Bilibili 公开视频页 | 规范化视频链接或编号；不使用平台登录态 |
-| 封面 | HTTPS 下的 `doubanio.com`、`xyzcdn.net`、`mzstatic.com`、`ytimg.com`、`hdslb.com` 及其子域 | 元信息中的封面地址 |
-| TMDB | `api.tmdb.org/3` | Query, series and season IDs; Bearer `tmdbToken` |
-| Maimemo | `open.maimemo.com` | Study progress and completed word lists; Bearer `maimemoToken` |
-| Amap places/weather | `restapi.amap.com` | Keyword, city and `amapKey` |
-| Daily sources | `apis.map.qq.com`, `wttr.in`, `api.deepseek.com`, `v2.jinrishici.com` | IP lookup key; city; prompt and DeepSeek key; poetry token |
-| Douban collections | `book.douban.com`, `movie.douban.com`, `music.douban.com`, `doubanio.com` | User ID and login cookie for collection/detail requests; public covers |
-
-Apple 目录每次最多查询 200 集，较早单集可能需要网页回退或手动填写名称。即使手动填写标题，保存时也可能获取缺失封面。关闭封面下载后不请求图片；手动补图和可选的启动补图仍可能获取媒体页面。作品关联仅读取本地清单，不联网。读取自定义凭证不联网，内置服务通过 records 接口按需请求。
-
-运行代码使用 Obsidian API 和标准 Web API，不依赖 Node.js 或 Electron。manifest 允许 Android、iOS 加载，尚未完成真机兼容性验证。笔记脚本只能取得设置中主动填写的凭证；插件不读取浏览器登录态或播放历史，不包含遥测。平台或网络错误会显示在调用方视图、添加窗口或补图报告中。
+产物位于 `release/media-capture/`。本地部署时，将 `.deploy.example.json` 复制为 `.deploy.local.json`，填写笔记库绝对路径 `vaultPath`，再运行 `npm run deploy`。部署只更新运行文件，保留设置与记录。源码仓库与插件安装目录分开管理。
 
 #### 许可证
 
-[Zero-Clause BSD](LICENSE)。
+[Zero-Clause BSD](LICENSE)。示例人体素材的来源和 MIT 许可位于 [assets](sample/Capture%20Sample/assets/SOURCE.md)。
