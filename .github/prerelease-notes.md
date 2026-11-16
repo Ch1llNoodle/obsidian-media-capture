@@ -1,5 +1,5 @@
-### Media Capture 0.16.1
+### Media Capture 0.17.1
 
-Correct the minimum Obsidian version to 1.8.7, which provides getLanguage(). Remove the older-version language fallback and align all three README files with the supported API version.
+Remove the outer border and shadow from write-rule cards and clear duplicate backgrounds on nested setting rows. Cards use the active Obsidian theme colors for their background and text while controls and keyboard focus retain native theme styling.
 
-Add a release metadata check to prevent the language API requirement and version map from drifting apart. Media states, settings, and capture records remain unchanged.
+Requires Obsidian 1.8.7 or later. Build and deployment verified; visual checks across themes and mobile devices remain pending.

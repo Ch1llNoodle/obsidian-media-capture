@@ -56,8 +56,27 @@
 .media-capture-settings .media-settings-tab[aria-selected="true"] { background: var(--background-modifier-hover); color: var(--text-accent); font-weight: var(--font-semibold); }
 .media-capture-settings .media-settings-tab:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }
 .media-capture-settings .media-settings-panel[hidden] { display: none; }
-.media-capture-settings .media-settings-rule { border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); padding: 0 14px; margin-block: 12px; }
-.media-capture-settings .media-settings-rule > .setting-item { border: 0; }
+.media-capture-settings .media-settings-rule {
+    border: 0;
+    box-shadow: none;
+    border-radius: var(--radius-m);
+    background: var(--background-secondary);
+    color: var(--text-normal);
+    padding: 0 16px;
+    margin-block: 12px;
+}
+/* Keep one theme-colored surface when themes also style native setting rows. */
+.media-capture-settings .media-settings-rule > .setting-item,
+.media-capture-settings .media-settings-rule > .media-rule-settings,
+.media-capture-settings .media-settings-rule .media-rule-settings > .setting-item {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
+}
+.media-capture-settings .media-settings-rule > .setting-item { padding: 16px 0; }
+.media-capture-settings .media-settings-rule > .media-rule-settings { padding: 0 0 12px; }
 .media-capture-settings .media-rule-settings { margin-bottom: 12px; }
 .media-capture-settings .media-rule-settings > summary { padding-block: 0 8px; font-size: var(--font-ui-small); }
 .media-capture-settings .media-rule-settings[open] > summary { padding-bottom: 14px; }
