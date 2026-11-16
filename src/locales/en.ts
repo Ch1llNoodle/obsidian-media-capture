@@ -1,4 +1,6 @@
 export const en = {
+    "打开完整使用手册": "Open the full user guide",
+    "从 sample/Capture Sample/Start 选择语言和对应示例。": "Choose a language and example in sample/Capture Sample/Start.",
     "开始使用": "Get started",
     "播客清单": "Podcast log",
     "先保存第一条播客或视频记录。默认每条一行，无需填写 API Key。": "Save your first podcast or video. The default is one line per item, with no API key needed.",
@@ -16,7 +18,7 @@ export const en = {
     "以上是当前设置。文件在首次保存时创建；含双花括号的路径会用节目名、标题等信息替换。": "These are your current destinations. Files are created on first save; double-brace placeholders are replaced with show names, titles and other metadata.",
     "日常怎么打开": "How to open Capture",
     "点击侧栏的采集图标，或打开 Obsidian 命令面板，搜索“Media Capture: 采集媒体”。使用指南也可以从命令面板再次打开。": "Use the capture icon in the sidebar, or search for Media Capture: Capture media in the command palette. The guide is also available from the command palette.",
-    "配套页面可从插件源码的 sample 文件夹获取。把其中的 Capture Sample 整个文件夹复制到笔记库根目录，再打开“Capture Sample/开始使用”。": "Companion pages are in the source repository’s sample folder. Copy the entire Capture Sample folder to your vault root, then open Capture Sample/开始使用.",
+    "配套页面可从插件源码的 sample 文件夹获取。把其中的 Capture Sample 整个文件夹复制到笔记库根目录，再打开“Capture Sample/Start”。": "Companion pages are in the source repository’s sample folder. Copy the entire Capture Sample folder to your vault root, then open Capture Sample/Start.",
     "打开 sample 示例文件夹": "Open sample folder",
     "接下来可以做什么": "What to try next",
     "改变保存方式": "Change the output layout",
@@ -55,7 +57,6 @@ export const en = {
     "使用配套模板创建一篇新日记。仅开启模块不会为已有日记补入信息。": "Create a new Daily note with the companion template. Enabling the module does not fill existing notes.",
     "模板将定位、天气、月相、问候语和诗词写入日记；关闭或失败的来源使用模板默认内容。": "The template writes location, weather, moon phase, greeting and poetry. Disabled or failed sources use template defaults.",
     "怎么使用": "How to use",
-    "可从 sample 中的 Capture Sample/{0} 页面开始。": "Start with the Capture Sample/{0} page in sample.",
     "粘贴播客单集或完整视频链接，获取信息后确认并保存。保存位置显示在窗口下方。": "Paste an episode or full video link, fetch its information, then review and save. The destination appears below.",
     "支持哪些链接？": "Which links are supported?",
     "支持豆瓣播客、小宇宙、Apple Podcasts 单集，以及 YouTube 和 Bilibili 视频。Apple Podcasts 链接需要包含 i 参数；Bilibili 短链先在浏览器打开，再复制完整地址。": "Supports Douban Podcasts, Xiaoyuzhou and Apple Podcasts episodes, plus YouTube and Bilibili videos. Apple links need an i parameter. Open Bilibili short links in a browser and copy the full URL.",

@@ -1,4 +1,5 @@
-import { Modal, Notice, Setting } from 'obsidian';
+import { getLanguage, Modal, Notice, Setting } from 'obsidian';
+import { manualUrl } from './help-links';
 import { t } from './i18n';
 import type { CaptureService } from './service';
 import { CaptureModal } from './capture-modal';
@@ -44,8 +45,9 @@ export function renderGettingStarted(container: HTMLElement, service: CaptureSer
     container.createEl('p', { cls: 'media-settings-note', text: t('以上是当前设置。文件在首次保存时创建；含双花括号的路径会用节目名、标题等信息替换。') });
     new Setting(container).setName(t('日常怎么打开')).setDesc(t('点击侧栏的采集图标，或打开 Obsidian 命令面板，搜索“Media Capture: 采集媒体”。使用指南也可以从命令面板再次打开。'));
     const details = container.createEl('details', { cls: 'media-start-more' });
-    container.createEl('p', { cls: 'media-settings-note', text: t('配套页面可从插件源码的 sample 文件夹获取。把其中的 Capture Sample 整个文件夹复制到笔记库根目录，再打开“Capture Sample/开始使用”。') });
+    container.createEl('p', { cls: 'media-settings-note', text: t('配套页面可从插件源码的 sample 文件夹获取。把其中的 Capture Sample 整个文件夹复制到笔记库根目录，再打开“Capture Sample/Start”。') });
     container.createEl('a', { text: t('打开 sample 示例文件夹'), href: 'https://github.com/Ch1llNoodle/obsidian-media-capture/tree/master/sample' });
+    container.createEl('a', { text: t('打开完整使用手册'), href: manualUrl(getLanguage()) });
     details.createEl('summary', { text: t('接下来可以做什么') });
     new Setting(details).setName(t('改变保存方式')).setDesc(t('在“功能 → 媒体采集 → 功能设置”选择集中清单、每条一篇或按节目追加，再应用预设。'));
     new Setting(details).setName(t('记录任务完成时间')).setDesc(t('先配置 Obsidian 的日记目录和模板，再开启“任务完成记录”。勾选普通 Markdown 任务后，在当天日记查看完成记录。'));

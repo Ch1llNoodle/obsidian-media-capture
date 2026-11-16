@@ -1,6 +1,8 @@
 import type { en } from './en';
 
 export const fr: Record<keyof typeof en, string> = {
+    "打开完整使用手册": "Ouvrir le guide complet",
+    "从 sample/Capture Sample/Start 选择语言和对应示例。": "Choisissez une langue et un exemple dans sample/Capture Sample/Start.",
     "开始使用": "Bien démarrer",
     "播客清单": "Journal des podcasts",
     "先保存第一条播客或视频记录。默认每条一行，无需填写 API Key。": "Enregistrez un premier podcast ou une vidéo. Une ligne par élément par défaut, sans clé API.",
@@ -18,7 +20,7 @@ export const fr: Record<keyof typeof en, string> = {
     "以上是当前设置。文件在首次保存时创建；含双花括号的路径会用节目名、标题等信息替换。": "Voici vos destinations actuelles. Les fichiers sont créés au premier enregistrement ; les variables entre doubles accolades sont remplacées par le nom de l’émission, le titre et les autres informations.",
     "日常怎么打开": "Comment ouvrir Capture",
     "点击侧栏的采集图标，或打开 Obsidian 命令面板，搜索“Media Capture: 采集媒体”。使用指南也可以从命令面板再次打开。": "Utilisez l’icône de capture dans la barre latérale, ou cherchez Media Capture dans la palette de commandes. Le guide est aussi accessible depuis cette palette.",
-    "配套页面可从插件源码的 sample 文件夹获取。把其中的 Capture Sample 整个文件夹复制到笔记库根目录，再打开“Capture Sample/开始使用”。": "Les pages d’exemple se trouvent dans le dossier sample du dépôt. Copiez tout le dossier Capture Sample à la racine du coffre, puis ouvrez Capture Sample/开始使用.",
+    "配套页面可从插件源码的 sample 文件夹获取。把其中的 Capture Sample 整个文件夹复制到笔记库根目录，再打开“Capture Sample/Start”。": "Les pages d’exemple se trouvent dans le dossier sample du dépôt. Copiez tout le dossier Capture Sample à la racine du coffre, puis ouvrez Capture Sample/Start.",
     "打开 sample 示例文件夹": "Ouvrir le dossier sample",
     "接下来可以做什么": "Que faire ensuite",
     "改变保存方式": "Changer le mode d’enregistrement",
@@ -57,7 +59,6 @@ export const fr: Record<keyof typeof en, string> = {
     "使用配套模板创建一篇新日记。仅开启模块不会为已有日记补入信息。": "Créez une nouvelle note quotidienne avec le modèle associé. Activer le module ne complète pas les notes existantes.",
     "模板将定位、天气、月相、问候语和诗词写入日记；关闭或失败的来源使用模板默认内容。": "Le modèle écrit localisation, météo, phase lunaire, message et poésie. Les sources désactivées ou en échec utilisent les valeurs du modèle.",
     "怎么使用": "Mode d’emploi",
-    "可从 sample 中的 Capture Sample/{0} 页面开始。": "Commencez par la page Capture Sample/{0} du dossier sample.",
     "粘贴播客单集或完整视频链接，获取信息后确认并保存。保存位置显示在窗口下方。": "Collez un lien d’épisode ou de vidéo complète, récupérez les informations, vérifiez et enregistrez. La destination est affichée en bas.",
     "支持哪些链接？": "Quels liens sont acceptés ?",
     "支持豆瓣播客、小宇宙、Apple Podcasts 单集，以及 YouTube 和 Bilibili 视频。Apple Podcasts 链接需要包含 i 参数；Bilibili 短链先在浏览器打开，再复制完整地址。": "Accepte les épisodes Douban Podcasts, Xiaoyuzhou et Apple Podcasts, ainsi que YouTube et Bilibili. Les liens Apple doivent contenir le paramètre i. Ouvrez les liens courts Bilibili dans un navigateur puis copiez l’adresse complète.",

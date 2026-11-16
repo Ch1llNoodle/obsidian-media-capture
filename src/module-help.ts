@@ -18,6 +18,5 @@ export function renderModuleHelp(container: HTMLElement, id: ModuleId): void {
     const guide = guides[id];
     const list = details.createEl('ol');
     for (const text of [guide.preparation, guide.action, guide.result]) list.createEl('li', { text: t(text) });
-    const examples: Record<ModuleId, string> = { media: '开始使用', tasks: '任务记录', series: '剧集记录', reading: '阅读记录', places: '地点记录', study: '学习同步', exercise: '运动记录', douban: '豆瓣收藏', daily: '日记来源' };
-    details.createEl('p', { text: t('可从 sample 中的 Capture Sample/{0} 页面开始。', examples[id]) });
+    details.createEl('p', { text: t('从 sample/Capture Sample/Start 选择语言和对应示例。') });
 }

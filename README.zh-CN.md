@@ -1,5 +1,7 @@
 ### Media Capture
 
+**[用户手册（Wiki）](https://github.com/Ch1llNoodle/obsidian-media-capture/wiki/Home-zh-CN)** · [文档源码](docs/wiki/Home-zh-CN.md) · [三语示例](sample/README.md)
+
 简体中文 · [English](README.md) · [Français](README.fr.md)
 
 Media Capture 将豆瓣、小宇宙、Apple Podcasts 的播客信息及 YouTube、Bilibili 的视频信息保存为 Markdown。写入规则支持一行清单、独立笔记和按节目／频道集中记录。默认每条一行，播客与视频分别保存到各自清单。界面支持简体中文、英文和法语，自动跟随应用语言。
@@ -26,7 +28,7 @@ Media Capture 将豆瓣、小宇宙、Apple Podcasts 的播客信息及 YouTube�
 
 打开插件设置的“开始使用”，或从命令面板运行“打开使用指南”。点击侧栏采集图标，粘贴单集或完整视频分享链接，获取信息并确认窗口下方的保存位置，再选择“保存并打开”。默认播客写入 Podcasts.md，视频写入 Videos.md，无需 API Key；自定义规则以窗口显示的位置为准。
 
-完整的 [sample 示例](sample/README.md)包含可直接复制的 Capture Sample 文件夹。复制到笔记库根目录，打开其中的“开始使用”。各示例列明依赖、需要开启的模块、凭证、操作步骤和保存位置。追踪页使用 Dataview，日记来源使用 Templater；媒体采集本身不需要它们。示例控件目前使用中文。
+完整的 [sample 示例](sample/README.md)包含可直接复制的 Capture Sample 文件夹。复制到笔记库根目录，打开 Start.md 选择中文、英文或法文。各示例列明依赖、需要开启的模块、凭证、操作步骤和保存位置，页面、按钮、提示和模板使用所选语言。追踪页使用 Dataview，日记来源使用 Templater；媒体采集本身不需要它们。
 
 每个模块的“怎么使用”说明准备、操作与结果。剧集、阅读、地点、学习、运动、豆瓣同步和日记来源需要配套页面或模板，开关与凭证不会自动生成这些页面。示例提供最小的配套页面，追踪数据只保存在 Capture Sample 内；媒体采集和任务记录沿用已有设置。
 

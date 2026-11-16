@@ -1,0 +1,1 @@
+[English](Home.md) · [简体中文](Home-zh-CN.md) · [Français](Home-fr.md) · [Source](https://github.com/Ch1llNoodle/obsidian-media-capture) · [sample](https://github.com/Ch1llNoodle/obsidian-media-capture/tree/master/sample)
