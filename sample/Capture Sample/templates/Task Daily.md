@@ -1,3 +1,3 @@
-### 示例日记
+### Sample Daily note
 
 ## Notes

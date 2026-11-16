@@ -14,4 +14,4 @@ Paths above are relative to Capture Sample.
 await dv.view("Capture Sample/scripts/demo", { module: "study", lang: "en" });
 ```
 
-[[Capture Sample/en/Start|Back to sample guide]]
+[[Capture Sample/Start|Back to sample guide]]

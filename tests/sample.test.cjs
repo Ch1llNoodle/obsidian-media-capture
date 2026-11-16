@@ -33,7 +33,7 @@ function fixture(request=async()=>{throw Error('Unexpected request');}) {
         fileManager:{processFrontMatter:async(file,change)=>change(metadata[file.path]??={})}};
     const api=attach(app,async options=>{requests++;return request(options);},{tmdbToken:'test',amapKey:'test',maimemoToken:'test'});
     app.plugins.plugins['media-capture'].service={config:api.config};
-    const view=async (module,lang='zh')=>{const root=element();await run(app,{container:root,paragraph:text=>root.createEl('p',{text})},{module,lang,path:lang==='en'?'Capture Sample/en/Douban.md':lang==='fr'?'Capture Sample/fr/Douban.md':'Capture Sample/豆瓣收藏.md'});return root;};
+    const view=async (module,lang='zh')=>{const root=element();await run(app,{container:root,paragraph:text=>root.createEl('p',{text})},{module,lang,path:lang==='en'?'Capture Sample/Douban.md':lang==='fr'?'Capture Sample/fr/Douban.md':'Capture Sample/zh-CN/豆瓣收藏.md'});return root;};
     const button=(root,text)=>all(root).find(node=>node.tag==='button'&&node.text===text);
     const input=(root,name)=>all(root).find(node=>node['aria-label']===name);
     return {...api,app,files,metadata,opened,view,button,input,requests:()=>requests};
@@ -46,6 +46,20 @@ test('sample trackers open without requests or new files and explain disabled mo
     }
     f.config.modules.reading=false;
     const root=await f.view('reading');assert(all(root).some(node=>node.text?.includes('开启')));
+    assert.equal(f.files.size,0);
+});
+
+test('sample root and omitted language default to English',async()=>{
+    assert(!fs.readdirSync(sample).some(name=>name.endsWith('.md')&&/[\u3400-\u9fff]/.test(name)));
+    assert(fs.existsSync(path.join(sample,'Reading.md')));
+    assert(fs.existsSync(path.join(sample,'zh-CN','阅读记录.md')));
+    assert(!fs.existsSync(path.join(sample,'en')));
+    assert(fs.readFileSync(path.join(sample,'templates/Daily.md'),'utf8').includes('Location:'));
+    const f=fixture(),root=element();
+    await run(f.app,{container:root,paragraph:text=>root.createEl('p',{text})},{module:'reading'});
+    assert(f.input(root,'Book title'));
+    assert(f.button(root,'Save reading progress'));
+    assert.equal(f.requests(),0);
     assert.equal(f.files.size,0);
 });
 
@@ -79,7 +93,7 @@ test('sample series can search, link a season, save progress and reload it',asyn
 test('sample Douban sync preserves text outside its managed region',async()=>{
     const f=fixture(async()=>({status:200,text:'<title>Book collection (0)</title>'}));
     f.app.plugins.plugins['obsidian-douban-plugin']={settings:{loginCookiesContent:'dbcl2="1:sample"'}};
-    const p='Capture Sample/豆瓣收藏.md',original=fs.readFileSync(path.join(sample,'豆瓣收藏.md'),'utf8');f.files.set(p,original);
+    const p='Capture Sample/zh-CN/豆瓣收藏.md',original=fs.readFileSync(path.join(sample,'zh-CN','豆瓣收藏.md'),'utf8');f.files.set(p,original);
     const root=await f.view('douban');await f.button(root,'同步豆瓣书籍收藏').click();
     const updated=f.files.get(p);
     assert.equal(updated.split('<!-- douban:start -->')[0],original.split('<!-- douban:start -->')[0]);
@@ -130,7 +144,7 @@ test('sample translations preserve placeholders and translated Daily templates r
     }
     const f=fixture();Object.keys(f.config.dailySources).forEach(key=>{f.config.dailySources[key]='none';});
     for(const lang of ['en','fr']) {
-        const template=fs.readFileSync(path.join(sample,lang,'templates/Daily.md'),'utf8').slice(4,-3);
+        const template=fs.readFileSync(path.join(sample,lang==='en'?'':lang,'templates/Daily.md'),'utf8').slice(4,-3);
         const render=new AsyncFunction('app','tp','let tR="";'+template+';return tR;');
         const result=await render(f.app,{file:{title:'2026-11-16'}});
         assert(result.includes('## Notes'));

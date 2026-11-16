@@ -20,4 +20,4 @@ await dv.view("Capture Sample/scripts/demo", { module: "douban", lang: "en", pat
 
 ### Notes
 
-[[Capture Sample/en/Start|Back to sample guide]]
+[[Capture Sample/Start|Back to sample guide]]

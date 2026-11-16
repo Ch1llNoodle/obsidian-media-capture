@@ -1,3 +1,0 @@
-### Sample Daily note
-
-## Notes

@@ -1,7 +1,7 @@
 await(async () => {
     // Copied as part of Capture Sample. Requires Dataview JavaScript queries.
     const base = 'Capture Sample';
-    const language = String(input?.lang ?? 'zh').toLowerCase().split(/[-_]/)[0];
+    const language = String(input?.lang ?? 'en').toLowerCase().split(/[-_]/)[0];
     const locale = language === 'zh' || language === 'fr' ? language : 'en';
     const dictionaries = JSON.parse(await app.vault.adapter.read(base + '/scripts/strings.json'));
     const t = (key, ...values) => {
