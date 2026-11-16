@@ -20,6 +20,6 @@ Apple Podcasts 必须是带 i 参数的单集链接。Bilibili 短链先用浏�
 
 [保存方式](Save-layouts-zh-CN.md)说明怎样改为独立笔记或按节目追加。记录任务完成时间时，先配置 Obsidian 核心日记，再开启任务完成记录，完成一条普通 Markdown 任务后查看当天日记。
 
-设置的“开始使用”以及命令面板的“打开使用指南”随时可用。移动端采集和外部播放仍需按实际设备验证。
+设置默认显示功能页，标题旁的帮助图标和命令面板的“打开使用指南”随时可用。移动端采集和外部播放仍需按实际设备验证。
 
 [Media Capture 使用手册](Home-zh-CN.md) · [Source](https://github.com/Ch1llNoodle/obsidian-media-capture) · [sample](https://github.com/Ch1llNoodle/obsidian-media-capture/tree/master/sample)

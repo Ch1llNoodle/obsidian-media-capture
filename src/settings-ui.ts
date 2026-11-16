@@ -1,4 +1,4 @@
-import { renderGettingStarted } from './getting-started';
+import { CaptureGuideModal } from './getting-started';
 import { t } from './i18n';
 import { renderCredentials } from './credential-settings';
 import { PluginSettingTab, Setting, Notice, type App } from 'obsidian';
@@ -7,15 +7,14 @@ import { ModuleSettingsView } from './module-settings';
 import { errorMessage } from './validation';
 import { NoteRefreshModal } from './note-refresh-ui';
 
-type Page = 'start' | 'modules' | 'services' | 'maintenance';
+type Page = 'modules' | 'services' | 'maintenance';
 const pages: { id: Page; name: string }[] = [
-    { id: 'start', name: '开始使用' },
     { id: 'modules', name: '功能' },
     { id: 'services', name: '服务连接' }, { id: 'maintenance', name: '维护' },
 ];
 
 export class CaptureSettings extends PluginSettingTab {
-    private page: Page = 'start';
+    private page: Page = 'modules';
     private readonly modules: ModuleSettingsView;
     constructor(app: App, private readonly service: CaptureService) { super(app, service.plugin); this.modules = new ModuleSettingsView(service, () => this.display(), () => this.select('services')); }
     override display(): void {
@@ -23,7 +22,8 @@ export class CaptureSettings extends PluginSettingTab {
         container.empty();
         container.classList.add('media-capture-settings');
         const header = container.createDiv({ cls: 'media-settings-header' });
-        new Setting(header).setName('Capture').setDesc(t('设置采集方式、记录联动与服务连接。')).setHeading();
+        new Setting(header).setName('Capture').setHeading().addExtraButton(button => button
+            .setIcon('help-circle').setTooltip(t('打开使用指南')).onClick(() => new CaptureGuideModal(this.service).open()));
         const navigation = container.createDiv({ cls: 'media-settings-navigation' });
         navigation.setAttribute('role', 'tablist');
         navigation.setAttribute('aria-label', t('Capture 设置'));
@@ -62,7 +62,6 @@ export class CaptureSettings extends PluginSettingTab {
     private heading(container: HTMLElement, name: string): void { new Setting(container).setName(t(name)).setHeading(); }
     private renderPage(container: HTMLElement): void {
         const config = this.service.config;
-        if (this.page === 'start') { renderGettingStarted(container, this.service, { modules: () => this.select('modules'), services: () => this.select('services'), refresh: () => this.display() }); return; }
         if (this.page === 'modules') { this.modules.render(container); return; }
         if (this.page === 'services') { renderCredentials(container, this.service); return; }
         if (!config.modules.media) {

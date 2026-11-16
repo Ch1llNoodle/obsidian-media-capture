@@ -1,4 +1,5 @@
 export const en = {
+    "各功能用法": "Feature instructions",
     "打开完整使用手册": "Open the full user guide",
     "从 sample/Capture Sample/Start 选择语言和对应示例。": "Choose a language and example in sample/Capture Sample/Start.",
     "开始使用": "Get started",
@@ -25,7 +26,7 @@ export const en = {
     "在“功能 → 媒体采集 → 功能设置”选择集中清单、每条一篇或按节目追加，再应用预设。": "Under Features → Media capture → Feature settings, choose a log, individual notes or a show file, then apply the preset.",
     "先配置 Obsidian 的日记目录和模板，再开启“任务完成记录”。勾选普通 Markdown 任务后，在当天日记查看完成记录。": "Configure Obsidian Daily notes first, then enable task completion logging. Complete a Markdown task and check today’s note.",
     "使用阅读、剧集等追踪功能": "Use reading and series trackers",
-    "这些模块需要笔记库提供配套的记录页面；开启开关或填写凭证不会自动生成页面。打开各模块的“怎么使用”查看操作入口和准备事项。": "These modules need companion pages in your vault. Enabling a switch or entering credentials does not create pages. Open How to use for each module to find its requirements and entry points.",
+    "这些模块需要笔记库提供配套的记录页面；开启开关或填写凭证不会自动生成页面。在本指南的“各功能用法”中查看操作入口和准备事项。": "These modules need companion pages in your vault. Enabling a switch or entering credentials does not create pages. Use Feature instructions in this guide to find requirements and entry points.",
     "查看功能与用法": "View features and usage",
     "配置服务连接": "Configure services",
     "开始使用 Capture": "Get started with Capture",

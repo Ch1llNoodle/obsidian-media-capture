@@ -5,7 +5,7 @@
 Capture 把播客、视频分享链接保存为普通 Markdown 记录。先完成第一条采集；这个基本流程不需要 API Key、AI、Dataview 或 Templater。
 
 1. 安装并启用 Media Capture。
-2. 打开“设置 → Media Capture → 开始使用”。
+2. 打开“设置 → Media Capture → 功能”，需要指引时点击标题旁的帮助图标。
 3. 选择“采集媒体”，粘贴单集或完整视频链接，获取信息，再选择“保存并打开”。
 
 默认播客写入 Podcasts.md，视频写入 Videos.md；窗口下方显示当前配置的真实保存位置。

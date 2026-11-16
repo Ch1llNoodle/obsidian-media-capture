@@ -1,4 +1,6 @@
 import { getLanguage, Modal, Notice, Setting } from 'obsidian';
+import { moduleDefinitions } from './modules';
+import { renderModuleHelp } from './module-help';
 import { manualUrl } from './help-links';
 import { t } from './i18n';
 import type { CaptureService } from './service';
@@ -51,7 +53,7 @@ export function renderGettingStarted(container: HTMLElement, service: CaptureSer
     details.createEl('summary', { text: t('接下来可以做什么') });
     new Setting(details).setName(t('改变保存方式')).setDesc(t('在“功能 → 媒体采集 → 功能设置”选择集中清单、每条一篇或按节目追加，再应用预设。'));
     new Setting(details).setName(t('记录任务完成时间')).setDesc(t('先配置 Obsidian 的日记目录和模板，再开启“任务完成记录”。勾选普通 Markdown 任务后，在当天日记查看完成记录。'));
-    new Setting(details).setName(t('使用阅读、剧集等追踪功能')).setDesc(t('这些模块需要笔记库提供配套的记录页面；开启开关或填写凭证不会自动生成页面。打开各模块的“怎么使用”查看操作入口和准备事项。'));
+    new Setting(details).setName(t('使用阅读、剧集等追踪功能')).setDesc(t('这些模块需要笔记库提供配套的记录页面；开启开关或填写凭证不会自动生成页面。在本指南的“各功能用法”中查看操作入口和准备事项。'));
     if (actions.modules) new Setting(details).addButton(button => button.setButtonText(t('查看功能与用法')).onClick(() => actions.modules?.()));
     if (actions.services) new Setting(details).addButton(button => button.setButtonText(t('配置服务连接')).onClick(() => actions.services?.()));
 }
@@ -63,6 +65,9 @@ export class CaptureGuideModal extends Modal {
         this.contentEl.addClass('media-start-guide');
         this.contentEl.createEl('h2', { text: t('开始使用 Capture') });
         renderGettingStarted(this.contentEl, this.service, { refresh: () => this.onOpen() });
+        const modules = this.contentEl.createEl('details', { cls: 'media-start-more' });
+        modules.createEl('summary', { text: t('各功能用法') });
+        for (const module of moduleDefinitions) renderModuleHelp(modules, module.id, module.name);
     }
     override onClose(): void { this.contentEl.empty(); }
 }

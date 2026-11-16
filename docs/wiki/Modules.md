@@ -2,7 +2,7 @@
 
 [English](Modules.md) · [简体中文](Modules-zh-CN.md) · [Français](Modules-fr.md)
 
-Enable only what you use under **Features**. Each card has **How to use**, describing preparation, actions and results. Disabling a module retains settings and records but blocks its recording operations.
+Enable only what you use under **Features**. The help guide contains feature instructions covering preparation, actions and results; settings focus on switches and configuration. Disabling a module retains settings and records but blocks its recording operations.
 
 | Module | Entry point | Preparation |
 | --- | --- | --- |

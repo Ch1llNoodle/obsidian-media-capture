@@ -1,6 +1,7 @@
 import type { en } from './en';
 
 export const fr: Record<keyof typeof en, string> = {
+    "各功能用法": "Mode d’emploi des fonctions",
     "打开完整使用手册": "Ouvrir le guide complet",
     "从 sample/Capture Sample/Start 选择语言和对应示例。": "Choisissez une langue et un exemple dans sample/Capture Sample/Start.",
     "开始使用": "Bien démarrer",
@@ -27,7 +28,7 @@ export const fr: Record<keyof typeof en, string> = {
     "在“功能 → 媒体采集 → 功能设置”选择集中清单、每条一篇或按节目追加，再应用预设。": "Dans Fonctions → Capture de médias → Réglages, choisissez un journal, des notes individuelles ou un fichier par émission, puis appliquez le préréglage.",
     "先配置 Obsidian 的日记目录和模板，再开启“任务完成记录”。勾选普通 Markdown 任务后，在当天日记查看完成记录。": "Configurez les notes quotidiennes d’Obsidian, puis activez le journal des tâches terminées. Terminez une tâche Markdown et consultez la note du jour.",
     "使用阅读、剧集等追踪功能": "Utiliser les suivis de lecture et de séries",
-    "这些模块需要笔记库提供配套的记录页面；开启开关或填写凭证不会自动生成页面。打开各模块的“怎么使用”查看操作入口和准备事项。": "Ces modules nécessitent des pages dans le coffre. Les activer ou saisir des identifiants ne crée pas de pages. Ouvrez Mode d’emploi dans chaque module pour connaître les prérequis et les actions.",
+    "这些模块需要笔记库提供配套的记录页面；开启开关或填写凭证不会自动生成页面。在本指南的“各功能用法”中查看操作入口和准备事项。": "Ces modules nécessitent des pages dans le coffre. Les activer ou saisir des identifiants ne crée pas de pages. Consultez le mode d’emploi des fonctions dans ce guide pour connaître les prérequis et les actions.",
     "查看功能与用法": "Voir les fonctions et leur utilisation",
     "配置服务连接": "Configurer les services",
     "开始使用 Capture": "Bien démarrer avec Capture",

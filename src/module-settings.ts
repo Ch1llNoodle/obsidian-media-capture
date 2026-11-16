@@ -1,4 +1,3 @@
-import { renderModuleHelp } from './module-help';
 import { Setting, Notice } from 'obsidian';
 import { t } from './i18n';
 import type { CaptureService } from './service';
@@ -24,11 +23,9 @@ export class ModuleSettingsView {
                     } catch (error) { component.setValue(this.service.config.modules[module.id]); new Notice(errorMessage(error)); }
                 });
             });
-            renderModuleHelp(card, module.id);
             if (!this.service.config.modules[module.id]) continue;
             if (module.services.length) new Setting(card).addButton(button => button.setButtonText(t('配置服务连接')).onClick(this.openServices));
             if (!['media', 'tasks', 'daily'].includes(module.id)) {
-                card.createEl('p', { cls: 'media-settings-note', text: module.services.length ? t('在服务连接中填写此功能使用的凭证。') : t('记录位置与显示方式由笔记库指定。') });
                 continue;
             }
             const details = card.createEl('details', { cls: 'media-rule-settings', attr: { 'data-module-id': module.id } });

@@ -8,4 +8,6 @@
 
 - [ ] Finish my first sample task
 
+Unchecking keeps the completion log. Completing it again updates its time. The template is applied only when a Daily note is created.
+
 [[Capture Sample/Start|Back to sample guide]]

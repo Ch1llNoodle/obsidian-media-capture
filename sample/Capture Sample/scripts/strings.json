@@ -52,7 +52,16 @@
     "在读": "Reading",
     "想读": "Wishlist",
     "书籍收藏已更新；同步区之外的手写内容保留。": "Book collection updated. Handwritten text outside the sync region is preserved.",
-    "正在读取豆瓣收藏…": "Reading Douban collections…"
+    "正在读取豆瓣收藏…": "Reading Douban collections…",
+    "体型": "Body",
+    "视角": "View",
+    "男": "Male",
+    "女": "Female",
+    "正面": "Front",
+    "背面": "Back",
+    "已选择": "Selected",
+    "未选择": "Not selected",
+    "点击人体图或勾选肌群，再保存；切换视角保留未保存的选择。": "Click the body map or check muscle groups, then save. Changing views keeps your unsaved choices."
   },
   "fr": {
     "先安装并启用 Media Capture，再重新打开本页。": "Installez et activez Media Capture, puis rouvrez cette page.",
@@ -107,6 +116,15 @@
     "在读": "En cours",
     "想读": "À lire",
     "书籍收藏已更新；同步区之外的手写内容保留。": "Collection mise à jour. Le texte personnel hors de la zone synchronisée est conservé.",
-    "正在读取豆瓣收藏…": "Lecture des collections Douban…"
+    "正在读取豆瓣收藏…": "Lecture des collections Douban…",
+    "体型": "Morphologie",
+    "视角": "Vue",
+    "男": "Homme",
+    "女": "Femme",
+    "正面": "Face",
+    "背面": "Dos",
+    "已选择": "Sélectionné",
+    "未选择": "Non sélectionné",
+    "点击人体图或勾选肌群，再保存；切换视角保留未保存的选择。": "Cliquez sur le corps ou cochez les groupes, puis enregistrez. Changer de vue conserve les choix non enregistrés."
   }
 }

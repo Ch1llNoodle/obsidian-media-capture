@@ -7,10 +7,11 @@ const sample = path.join(__dirname, '../sample/Capture Sample');
 const source = fs.readFileSync(path.join(sample, 'scripts/demo.js'), 'utf8');
 const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 const run = new AsyncFunction('app','dv','input',source);
+const documentStub = {createElementNS:(_ns,tag)=>element(tag)};
 function element(tag='div',options={}) {
-    return {tag,children:[],value:'',checked:false,disabled:false,...options,
+    return {tag,children:[],value:'',checked:false,disabled:false,style:{},ownerDocument:documentStub,...options,
         createEl(tag,options={}){const node=element(tag,options);this.children.push(node);return node;},
-        createDiv(){return this.createEl('div');},empty(){this.children=[];},
+        createDiv(options={}){return this.createEl('div',options);},empty(){this.children=[];},append(...nodes){this.children.push(...nodes);},getAttribute(name){return this[name];},
         setAttribute(name,value){this[name]=value;},addEventListener(name,work){this[name]=work;}};
 }
 const all=node=>[node,...node.children.flatMap(all)];
@@ -33,7 +34,7 @@ function fixture(request=async()=>{throw Error('Unexpected request');}) {
         fileManager:{processFrontMatter:async(file,change)=>change(metadata[file.path]??={})}};
     const api=attach(app,async options=>{requests++;return request(options);},{tmdbToken:'test',amapKey:'test',maimemoToken:'test'});
     app.plugins.plugins['media-capture'].service={config:api.config};
-    const view=async (module,lang='zh')=>{const root=element();await run(app,{container:root,paragraph:text=>root.createEl('p',{text})},{module,lang,path:lang==='en'?'Capture Sample/Douban.md':lang==='fr'?'Capture Sample/fr/Douban.md':'Capture Sample/zh-CN/豆瓣收藏.md'});return root;};
+    const view=async (module,lang='zh')=>{const root=element();await run(app,{container:root,paragraph:text=>root.createEl('p',{text}),view:async(name,input)=>{const body=fs.readFileSync(path.join(sample,name.slice('Capture Sample/'.length),'view.js'),'utf8');await new AsyncFunction('app','dv','input',body)(app,{container:root},input);}},{module,lang,path:lang==='en'?'Capture Sample/Douban.md':lang==='fr'?'Capture Sample/fr/Douban.md':'Capture Sample/zh-CN/豆瓣收藏.md'});return root;};
     const button=(root,text)=>all(root).find(node=>node.tag==='button'&&node.text===text);
     const input=(root,name)=>all(root).find(node=>node['aria-label']===name);
     return {...api,app,files,metadata,opened,view,button,input,requests:()=>requests};
@@ -151,4 +152,70 @@ test('sample translations preserve placeholders and translated Daily templates r
         assert(!/[\u3400-\u9fff]/.test(result));
     }
     assert.equal(f.requests(),0);
+});
+
+test('bundled body map switches all views and saves diagram and checkbox selections together',async()=>{
+    const f=fixture();const root=await f.view('exercise','en');
+    const shapes=JSON.parse(fs.readFileSync(path.join(sample,'assets/body-paths.json'),'utf8'));
+    const svg=()=>all(root).find(node=>node.tag==='svg');
+    const group=name=>all(root).find(node=>node.tag==='g'&&node['data-muscle']===name);
+    const checks=()=>all(root).filter(node=>node.type==='checkbox');
+    assert.equal(svg().viewBox,shapes['male-front'].viewBox);
+    group('chest').click();assert.equal(checks()[0].checked,true);assert.equal(group('chest')['aria-pressed'],'true');
+    f.button(root,'Female').click();assert.equal(svg().viewBox,shapes['female-front'].viewBox);assert.equal(checks()[0].checked,true);
+    f.button(root,'Back').click();assert.equal(svg().viewBox,shapes['female-back'].viewBox);assert.equal(checks()[0].checked,true);
+    group('back').keydown({key:'Enter',preventDefault(){}});assert.equal(checks()[1].checked,true);
+    f.button(root,'Male').click();assert.equal(svg().viewBox,shapes['male-back'].viewBox);assert.equal(group('back')['aria-pressed'],'true');
+    f.button(root,'Front').click();checks()[2].checked=true;checks()[2].change();assert.equal(group('shoulders')['aria-pressed'],'true');
+    await f.button(root,'Save muscle selections').click();
+    assert.deepEqual(JSON.parse(f.files.get('Capture Sample/data/exercise.json'))['sample-workout'],['chest','back','shoulders']);
+    const reloaded=await f.view('exercise','fr');
+    assert.equal(all(reloaded).find(node=>node.tag==='g'&&node['data-muscle']==='chest')['aria-pressed'],'true');
+    assert(fs.readFileSync(path.join(sample,'assets/LICENSE.body-highlighter.txt'),'utf8').includes('Copyright (c) 2022 ELABBASSI Hicham'));
+    assert.equal(f.requests(),0);
+});
+
+
+test('sample Places saves visits and reuses the same place across languages',async()=>{
+    const f=fixture(async()=>({status:200,json:{status:'1',pois:[{id:'sample-place',name:'Example Park',pname:'',cityname:'Beijing',adname:'',address:'Sample road',location:'116.4,39.9'}]}}));
+    for(const lang of ['en','fr','zh']) {
+        const root=await f.view('places',lang);
+        all(root).find(node=>node.tag==='input').value='Example Park';
+        await all(root).find(node=>node.tag==='button').click();
+        const choice=all(root).find(node=>node.tag==='button'&&node.text==='Example Park Beijing');
+        assert(choice);await choice.click();
+        const day=f.opened.at(-1);assert(day?.startsWith('Capture Sample/daily/'));
+        const notes=[...f.files.keys()].filter(p=>p.startsWith('Capture Sample/places/')&&p.endsWith('.md'));
+        assert.equal(notes.length,1);assert(f.files.get(notes[0]).includes('amap_id: "sample-place"'));
+        assert.deepEqual(f.metadata[day].places,['[['+notes[0].slice(0,-3)+'|Example Park]]']);
+        assert.equal(choice.disabled,false);
+    }
+    assert.equal(f.requests(),3);
+});
+
+test('sample Study replaces counts, preserves activity at zero and retains data on failure',async()=>{
+    let failed=false,finished=2;
+    const f=fixture(async options=>failed?{status:401,json:{}}:{status:200,json:{data:options.url.endsWith('get_today_items')
+        ? {today_items:[{voc_id:'new',is_new:true,is_finished:true},{voc_id:'review',is_new:false,is_finished:true}]}
+        : {progress:{finished,total:10,study_time:30}}}});
+    for(const lang of ['en','fr','zh']) {
+        const root=await f.view('study',lang),button=all(root).find(node=>node.tag==='button');
+        await button.click();
+        const day=f.opened.at(-1);assert(day?.startsWith('Capture Sample/daily/'));
+        assert.deepEqual(f.metadata[day],{new_words:1,review_words:1,studied:true});
+        finished=0;await button.click();
+        assert.deepEqual(f.metadata[day],{new_words:0,review_words:0,studied:true});
+        failed=true;const opened=f.opened.length;await button.click();
+        assert.equal(f.opened.length,opened);
+        assert.deepEqual(f.metadata[day],{new_words:0,review_words:0,studied:true});
+        assert(all(root).some(node=>node.textContent?.includes('Token')));
+        assert.equal(button.disabled,false);failed=false;finished=2;
+    }
+});
+
+test('sample Daily source guides point to the template directory of their language',()=>{
+    for(const [page,directory] of [['Daily-sources.md','templates'],['fr/Daily-sources.md','fr/templates'],['zh-CN/日记来源.md','zh-CN/templates']]) {
+        assert(fs.readFileSync(path.join(sample,page),'utf8').includes('Capture Sample/'+directory),page);
+        assert(fs.existsSync(path.join(sample,directory,'Daily.md')));
+    }
 });

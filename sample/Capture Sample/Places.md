@@ -10,6 +10,8 @@ Output: Place notes under places and a places property in today’s sample Daily
 
 Paths above are relative to Capture Sample.
 
+After saving, today’s Daily note opens. Inspect its places property and follow the link to the place note. Selecting the same place again reuses its note and keeps one visit link.
+
 ```dataviewjs
 await dv.view("Capture Sample/scripts/demo", { module: "places", lang: "en" });
 ```

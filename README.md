@@ -26,11 +26,11 @@ The plugin ID and installation directory are `media-capture`. Only runtime files
 
 #### First use
 
-Open Get started in plugin settings, or run Open getting started guide from the command palette. Use the sidebar capture icon, paste an episode or full video share link, fetch its information, review the destination shown below the form, and choose Save and open. Defaults are Podcasts.md and Videos.md, with no API key needed. Custom rules use the destinations shown in the form.
+Use the help icon beside the Capture settings title, or run Open getting started guide from the command palette. Use the sidebar capture icon, paste an episode or full video share link, fetch its information, review the destination shown below the form, and choose Save and open. Defaults are Podcasts.md and Videos.md, with no API key needed. Custom rules use the destinations shown in the form.
 
 The [sample folder](sample/README.md) contains a complete Capture Sample directory. Copy it to your vault root and open Start.md to select English, Chinese or French. Each example explains dependencies, modules, credentials, actions and output locations. Pages, controls, messages and templates use the selected language. Interactive trackers use Dataview; the Daily source template uses Templater. Media capture itself requires neither.
 
-Each module’s How to use explains preparation, actions and results. Trackers and Daily sources need companion pages or templates; enabling switches and filling credentials do not create these pages. Samples provide working minimal pages. Tracking data stays inside Capture Sample, while media and task logging follow existing settings.
+The help guide’s feature instructions explain preparation, actions and results. Trackers and Daily sources need companion pages or templates; enabling switches and filling credentials do not create these pages. Samples provide working minimal pages. Tracking data stays inside Capture Sample, while media and task logging follow existing settings.
 
 #### Task completion log
 

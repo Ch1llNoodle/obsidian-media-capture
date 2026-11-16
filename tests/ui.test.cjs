@@ -102,7 +102,7 @@ for (const language of ['zh', 'en', 'fr']) test(`media settings and associations
         addExtraButton(callback) { return this.button(callback); }
         button(callback) {
             const node = this.row.createEl('button');
-            const component = { setCta: () => component, setButtonText: text => { node.text = text; return component; }, setIcon: () => component, setTooltip: () => component, setDisabled: value => {node.disabled=value;return component;}, onClick: fn => { node.click = fn; return component; } };
+            const component = { setCta: () => component, setButtonText: text => { node.text = text; return component; }, setIcon: () => component, setTooltip: text => { node.tooltip=text; return component; }, setDisabled: value => {node.disabled=value;return component;}, onClick: fn => { node.click = fn; return component; } };
             callback(component); return this;
         }
     }
@@ -133,8 +133,12 @@ for (const language of ['zh', 'en', 'fr']) test(`media settings and associations
     assert.equal(plugin.searchTv, undefined);
     plugin.settingsTab.display();
     const tab = name => all(plugin.settingsTab.containerEl).find(node => node.role === 'tab' && node.text === label(name));
-    assert.equal(all(plugin.settingsTab.containerEl).filter(node=>node.role==='tab').length,4);
-    assert.equal(tab('开始使用')['aria-selected'],'true');
+    assert.equal(all(plugin.settingsTab.containerEl).filter(node=>node.role==='tab').length,3);
+    assert.equal(tab('功能')['aria-selected'],'true');
+    assert(!all(plugin.settingsTab.containerEl).some(node=>node.name===label('记录会保存在哪里')));
+    assert(!all(plugin.settingsTab.containerEl).some(node=>node.text===label('怎么使用')));
+    const helpButton=all(plugin.settingsTab.containerEl).find(node=>node.tooltip===label('打开使用指南'));
+    helpButton.click();assert(all(modals.at(-1).contentEl).some(node=>node.text===label('各功能用法')));modals.pop().close();
     const beforeGuideFiles=files.size;
     commands.find(command=>command.id==='getting-started').callback();
     const guide=modals.pop();
@@ -144,7 +148,6 @@ for (const language of ['zh', 'en', 'fr']) test(`media settings and associations
     assert(all(firstCapture.contentEl).some(node=>node.text===label('保存并打开')));
     assert(all(firstCapture.contentEl).some(node=>node.text===label('支持哪些链接？')));
     firstCapture.close();assert.equal(files.size,beforeGuideFiles,'opening guide or capture creates no notes');
-    assert(all(plugin.settingsTab.containerEl).some(node=>node.name===label('记录会保存在哪里')));
     const countBeforeGuide=files.size;
     commands.find(command=>command.id==='getting-started').callback();
     assert(all(modals.at(-1).contentEl).some(node=>node.text===label('开始使用 Capture')));

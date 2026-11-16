@@ -6,7 +6,7 @@
 
 Enable Exercise tracking. No credentials needed. Enter a video link or stable name, load saved choices, select muscle groups, then save.
 
-Output: data/exercise.json. Muscle identifiers are stable across languages; this example does not include a body diagram.
+Output: data/exercise.json. Muscle identifiers are stable across languages; the bundled body map supports male/female and front/back views, and shares selections with the checkboxes.
 
 Paths above are relative to Capture Sample.
 

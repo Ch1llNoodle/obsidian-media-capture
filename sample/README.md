@@ -15,3 +15,9 @@ Copiez tout le dossier **Capture Sample** à la racine du coffre et ouvrez **Cap
 Téléchargez le dépôt avec Code → Download ZIP, puis ouvrez sample. Les suivis interactifs nécessitent Dataview et ses requêtes JavaScript ; les modèles quotidiens utilisent Templater et les tâches les notes quotidiennes principales. La capture de médias ne nécessite aucun de ces ajouts.
 
 Tracking data stays under Capture Sample. Media capture and task logging use your existing settings. Examples contain no credentials and make no external requests on opening; requests begin only after clicking an action or inserting a Daily source template. Dates use Asia/Shanghai. Provider content and backend errors retain their source language.
+
+The Exercise example includes local male/female front/back body maps. Click a muscle region or a checkbox, save, and reload to restore both. Copy assets and scripts with the whole folder; no separate image import is needed. Upstream attribution and the MIT license are included in assets.
+
+运动示例自带男女正背面人体图，点击图形与勾选项同步，保存后可重新载入。复制整个目录即可，无需另外导入图片；assets 包含来源说明和 MIT 许可。
+
+L’exemple Sport inclut les vues homme/femme et face/dos, synchronisées avec les cases. Enregistrez puis rechargez pour les retrouver. Copiez le dossier complet ; aucune image à importer séparément. Les sources et la licence MIT sont dans assets.

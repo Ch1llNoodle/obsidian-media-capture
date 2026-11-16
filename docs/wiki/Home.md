@@ -5,7 +5,7 @@
 Media Capture saves podcast and video links as ordinary Markdown notes. Start with one media record; no API key, AI tool, Dataview or Templater is required for this basic flow.
 
 1. Install and enable Media Capture.
-2. Open **Settings → Media Capture → Get started**.
+2. Open **Settings → Media Capture → Features**. Use the small help icon beside the title when needed.
 3. Use **Capture media**, paste an episode or full video share link, fetch information and choose **Save and open**.
 
 By default, podcasts go to Podcasts.md and videos to Videos.md. The capture form shows your actual configured destinations.

@@ -20,6 +20,6 @@ Apple Podcasts links must identify an episode with the i parameter. For Bilibili
 
 Use [Saving layouts](Save-layouts.md) to change the output. To record task completion times, configure Obsidian’s core Daily notes plugin first, enable Task completion log, then complete an ordinary Markdown task and open today’s Daily note.
 
-The Get started settings page and **Open getting started guide** command remain available at any time. Mobile capture and external playback still require testing on the actual device.
+Settings open on Features. The title’s help icon and **Open getting started guide** command remain available at any time. Mobile capture and external playback still require testing on the actual device.
 
 [Media Capture](Home.md) · [Source](https://github.com/Ch1llNoodle/obsidian-media-capture) · [sample](https://github.com/Ch1llNoodle/obsidian-media-capture/tree/master/sample)

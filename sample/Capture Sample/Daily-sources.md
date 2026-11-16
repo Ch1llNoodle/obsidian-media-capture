@@ -7,4 +7,6 @@
 3. Create an empty dated note under Capture Sample/daily, open it and run Templater: Open Insert Template modal. Choose Daily.
 4. Source requests run when the template is inserted. Disabled or failed sources use defaults; existing notes are not filled automatically. Without location, weather and moon requests use Beijing. The greeting sends only the short prompt in this template.
 
+Use an empty note: inserting this template again appends another copy. Task Daily is a plain template for core Daily notes; Daily contains Templater commands.
+
 [[Capture Sample/Start|Back to sample guide]]

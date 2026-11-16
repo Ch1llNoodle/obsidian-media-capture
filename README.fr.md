@@ -24,11 +24,11 @@ Lors d’une mise à jour, remplacez les trois fichiers d’exécution et rechar
 
 #### Première utilisation
 
-Ouvrez Bien démarrer dans les paramètres ou le guide depuis la palette de commandes. Utilisez l’icône latérale, collez un lien d’épisode ou de vidéo complète, récupérez les informations, vérifiez la destination sous le formulaire puis choisissez Enregistrer et ouvrir. Par défaut, les fichiers sont Podcasts.md et Videos.md, sans clé API. Les règles personnalisées utilisent les destinations indiquées dans le formulaire.
+Ouvrez le guide via l’icône d’aide près du titre des paramètres, ou depuis la palette de commandes. Utilisez l’icône latérale, collez un lien d’épisode ou de vidéo complète, récupérez les informations, vérifiez la destination sous le formulaire puis choisissez Enregistrer et ouvrir. Par défaut, les fichiers sont Podcasts.md et Videos.md, sans clé API. Les règles personnalisées utilisent les destinations indiquées dans le formulaire.
 
 Le [dossier sample](sample/README.md) contient un dossier Capture Sample complet. Copiez-le à la racine du coffre et ouvrez Start.md pour choisir le français, l’anglais ou le chinois. Chaque exemple indique dépendances, modules, identifiants, actions et emplacements. Pages, contrôles, messages et modèles utilisent la langue choisie. Les suivis interactifs utilisent Dataview et le modèle quotidien utilise Templater. La capture de médias ne nécessite aucun des deux.
 
-Le Mode d’emploi de chaque module indique les prérequis, les actions et les résultats. Les suivis et les sources quotidiennes nécessitent des pages ou modèles associés ; les activer ou saisir les identifiants ne crée pas ces pages. Les exemples fournissent des pages minimales utilisables. Leurs données restent dans Capture Sample ; les médias et tâches suivent les réglages existants.
+Le guide d’aide indique les prérequis, les actions et les résultats de chaque fonction. Les suivis et les sources quotidiennes nécessitent des pages ou modèles associés ; les activer ou saisir les identifiants ne crée pas ces pages. Les exemples fournissent des pages minimales utilisables. Leurs données restent dans Capture Sample ; les médias et tâches suivent les réglages existants.
 
 #### Journal des tâches terminées
 

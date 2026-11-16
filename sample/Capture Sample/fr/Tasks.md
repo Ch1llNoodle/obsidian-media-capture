@@ -8,4 +8,6 @@
 
 - [ ] Terminer ma première tâche exemple
 
+Décocher conserve le journal. Terminer à nouveau la tâche met à jour son heure. Le modèle ne s’applique qu’à la création d’une note quotidienne.
+
 [[Capture Sample/fr/Demarrer|Retour au guide]]

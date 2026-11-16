@@ -2,7 +2,7 @@
 
 [English](Modules.md) · [简体中文](Modules-zh-CN.md) · [Français](Modules-fr.md)
 
-Dans Fonctions, activez seulement les modules utiles. Le Mode d’emploi de chaque carte indique préparation, action et résultat. Désactiver un module conserve paramètres et données mais bloque ses opérations d’enregistrement.
+Dans Fonctions, activez seulement les modules utiles. Le guide d’aide indique préparation, action et résultat pour chaque fonction ; les paramètres se concentrent sur la configuration. Désactiver un module conserve paramètres et données mais bloque ses opérations d’enregistrement.
 
 | Module | Entrée | Préparation |
 | --- | --- | --- |

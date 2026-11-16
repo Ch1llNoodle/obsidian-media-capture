@@ -10,6 +10,8 @@ Résultat: Notes dans places et propriété places de la note quotidienne exempl
 
 Les chemins ci-dessus sont relatifs à Capture Sample.
 
+Après sauvegarde, la note quotidienne du jour s’ouvre. Vérifiez sa propriété places et suivez le lien vers le lieu. Sélectionner le même lieu réutilise sa note et conserve un seul lien de visite.
+
 ```dataviewjs
 await dv.view("Capture Sample/scripts/demo", { module: "places", lang: "fr" });
 ```

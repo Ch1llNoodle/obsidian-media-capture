@@ -184,15 +184,26 @@ await(async () => {
             const video = field(t("视频链接或稳定名称"), 'text', 'sample-workout');
             const options = root.createDiv();
             const selected = new Map();
+            let refreshBody = () => {};
             for (const name of ['chest', 'back', 'shoulders', 'arms', 'core', 'legs']) {
                 const label = options.createEl('label');
-                selected.set(name, label.createEl('input', { type: 'checkbox' }));
+                const checkbox = label.createEl('input', { type: 'checkbox' });
+                selected.set(name, checkbox);
+                checkbox.addEventListener('change', () => refreshBody());
                 label.createEl('span', { text: ({ chest: t("胸"), back: t("背"), shoulders: t("肩"), arms: t("手臂"), core: t("核心"), legs: t("腿") }[name]) + ' ' });
             }
+            const bodyHost = root.createDiv();
+            await dv.view(base + '/scripts/body', {
+                host: bodyHost, t,
+                selected: name => selected.get(name).checked,
+                toggle: name => { const checkbox = selected.get(name); checkbox.checked = !checkbox.checked; },
+                ready: refresh => { refreshBody = refresh; },
+            });
             const load = async () => {
                 const saved = (await store.load())[video.value.trim()] ?? [];
                 for (const [name, checkbox] of selected)
                     checkbox.checked = saved.includes(name);
+                refreshBody();
                 status.textContent = t("已载入这个视频的肌群选择。");
             };
             action(root, t("载入已有选择"), load);

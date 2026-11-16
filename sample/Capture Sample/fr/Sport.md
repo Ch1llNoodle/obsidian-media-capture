@@ -6,7 +6,7 @@
 
 Activez Suivi sportif. Aucun identifiant nécessaire. Saisissez un lien ou un nom stable, chargez les choix, sélectionnez les groupes musculaires puis enregistrez.
 
-Résultat: data/exercise.json. Les identifiants musculaires sont communs aux langues ; cet exemple ne contient pas de schéma corporel.
+Résultat: data/exercise.json. Les identifiants musculaires sont communs aux langues ; le schéma fourni propose les vues homme/femme et face/dos, synchronisées avec les cases à cocher.
 
 Les chemins ci-dessus sont relatifs à Capture Sample.
 

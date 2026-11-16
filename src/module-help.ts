@@ -12,9 +12,9 @@ const guides: Record<ModuleId, { preparation: string; action: string; result: st
     douban: { preparation: '先安装 Douban 插件并登录，再准备笔记库的收藏同步页面。', action: '在配套页面点击豆瓣同步按钮，等待收藏列表读取完成。', result: '作品和封面按页面约定保存；本模块不替代 Douban 插件的搜索与逐条导入。' },
     daily: { preparation: '需要调用 Capture 的日记模板。在功能设置中选择来源，再到服务连接填写对应凭证。', action: '使用配套模板创建一篇新日记。仅开启模块不会为已有日记补入信息。', result: '模板将定位、天气、月相、问候语和诗词写入日记；关闭或失败的来源使用模板默认内容。' },
 };
-export function renderModuleHelp(container: HTMLElement, id: ModuleId): void {
+export function renderModuleHelp(container: HTMLElement, id: ModuleId, label = '怎么使用'): void {
     const details = container.createEl('details', { cls: 'media-module-help' });
-    details.createEl('summary', { text: t('怎么使用') });
+    details.createEl('summary', { text: t(label) });
     const guide = guides[id];
     const list = details.createEl('ol');
     for (const text of [guide.preparation, guide.action, guide.result]) list.createEl('li', { text: t(text) });

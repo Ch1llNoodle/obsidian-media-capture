@@ -5,7 +5,7 @@
 Media Capture enregistre des liens de podcasts et vidéos dans des notes Markdown ordinaires. Commencez par un média : aucune clé API, IA, Dataview ou Templater n’est nécessaire pour ce premier usage.
 
 1. Installez et activez Media Capture.
-2. Ouvrez Paramètres → Media Capture → Bien démarrer.
+2. Ouvrez Paramètres → Media Capture → Fonctions ; l’icône d’aide près du titre ouvre le guide.
 3. Lancez la capture, collez un lien d’épisode ou de vidéo complète, récupérez les informations puis choisissez Enregistrer et ouvrir.
 
 Par défaut, les podcasts sont dans Podcasts.md et les vidéos dans Videos.md. Le formulaire affiche les destinations réellement configurées.

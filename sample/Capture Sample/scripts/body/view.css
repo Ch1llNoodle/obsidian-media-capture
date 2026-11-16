@@ -1,0 +1,12 @@
+.capture-sample-body { margin-block: 16px; color: var(--text-normal); }
+.capture-sample-body > p { color: var(--text-muted); font-size: var(--font-ui-small); }
+.capture-sample-body .capture-body-controls { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+.capture-sample-body .capture-body-controls [role="group"] { display: flex; flex-wrap: wrap; gap: 4px; }
+.capture-sample-body button[aria-pressed="true"] { background: var(--interactive-accent); color: var(--text-on-accent); }
+.capture-sample-body .capture-body-canvas { display: flex; justify-content: center; }
+.capture-sample-body g[role="button"]:hover > path,
+.capture-sample-body g[role="button"]:focus-visible > path { stroke: var(--text-normal); stroke-width: 1.5; }
+.capture-sample-body g[role="button"]:focus-visible { outline: none; }
+
+.capture-sample-body svg { width: 260px; max-width: 100%; height: auto; display: block; }
+.capture-sample-body g[role="button"] { cursor: pointer; }
