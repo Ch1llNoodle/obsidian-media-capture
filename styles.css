@@ -56,46 +56,60 @@
 .media-capture-settings .media-settings-tab[aria-selected="true"] { background: var(--background-modifier-hover); color: var(--text-accent); font-weight: var(--font-semibold); }
 .media-capture-settings .media-settings-tab:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }
 .media-capture-settings .media-settings-panel[hidden] { display: none; }
-.media-capture-settings .media-settings-rule {
-    border: 0;
-    box-shadow: none;
-    border-radius: var(--radius-m);
+/* Module headers and each subsection have separate, compact theme surfaces. */
+.media-capture-settings .media-settings-module { margin-block: 12px 20px; }
+.media-capture-settings .media-settings-module-header,
+.media-capture-settings .media-settings-group {
     background: var(--background-secondary);
     color: var(--text-normal);
+    border: 0;
+    border-radius: var(--radius-m);
+    box-shadow: none;
+    margin: 0;
     padding: 0 16px;
-    margin-block: 12px;
 }
-/* Keep one theme-colored surface when themes also style native setting rows. */
+.media-capture-settings .media-settings-module-header > .setting-item,
+.media-capture-settings .media-settings-group > .setting-item,
 .media-capture-settings .media-settings-rule > .setting-item,
-.media-capture-settings .media-settings-rule > .media-rule-settings,
-.media-capture-settings .media-settings-rule .media-rule-settings > .setting-item {
+.media-capture-settings .media-rule-settings .setting-item {
     background: transparent;
     border: 0;
     border-radius: 0;
     box-shadow: none;
     margin: 0;
+    padding: 12px 0;
 }
-.media-capture-settings .media-settings-rule > .setting-item { padding: 16px 0; }
-/* Module titles and subsection headings use the standard UI size and semibold weight. */
+.media-capture-settings .media-settings-module-header > .setting-item + .setting-item,
+.media-capture-settings .media-settings-group > .setting-item + .setting-item,
+.media-capture-settings .media-settings-group > .media-settings-rule,
+.media-capture-settings .media-settings-group > .media-settings-rule + .setting-item,
+.media-capture-settings .media-settings-rule .setting-item + .setting-item {
+    border-top: 1px solid var(--background-modifier-border);
+}
+.media-capture-settings .media-settings-module-header > .setting-item + .setting-item { padding-block: 8px; }
+.media-capture-settings .media-settings-rule {
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+}
 .media-capture-settings .media-settings-module .setting-item-name {
     font-size: var(--font-ui-medium);
     font-weight: var(--font-normal);
 }
-.media-capture-settings .media-settings-module > .setting-item > .setting-item-info > .setting-item-name {
-    font-size: var(--font-ui-medium);
-    font-weight: var(--font-semibold);
-}
+.media-capture-settings .media-settings-module-header > .setting-item:first-child > .setting-item-info > .setting-item-name,
 .media-capture-settings .media-settings-module .setting-item-heading .setting-item-name {
     font-size: var(--font-ui-medium);
     font-weight: var(--font-semibold);
 }
-.media-capture-settings .media-settings-module .setting-item-description {
-    font-size: var(--font-ui-small);
-}
-.media-capture-settings .media-settings-rule > .media-rule-settings { padding: 0 0 12px; }
-.media-capture-settings .media-rule-settings { margin-bottom: 12px; }
-.media-capture-settings .media-rule-settings > summary { padding-block: 0 8px; font-size: var(--font-ui-small); }
-.media-capture-settings .media-rule-settings[open] > summary { padding-bottom: 14px; }
+.media-capture-settings .media-settings-module .setting-item-description { font-size: var(--font-ui-small); }
+.media-capture-settings .media-settings-module > .media-rule-settings { margin: 8px 0 0; padding: 0; }
+.media-capture-settings .media-settings-module .media-settings-section-heading { padding: 0; margin: 18px 0 8px; }
+.media-capture-settings .media-settings-module > .media-rule-settings > .media-settings-section-heading:first-of-type { margin-top: 8px; }
+.media-capture-settings .media-settings-rule > .media-rule-settings { margin: 0; padding: 0 0 10px; }
+.media-capture-settings .media-rule-settings > summary { cursor: pointer; color: var(--text-muted); padding: 4px 0; font-size: var(--font-ui-small); }
+.media-capture-settings .media-rule-settings[open] > summary { padding-bottom: 8px; }
 .media-capture-settings .media-rule-settings .setting-item { align-items: flex-start; }
 .media-capture-settings .media-rule-settings textarea { width: 100%; min-height: 160px; resize: vertical; font-family: var(--font-monospace); font-size: var(--font-smaller); }
 .media-capture-settings .media-rule-settings .setting-item:has(textarea) { flex-direction: column; gap: 10px; }
