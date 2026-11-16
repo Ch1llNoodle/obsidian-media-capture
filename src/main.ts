@@ -1,5 +1,5 @@
 import { t } from './i18n';
-import { Notice, Plugin } from 'obsidian';
+import { Notice, Plugin, type Command } from 'obsidian';
 import { CaptureService } from './service';
 import { CaptureModal } from './capture-modal';
 import { CaptureSettings } from './settings-ui';
@@ -12,7 +12,7 @@ import { CaptureRecords } from './record-api';
 export default class MediaCapture extends Plugin {
     service!: CaptureService;
     private taskLog: TaskCompletionLog | undefined;
-    readonly supportsRecommendations = true;
+    get supportsRecommendations(): boolean { return this.activeSettings.modules.media; }
     records!: CaptureRecords;
 
     private get activeSettings(): CaptureSettingsData {
@@ -27,35 +27,35 @@ export default class MediaCapture extends Plugin {
     override async onload(): Promise<void> {
         this.service = new CaptureService(this, () => this.taskLog?.configure());
         await this.service.initialize();
-        this.records = new CaptureRecords(this.app, name => this.getCredential(name), () => { void this.activeSettings; });
+        this.records = new CaptureRecords(this.app, name => this.getCredential(name), () => { void this.activeSettings; }, () => this.activeSettings);
         this.taskLog = new TaskCompletionLog(this, () => this.service.config);
         this.taskLog.configure();
         this.service.notes.register(this);
         this.service.appends.register(this);
         this.addSettingTab(new CaptureSettings(this.app, this.service));
         registerRecommendationUI(this, this.service);
-        this.addCommand({
+        this.addMediaCommand({
             id: 'capture-media', name: t("采集媒体"),
             callback: () => new CaptureModal(this.service).open(),
         });
-        this.addCommand({
+        this.addMediaCommand({
             id: 'create-media-note', name: t("创建媒体笔记"),
             callback: () => new CaptureModal(this.service, { output: 'note', item: {
                 id: '', url: '', title: '', state: "completed", date: '',
             } }).open(),
         });
-        this.addCommand({
+        this.addMediaCommand({
             id: 'apply-note-template', name: t("将模板应用到已有记录"),
             callback: () => new NoteRefreshModal(this.service).open(),
         });
-        this.addCommand({
+        this.addMediaCommand({
             id: 'open-media-log', name: t("打开媒体记录"),
             callback: async () => {
                 const file = await this.service.ensureCatalog();
                 await this.app.workspace.getLeaf(false).openFile(file);
             },
         });
-        this.addCommand({
+        this.addMediaCommand({
             id: 'repair-covers', name: t("补全缺失封面"),
             callback: () => {
                 void this.service.repairCovers().catch((error: unknown) => {
@@ -64,6 +64,14 @@ export default class MediaCapture extends Plugin {
             },
         });
         this.app.workspace.onLayoutReady(() => this.service.repairOnReady());
+    }
+
+    private addMediaCommand(command: Command): void {
+        this.addCommand({ ...command, checkCallback: checking => {
+            if (!this.activeSettings.modules.media) return false;
+            if (!checking) command.callback?.();
+            return true;
+        } });
     }
 
     override onunload(): void {

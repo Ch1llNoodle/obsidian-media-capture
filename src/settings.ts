@@ -1,7 +1,8 @@
+import { defaultModules, defaultDailySources, moduleDefinitions, dailySourceDefinitions } from './modules';
 import { t } from './i18n';
 import type { CaptureSettingsData } from './types';
 import { validateCredentials } from './credentials';
-import { record } from './validation';
+import { record, isRecord } from './validation';
 import { defaultRules, validateRules } from './write-rules';
 
 export function ruleTargets(settings: Omit<CaptureSettingsData, 'catalogPath' | 'entryHeading'>): CaptureSettingsData {
@@ -12,7 +13,8 @@ export function ruleTargets(settings: Omit<CaptureSettingsData, 'catalogPath' | 
 }
 
 export const DEFAULT_SETTINGS: Readonly<CaptureSettingsData> = Object.freeze(ruleTargets({
-    taskCompletionLog: false,
+    modules: defaultModules(),
+    dailySources: defaultDailySources(),
     taskLogHeading: '## Notes',
     writeRules: defaultRules(),
     videoCatalogPath: 'Videos.md',
@@ -41,7 +43,7 @@ export function vaultPath(value: unknown, extension = ""): string {
 
 export function validateSettings(settings: unknown): CaptureSettingsData {
     const supplied = record(settings);
-    const result = ruleTargets({ ...DEFAULT_SETTINGS, writeRules: defaultRules(), credentials: [] });
+    const result = ruleTargets({ ...DEFAULT_SETTINGS, modules: defaultModules(), dailySources: defaultDailySources(), writeRules: defaultRules(), credentials: [] });
     for (const key of Object.keys(supplied)) if (!Object.prototype.hasOwnProperty.call(DEFAULT_SETTINGS, key) || ['catalogPath', 'entryHeading'].includes(key)) throw new Error(t("Unknown settings field: {0}.", key));
     for (const key of ['taskLogHeading', 'videoCatalogPath', 'imageFolder', 'dailyFolder', 'dailyProperty', 'bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const) {
         if (supplied[key] !== undefined) {
@@ -49,10 +51,29 @@ export function validateSettings(settings: unknown): CaptureSettingsData {
             result[key] = supplied[key];
         }
     }
-    for (const key of ['taskCompletionLog', 'downloadCovers', 'repairOnStartup', 'dailyIntegration', 'playbackIntegration'] as const) {
+    for (const key of ['downloadCovers', 'repairOnStartup', 'dailyIntegration', 'playbackIntegration'] as const) {
         if (supplied[key] !== undefined) {
             if (typeof supplied[key] !== 'boolean') throw new Error(t("Setting {0} must be boolean.", key));
             result[key] = supplied[key];
+        }
+    }
+    if (supplied.modules !== undefined) {
+        if (!isRecord(supplied.modules)) throw new Error(t('功能配置必须是对象。'));
+        const modules = supplied.modules;
+        for (const key of Object.keys(modules)) if (!moduleDefinitions.some(module => module.id === key)) throw new Error(t('Unknown settings field: {0}.', key));
+        for (const { id } of moduleDefinitions) if (modules[id] !== undefined) {
+            if (typeof modules[id] !== 'boolean') throw new Error(t('Setting {0} must be boolean.', id));
+            result.modules[id] = modules[id];
+        }
+    }
+    if (supplied.dailySources !== undefined) {
+        if (!isRecord(supplied.dailySources)) throw new Error(t('日记来源配置必须是对象。'));
+        const sources = supplied.dailySources;
+        for (const key of Object.keys(sources)) if (!dailySourceDefinitions.some(source => source.id === key)) throw new Error(t('Unknown settings field: {0}.', key));
+        for (const source of dailySourceDefinitions) if (sources[source.id] !== undefined) {
+            const value = sources[source.id];
+            if (typeof value !== 'string' || value !== 'none' && value !== source.provider) throw new Error(t('日记来源无效：{0}', source.id));
+            result.dailySources[source.id] = value;
         }
     }
     if (supplied.credentials !== undefined) result.credentials = validateCredentials(supplied.credentials);

@@ -34,7 +34,7 @@ Le coffre fournit chemins, champs, fuseaux horaires, titres, prompts et rendu. L
 
 #### Journal des tâches terminées
 
-Activez **Enregistrer l’heure de fin des tâches** dans les paramètres de Capture pour inscrire les tâches Markdown terminées dans la note quotidienne du jour. Cette fonction est désactivée par défaut. **Titre de la section des tâches** définit la section de destination, `## Notes` par défaut. Le chemin, le format de date et le modèle suivent la configuration des notes quotidiennes d’Obsidian.
+Activez **Journal des tâches terminées** dans **Fonctions** dans les paramètres de Capture pour inscrire les tâches Markdown terminées dans la note quotidienne du jour. Cette fonction est désactivée par défaut. **Titre de la section des tâches** définit la section de destination, `## Notes` par défaut. Le chemin, le format de date et le modèle suivent la configuration des notes quotidiennes d’Obsidian.
 
 Chaque entrée contient le texte de la tâche, un lien vers la tâche d’origine et son heure de fin. Un identifiant de bloc stable est ajouté à la tâche source. Une tâche cochée depuis une vue de synthèse conserve ce lien source. Décocher conserve l’entrée ; terminer à nouveau la tâche actualise l’heure et déplace l’entrée dans la note du jour. Tasks continue de gérer les échéances et les dates de fin. Les tâches déjà terminées ne sont pas rejouées au démarrage. Les entrées sont enregistrées en Markdown, sans fichier de récompenses.
 
@@ -163,7 +163,9 @@ Les paramètres, fenêtres, boutons, notifications et erreurs générées par le
 
 #### Paramètres
 
-Les paramètres sont regroupés en Capture de médias, Enregistrements et journal, Services et Maintenance. La capture contient règles, vidéo, lecture et couvertures. Les enregistrements regroupent tâches, liens quotidiens et collections. Services présente six champs nommés et les autres identifiants. Maintenance propose la réparation des couvertures et les mises à jour des modèles. Les champs dépendants sont désactivés avec leur fonction, en conservant leurs valeurs. Les identifiants sont masqués et peuvent être révélés temporairement. La page active reste sélectionnée après sauvegarde ; les règles ouvertes sont mémorisées pendant la session.
+Les paramètres comportent trois pages : Fonctions, Connexions aux services et Maintenance. Activez la capture de médias, les tâches, les séries, la lecture, les lieux, les études, le sport, Douban et les sources quotidiennes selon les besoins. Seuls les modules activés affichent leurs réglages. Une nouvelle installation active uniquement la capture de médias. Ses réglages regroupent règles, lecture, couvertures, liens quotidiens et œuvres associées. La maintenance propose les opérations des modules activés. Les cartes utilisent les couleurs du thème sans bordure extérieure.
+
+Les connexions affichent uniquement les identifiants utilisés par les fonctions activées ; les identifiants partagés apparaissent une seule fois. Désactiver un module masque ses réglages et bloque ses API, tout en conservant paramètres, identifiants et données. Les accès à la lecture, aux séries et aux muscles vérifient chaque opération. Localisation, météo, phase lunaire, message et poésie proposent chacun Désactivé ou une source prise en charge ; ils sont désactivés par défaut. Une source quotidienne désactivée renvoie null afin que le modèle utilise ses valeurs par défaut.
 
 | Paramètre | Valeur par défaut | Fonction |
 | --- | --- | --- |
@@ -174,24 +176,15 @@ Les paramètres sont regroupés en Capture de médias, Enregistrements et journa
 | Enregistrer les couvertures localement | Activé | Téléchargement à la capture ou à la réparation |
 | Compléter les couvertures au démarrage | Désactivé | Réparation après le chargement de l’espace de travail |
 | Intégration au journal | Désactivée | Lien vers une unique note quotidienne existante |
-| Identifiants personnalisés | Vides | Champs et valeurs lus par les scripts |
+| Identifiants des services | Vides | Services des modules activés uniquement, identifiants partagés affichés une fois |
 | Dossier / propriété du journal | `Daily` / `media` | Recherche dans les sous-dossiers, autres propriétés conservées |
 | Collections d’œuvres | `Books.md`, `Movies.md`, `Series.md`, `Music.md`, `Games.md`, `Theater.md` dans `Recommendations/` | Collections d’œuvres souhaitées existantes |
 
 L’intégration au journal recherche une note nommée `YYYY-MM-DD` dans le dossier configuré et ses sous-dossiers. Elle utilise le lien de bloc du journal si la règle correspondante s’exécute ; sinon, elle utilise la première sortie supplémentaire, avec une ancre d’épisode pour les fichiers d’émission. Créer une note depuis une ligne existante conserve la source d’activité d’origine. Modifier les chemins concerne les nouvelles sorties ; les fichiers existants restent à leur place.
 
-#### Identifiants personnalisés
+#### Identifiants des services
 
-Ajoutez, renommez, modifiez ou supprimez les champs dans **Identifiants personnalisés**. Les valeurs sont masquées à l’écran. Les noms sont uniques, sensibles à la casse et limités à 80 caractères ; 100 entrées au maximum sont acceptées. Les valeurs sont conservées telles quelles. Le script appelant gère les en-têtes d’authentification, la normalisation des jetons et la validation propre au service.
-
-```javascript
-const capture = app.plugins.plugins['media-capture'];
-const token = capture.getCredential('serviceToken');
-```
-
-`getCredential(name)` renvoie une valeur ou une chaîne vide ; le plugin indisponible produit une erreur. La lecture reste locale. Les services intégrés utilisent records ; les intégrations personnalisées peuvent lire les identifiants directement.
-
-Les valeurs sont enregistrées en clair dans `data.json` ; le masquage à l’écran ne chiffre pas ce fichier. Synchronisez-le uniquement avec les données privées du coffre. Renommer ou supprimer un champ nécessite d’adapter ses scripts. Le format actuel utilise une liste `credentials` de `{name, value}` et ne prend pas en charge les anciens paramètres fixes par service.
+Saisissez les identifiants par nom de service. Les champs sont masqués et disposent d’un bouton pour les afficher. Les séries utilisent TMDB, les études Maimemo et les lieux Amap. Les sources quotidiennes peuvent utiliser Tencent Maps, Amap, DeepSeek et Jinrishici. La phase lunaire wttr.in ne nécessite aucun identifiant. La configuration utilise `modules` et `dailySources`, et les tâches `modules.tasks`. L’ancien champ `taskCompletionLog` est refusé, sans migration des anciennes configurations.
 
 #### Identité des enregistrements et couvertures
 

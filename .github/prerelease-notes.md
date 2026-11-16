@@ -1,5 +1,7 @@
-### Media Capture 0.17.1
+### Media Capture 0.18.0
 
-Remove the outer border and shadow from write-rule cards and clear duplicate backgrounds on nested setting rows. Cards use the active Obsidian theme colors for their background and text while controls and keyboard focus retain native theme styling.
+Organize settings into Features, Service connections and Maintenance. Enable media, tasks, series, reading, places, study, exercise, Douban sync and Daily note sources separately. Fresh installs enable media only. Service fields appear only when required, with shared credentials shown once.
 
-Requires Obsidian 1.8.7 or later. Build and deployment verified; visual checks across themes and mobile devices remain pending.
+Daily note sources independently select Off or a supported provider. Disabled modules block new operations and old storage handles; disabled sources return null without requests. Saved credentials and records remain available when features are re-enabled.
+
+Configuration uses modules and dailySources. Task logging uses modules.tasks; no migration of the retired taskCompletionLog field is included. Requires Obsidian 1.8.7 or later. Desktop theme and mobile visual checks remain pending.

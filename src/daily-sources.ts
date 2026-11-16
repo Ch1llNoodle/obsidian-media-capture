@@ -1,4 +1,5 @@
 import { requestUrl, type RequestUrlParam, type RequestUrlResponse } from 'obsidian';
+import type { DailySourceId } from './modules';
 import { record, errorMessage } from './validation';
 
 /** One budget per generated note. Late responses cannot mutate the caller's note. */
@@ -15,30 +16,33 @@ export function requestBudget(send: (options: RequestUrlParam) => Promise<Reques
     });
 }
 const text = (value: unknown): string => typeof value === 'string' ? value : '';
-export function createDailySources(credential: (name: string) => string, active: () => void) {
+export function createDailySources(credential: (name: string) => string, active: () => void, enabled: (source: DailySourceId) => boolean) {
     const send = requestBudget(async options => { active(); return requestUrl(options); });
-    async function json(options: RequestUrlParam, limit?: number): Promise<Record<string, unknown>> {
+    async function json(source: DailySourceId, options: RequestUrlParam, limit?: number): Promise<Record<string, unknown>> {
         const response = await send(options, limit);
         active();
+        if (!enabled(source)) throw new Error('Daily source disabled');
         if (response.status !== 200) throw new Error(`Daily service HTTP ${response.status}`);
         return record(response.json);
     }
     return {
         location: async () => {
+            if (!enabled('location')) return null;
             const key = credential('tencentMapKey');
             if (!key) return null;
             try {
-                const data = await json({ url: `https://apis.map.qq.com/ws/location/v1/ip?key=${encodeURIComponent(key)}` });
+                const data = await json('location', { url: `https://apis.map.qq.com/ws/location/v1/ip?key=${encodeURIComponent(key)}` });
                 const info = record(record(data.result).ad_info);
                 if (data.status !== 0 || !text(info.city) || !/^\d+$/.test(String(info.adcode))) return null;
                 return { city: text(info.city).replace(/市$/, ''), adcode: String(info.adcode) };
             } catch { return null; }
         },
         weather: async (city: string) => {
+            if (!enabled('weather')) return null;
             const key = credential('amapKey');
             if (!key) return null;
             try {
-                const data = await json({ url: `https://restapi.amap.com/v3/weather/weatherInfo?${new URLSearchParams({ key, city, extensions: 'all' })}` });
+                const data = await json('weather', { url: `https://restapi.amap.com/v3/weather/weatherInfo?${new URLSearchParams({ key, city, extensions: 'all' })}` });
                 const forecasts: unknown[] = Array.isArray(data.forecasts) ? data.forecasts as unknown[] : [];
                 const info = record(forecasts[0]);
                 const casts: unknown[] = Array.isArray(info.casts) ? info.casts as unknown[] : [];
@@ -48,17 +52,19 @@ export function createDailySources(credential: (name: string) => string, active:
             } catch { return null; }
         },
         moon: async (city: string) => {
+            if (!enabled('moon')) return null;
             try {
                 const response = await send({ url: `https://wttr.in/${encodeURIComponent(city)}?format=%m` }, 2000);
                 active();
-                return response.status === 200 && response.text && !response.text.includes('<') && response.text.length < 5 ? response.text.trim() : null;
+                return enabled('moon') && response.status === 200 && response.text && !response.text.includes('<') && response.text.length < 5 ? response.text.trim() : null;
             } catch { return null; }
         },
         greeting: async (prompt: string) => {
+            if (!enabled('greeting')) return null;
             const key = credential('deepseekKey');
             if (!key) return null;
             try {
-                const data = await json({ url: 'https://api.deepseek.com/v1/chat/completions', method: 'POST',
+                const data = await json('greeting', { url: 'https://api.deepseek.com/v1/chat/completions', method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
                     body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: prompt }], temperature: 0.8 }) }, 6000);
                 const choices: unknown[] = Array.isArray(data.choices) ? data.choices as unknown[] : [];
@@ -66,10 +72,11 @@ export function createDailySources(credential: (name: string) => string, active:
             } catch { return null; }
         },
         poetry: async () => {
+            if (!enabled('poetry')) return null;
             const key = credential('jinrishiciToken');
             if (!key) return null;
             try {
-                const data = record((await json({ url: 'https://v2.jinrishici.com/sentence', headers: { 'X-User-Token': key } })).data);
+                const data = record((await json('poetry', { url: 'https://v2.jinrishici.com/sentence', headers: { 'X-User-Token': key } })).data);
                 const origin = record(data.origin);
                 if (!text(data.content)) return null;
                 return { content: text(data.content), title: text(origin.title), dynasty: text(origin.dynasty), author: text(origin.author) };

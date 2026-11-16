@@ -59,14 +59,19 @@ class EpisodeButtons extends MarkdownRenderChild {
 export function registerRecommendationUI(plugin: Plugin, podcast: CaptureService): void {
     const service = new RecommendationService(podcast);
     plugin.registerEditorExtension(recommendationEditor(service));
-    plugin.app.workspace.onLayoutReady(() => { void service.refreshEpisodeLinks().catch((error: unknown) => new Notice(errorMessage(error))); });
-    plugin.addCommand({ id: 'add-recommendation', name: t("打开媒体关联入口"), callback: async () => {
+    plugin.app.workspace.onLayoutReady(() => { if (podcast.config.modules.media) void service.refreshEpisodeLinks().catch((error: unknown) => new Notice(errorMessage(error))); });
+    const open = async (): Promise<void> => {
         try {
             const file = await podcast.ensureCatalog();
             await plugin.app.workspace.getLeaf(false).openFile(file);
-            new Notice(t("在媒体条目旁选择“添加关联”。"));
+            new Notice(t('在媒体条目旁选择“添加关联”。'));
         } catch (error) { new Notice(errorMessage(error)); }
-    } });
+    };
+    plugin.addCommand({ id: 'add-recommendation', name: t('打开媒体关联入口'), checkCallback: checking => {
+        if (!podcast.config.modules.media) return false;
+        if (!checking) void open();
+        return true;
+    }, callback: open });
     plugin.registerMarkdownPostProcessor((element, context) => {
         if (podcast.isCatalog(context.sourcePath)) context.addChild(new EpisodeButtons(element, service));
     });

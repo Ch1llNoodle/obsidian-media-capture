@@ -1,3 +1,4 @@
+import { requireModule } from './modules';
 import { isMediaState } from './media-state';
 import { t } from './i18n';
 import { ruleTargets, validateSettings } from './settings';
@@ -39,8 +40,12 @@ export class CaptureService {
     dispose(): void { this.unloaded = true; }
     async loadData(): Promise<unknown> { return new CaptureDataStore(this.plugin).load(); }
     saveData(data: Record<string, unknown>): Promise<void> { return new CaptureDataStore(this.plugin).save(data); }
+    requireMedia(): void {
+        if (this.unloaded) throw new Error(t("插件已卸载，请重新启用后重试。"));
+        requireModule(this.config, 'media');
+    }
     repairOnReady(): void {
-        if (!this.unloaded && this.config.repairOnStartup && this.config.downloadCovers) {
+        if (!this.unloaded && this.config.modules.media && this.config.repairOnStartup && this.config.downloadCovers) {
             void this.repairCovers(true).catch(error => console.error("Media Capture: 封面补全失败", errorMessage(error)));
         }
     }
@@ -59,14 +64,16 @@ export class CaptureService {
         this.settingsChanged();
     }
     fetchMetadata(url: string): Promise<EpisodeMetadata> {
+        this.requireMedia();
         return fetchMediaMetadata(url);
     }
     get catalogPaths(): string[] { return [this.config.catalogPath, this.config.videoCatalogPath].filter(Boolean); }
-    isCatalog(path: string | undefined): boolean { return path !== undefined && this.catalogPaths.includes(path); }
+    isCatalog(path: string | undefined): boolean { return this.config.modules.media && path !== undefined && this.catalogPaths.includes(path); }
     catalogPathFor(item: Pick<CaptureItem, 'provider'>): string {
         return item.provider === 'youtube' || item.provider === 'bilibili' ? this.config.videoCatalogPath : this.config.catalogPath;
     }
     async ensureCatalog(path = this.config.catalogPath): Promise<TFile> {
+        this.requireMedia();
         if (!this.isCatalog(path)) throw new Error(t("未配置该记录文件。"));
         this.notes.checkPath(path, true);
         let file = this.app.vault.getAbstractFileByPath(path);
@@ -79,11 +86,12 @@ export class CaptureService {
         return file;
     }
     capture(item: CaptureItem): Promise<CaptureResult> {
-        const work = this.queue.then(() => saveCapture(this, item));
+        const work = this.queue.then(() => { this.requireMedia(); return saveCapture(this, item); });
         this.queue = work.catch(() => {});
         return work;
     }
     async repairCovers(silent = false): Promise<CoverRepairResult | undefined> {
+        this.requireMedia();
         if (!this.config.downloadCovers) { if (!silent) new Notice(t("本地封面下载已关闭，可在插件设置中开启。")); return; }
         const sources: string[] = [];
         for (const path of this.catalogPaths) {
@@ -97,7 +105,7 @@ export class CaptureService {
         let repaired = 0;
         const failures: CoverFailure[] = [];
         for (const { line, identity } of missing) {
-            if (this.unloaded) return;
+            if (this.unloaded || !this.config.modules.media) return;
             const state = stateOf(line);
             if (!identity || !isMediaState(state)) continue;
             try {

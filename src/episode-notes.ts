@@ -130,7 +130,7 @@ export class EpisodeNotes {
     }
 
     async save(plan: EpisodeNotePlan, coverPath: string): Promise<{ file: TFile; created: boolean }> {
-        if (this.podcast.unloaded) throw new Error(t("插件已卸载，请重新启用后重试。"));
+        this.podcast.requireMedia();
         const existing = await this.find(plan.id, plan.rule.id);
         if (existing) return { file: existing, created: false };
         if (plan.existing) throw new Error(t("单集笔记已被移除或标识已变化，请重新打开后重试。"));
@@ -139,7 +139,7 @@ export class EpisodeNotes {
         const content = renderEpisodeNote(plan.template, values, plan.rule.id);
         const folder = plan.path.includes('/') ? plan.path.slice(0, plan.path.lastIndexOf('/')) : '';
         if (folder) await ensureFolder(vault, folder);
-        if (this.podcast.unloaded) throw new Error(t("插件已卸载，请重新启用后重试。"));
+        this.podcast.requireMedia();
         const file = await vault.create(plan.path, content);
         this.index.set(plan.rule.id + '::' + plan.id, file.path);
         this.metadata.set(plan.id, values);

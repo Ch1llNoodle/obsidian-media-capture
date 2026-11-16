@@ -39,11 +39,13 @@ async function backup(podcast: CaptureService, entry: NoteRefreshEntry): Promise
 
 export function applyNoteRefresh(podcast: CaptureService, entries: readonly NoteRefreshEntry[]): Promise<NoteRefreshResult[]> {
     const work = podcast.queue.then(async () => {
+        podcast.requireMedia();
         const results: NoteRefreshResult[] = [];
         for (const entry of entries) {
             let stage = t("检查目标");
             const result: NoteRefreshResult = { path: entry.path, status: 'failed', backupPath: '', error: '' };
             try {
+                podcast.requireMedia();
                 if (entry.error) throw new Error(entry.error);
                 if (podcast.unloaded) throw new Error(t("插件已卸载，后续文件均未更新。"));
                 podcast.notes.checkPath(entry.path, entry.ruleId === 'catalog' && podcast.isCatalog(entry.path));
@@ -58,6 +60,7 @@ export function applyNoteRefresh(podcast: CaptureService, entries: readonly Note
                 stage = t("替换正文");
                 if (podcast.unloaded) throw new Error(t("插件已卸载，原笔记未替换。"));
                 await podcast.app.vault.process(file, current => {
+                    podcast.requireMedia();
                     if (current !== entry.original) throw new Error(t("备份期间文件已修改，原笔记未替换，请重新预览。"));
                     return entry.replacement;
                 });

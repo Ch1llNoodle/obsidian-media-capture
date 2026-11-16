@@ -25,3 +25,13 @@ test('default credentials do not leak between fresh settings instances',()=>{
     const first=validateSettings({});first.credentials.push({name:'example',value:'private-value'});
     assert.equal(validateSettings({}).credentials.length,0);
 });
+
+test('feature settings default to media only and reject retired or invalid configuration',()=>{
+    const first=validateSettings({});
+    assert.deepEqual(Object.entries(first.modules).filter(([,enabled])=>enabled).map(([id])=>id),['media']);
+    assert(Object.values(first.dailySources).every(source=>source==='none'));
+    first.modules.series=true;first.dailySources.weather='amap';
+    assert.equal(validateSettings({}).modules.series,false);
+    assert.equal(validateSettings({}).dailySources.weather,'none');
+    for(const settings of [{taskCompletionLog:true},{modules:null},{modules:[]},{modules:{unknown:true}},{modules:{media:1}},{dailySources:[]},{dailySources:{weather:'tencent'}},{dailySources:{unknown:'none'}}]) assert.throws(()=>validateSettings(settings));
+});

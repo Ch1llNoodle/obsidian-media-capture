@@ -22,7 +22,7 @@ export async function saveCapture(service: CaptureService, input: CaptureItem): 
     const rules = rulesFor(settings, mode);
     if (!rules.length) throw new Error(t("没有启用的写入规则，请在设置中启用至少一条。"));
     const item: CaptureItem = { ...input, ...parsed };
-    if (service.unloaded) throw new Error(t("插件已卸载，请重新启用后重试。"));
+    service.requireMedia();
     if (!item.title.trim() || !isMediaState(item.state)) throw new Error(t("名称或状态无效。"));
     if (item.state === "completed" && !validDate(item.date)) throw new Error(t("收听日期无效。"));
     if (item.published && !validDate(item.published)) throw new Error(t("发布日期无效。"));
@@ -81,7 +81,7 @@ export async function saveCapture(service: CaptureService, input: CaptureItem): 
     try {
         for (const plan of plans) {
             stage = t("写入规则「{0}」：{1}", plan.rule.name, plan.path);
-            if (service.unloaded) throw new Error(t("插件已卸载，请重新启用后重试。"));
+            service.requireMedia();
             if (plan.kind === 'catalog') {
                 const file = await service.ensureCatalog(catalogPath);
                 await service.app.vault.process(file, text => updateCatalog(text, recordItem, cover.path, { ...settings, writeRules: [plan.rule] }, createdDate).text);

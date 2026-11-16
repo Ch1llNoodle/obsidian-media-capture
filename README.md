@@ -34,7 +34,7 @@ The vault supplies paths, fields, time zones, headings, prompts and rendering ru
 
 #### Task completion log
 
-Enable **Record task completion times** in Capture settings to write completed Markdown tasks to today's Daily note. The feature is off by default. **Task log heading** selects the destination section; the default is `## Notes`. Note paths, date formats and templates follow Obsidian's Daily notes configuration.
+Enable **Task completion log** on the **Features** page to write completed Markdown tasks to today's Daily note. The feature is off by default. **Task log heading** selects the destination section; the default is `## Notes`. Note paths, date formats and templates follow Obsidian's Daily notes configuration.
 
 Each record contains the task text, a link to the original task and its completion time. The source task receives a stable block ID. Completing a task from a query view links to that source. Unchecking keeps the record; completing it again updates the time and moves the record to today's note. Tasks continues to manage deadlines and completion dates. Existing completed tasks are not replayed on startup. Logs are stored in Markdown; no reward file is required.
 
@@ -167,7 +167,9 @@ Settings, dialogs, buttons, notices, and plugin-generated errors are translated.
 
 #### Settings
 
-Settings are grouped into Media capture, Records and journal, Services, and Maintenance. Media capture contains write rules, video, playback and covers. Records contains tasks, daily links and work collections. Services presents six named credential fields and Other credentials. Maintenance provides cover repair and template updates. Dependent inputs are disabled when their feature is off, retaining saved values. Credentials are masked and can be revealed temporarily. Saving retains the active page; rule expansion stays within the current settings session.
+Settings have three pages: Features, Service connections, and Maintenance. Features enable media capture, task completion logging, series, reading, places, study, exercise, Douban sync, and Daily note sources. Only enabled modules show their settings. Fresh installations enable media capture only. Media settings include write rules, playback, covers, daily links and work associations. Maintenance shows actions for enabled modules. Rule cards use theme backgrounds without an outer border.
+
+Service connections show only credentials used by enabled features; shared credentials appear once. Disabling a module hides its settings and blocks its record APIs while retaining settings, credentials and saved records. Reading, series and muscle-selection handles check the current switch on every operation. Location, weather, moon phase, greeting and poetry each select Off or a supported source, defaulting to Off. Disabled Daily sources return null so templates use their own defaults.
 
 | Setting | Default | Behavior |
 | --- | --- | --- |
@@ -178,26 +180,15 @@ Settings are grouped into Media capture, Records and journal, Services, and Main
 | Download covers | Enabled | Downloads missing covers when capturing or repairing |
 | Repair on startup | Disabled | Repairs concentrated-log covers after layout is ready |
 | Daily integration | Disabled | Links completed podcast or video records to exactly one existing dated note |
-| Custom credentials | Empty | User-defined field/value pairs for vault scripts |
+| Service credentials | Empty | Only services required by enabled modules; shared credentials appear once |
 | Daily folder / property | `Daily` / `media` | Searches subfolders; preserves other properties |
 | Collection paths | Files under `Recommendations/`: `Books.md`, `Movies.md`, `Series.md`, `Music.md`, `Games.md`, `Theater.md` | Existing wanted-work collections |
 
 Daily integration writes links to existing notes whose filenames match `YYYY-MM-DD` in the configured folder or its subfolders. When the concentrated log rule runs, its block link is used; otherwise the first additional output supplies the link, including an episode anchor in a show file. A note created from an existing log row keeps the existing activity source. Changing rule paths affects new outputs; existing files stay in place.
 
-#### Custom credentials
+#### Service credentials
 
-Use **Custom credentials** in settings to add, rename, edit, or delete field/value entries. Values are masked on screen. Field names are case-sensitive, unique, and limited to 80 characters; up to 100 entries are allowed. Values are stored exactly as entered. Built-in clients normalize authentication and validate responses; custom integrations manage their own protocols.
-
-Vault scripts can read a configured value with:
-
-```javascript
-const capture = app.plugins.plugins['media-capture'];
-const token = capture.getCredential('serviceToken');
-```
-
-`getCredential(name)` returns an empty string when the field is absent and throws when the plugin is unavailable or unloaded. It reads settings without a network request. Built-in service clients and record operations are exposed through records; custom vault integrations may still read credentials directly.
-
-Values are saved as plain text in `data.json`; masking the input does not encrypt that file. Synchronize it only with private vault data. Renaming or deleting a field requires updating any scripts that use that field name. The current settings format uses a `credentials` array of `{name, value}` entries; fixed service-specific settings and methods are no longer supported.
+Enter credentials by service name. Inputs are masked with a reveal button. Series uses TMDB, study sync uses Maimemo, and place search uses Amap. Daily location, weather, greeting and poetry can use Tencent Maps, Amap, DeepSeek and Jinrishici. The wttr.in moon source needs no credential. Settings use `modules` and `dailySources`; task logging uses `modules.tasks`. The retired `taskCompletionLog` field is rejected, with no legacy configuration migration.
 
 #### Record identity and repair
 

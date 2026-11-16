@@ -1,3 +1,4 @@
+import type { ModuleSettings, DailySourceSettings } from './modules';
 export type Provider = 'douban' | 'xiaoyuzhou' | 'apple' | 'youtube' | 'bilibili';
 export type MediaState = "completed" | "in-progress" | "wishlist";
 export type CapturePreset = 'log' | 'note' | 'both' | 'show' | 'custom';
@@ -49,7 +50,8 @@ export interface Credential {
 
 /** Configuration that can be shared after reviewing vault-relative paths and templates. */
 export interface CapturePreferences {
-    taskCompletionLog: boolean;
+    modules: ModuleSettings;
+    dailySources: DailySourceSettings;
     taskLogHeading: string;
     writeRules: WriteRule[];
     videoCatalogPath: string;

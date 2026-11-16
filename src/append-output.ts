@@ -88,7 +88,7 @@ export class AppendOutputs {
     }
     async save(plan: AppendPlan, cover: string): Promise<{ path: string; anchor: string; created: boolean }> {
         const { rule, item, id } = plan;
-        if (this.podcast.unloaded) throw new Error(t("插件已卸载，请重新启用后重试。"));
+        this.podcast.requireMedia();
         const vault = this.podcast.app.vault;
         let file = vault.getAbstractFileByPath(plan.path);
         if (!file) {

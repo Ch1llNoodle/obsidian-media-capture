@@ -33,7 +33,7 @@ test('public services use plugin request access and guard stale handles',async()
     assert.equal(requests[0].headers.Authorization,'Bearer token');
     const store=records.reading('read.json');dispose();
     await assert.rejects(store.load(),/unloaded/);
-    assert.throws(()=>records.services.searchTv('Show'),/unloaded/);
+    await assert.rejects(records.services.searchTv('Show'),/unloaded/);
     assert.equal(requests.length,1);
 });
 test('place creation deduplicates concurrent views and preserves conflicting notes',async()=>{
@@ -72,4 +72,40 @@ test('episode actions preserve daily history and implement cumulative checking a
     assert.deepEqual((await store.readDiary('today.md')).work.seasons['42:1'].watched,[1,3]);
     assert.deepEqual((await store.readDiary('old.md')).work.seasons['42:1'].watched,[1,2,3]);
     await assert.rejects(store.change(context,{type:'toggle',key:'42:1',number:99,checked:true}),/分集/);
+});
+
+test('disabled modules reject new calls and previously acquired storage handles without writes',async()=>{
+    const {records,config,files}=fixture();
+    const reading=records.reading('reading.json');
+    const series=records.series('series.json');
+    const exercise=records.selections('groups.json');
+    config.modules.reading=false;config.modules.series=false;config.modules.exercise=false;
+    assert.throws(()=>records.reading('reading.json'),/enable/i);
+    await assert.rejects(reading.save('Daily/2026-11-16.md','book',0,12),/enable/i);
+    await assert.rejects(series.load(),/enable/i);
+    await assert.rejects(exercise.save('video',['back']),/enable/i);
+    assert.equal(files.size,0);
+});
+
+test('module changes stop service requests and discard in-flight results',async()=>{
+    let count=0,finish;
+    const {records,config}=fixture(()=>{count++;return new Promise(resolve=>{finish=resolve;});},{tmdbToken:'token'});
+    config.modules.series=false;
+    await assert.rejects(records.services.searchTv('show'),/enable/i);assert.equal(count,0);
+    config.modules.series=true;
+    const pending=records.services.searchTv('show');
+    config.modules.series=false;
+    finish({status:200,json:{results:[]}});
+    await assert.rejects(pending,/enable/i);assert.equal(count,1);
+});
+
+test('disabled Daily sources issue no requests, and source handles follow live settings',async()=>{
+    let calls=0;
+    const {records,config}=fixture(async()=>{calls++;return {status:200,text:'🌑',json:{}};},{tencentMapKey:'key',amapKey:'key',deepseekKey:'key',jinrishiciToken:'key'});
+    const daily=records.daily();config.modules.daily=false;
+    assert.deepEqual(await Promise.all([daily.location(),daily.weather('city'),daily.moon('city'),daily.greeting('prompt'),daily.poetry()]),[null,null,null,null,null]);
+    assert.equal(calls,0);
+    config.modules.daily=true;config.dailySources.moon='none';
+    assert.equal(await daily.moon('city'),null);assert.equal(calls,0);
+    config.dailySources.moon='wttr';assert.equal(await daily.moon('city'),'🌑');assert.equal(calls,1);
 });

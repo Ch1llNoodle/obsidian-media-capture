@@ -28,14 +28,14 @@ export class RecommendationService {
 
     link(item: RecommendationWork, selected: RecommendationSource, reason = ''): Promise<void> {
         const work = this.podcast.queue.then(async () => {
-            if (this.podcast.unloaded) throw new Error(t("插件已卸载，请重新启用后重试。"));
+            this.podcast.requireMedia();
             const source = (await this.sources()).find(source => source.path === selected.path && source.blockId === selected.blockId);
             if (!source) throw new Error(t("来源播客已变化，请重新选择。"));
             const allowed = recommendationKinds.some(kind => this.podcast.config[`${kind}Path`] === item.path);
             if (!allowed || this.podcast.isCatalog(item.path)) throw new Error(t("请从已配置的作品清单中选择。"));
             const file = this.podcast.app.vault.getAbstractFileByPath(item.path);
             if (!isMarkdownFile(file)) throw new Error(t("作品清单已变化，请重新选择。"));
-            if (this.podcast.unloaded) throw new Error(t("插件已卸载，请重新启用后重试。"));
+            this.podcast.requireMedia();
             await this.podcast.app.vault.process(file, text => {
                 if (recommendationIndex(text, item) < 0) throw new Error(t("作品已移除，请同步清单后重新选择。"));
                 const current = catalogWorks(text, item.path, item.kind).find(work => work.url === item.url);
@@ -55,7 +55,7 @@ export class RecommendationService {
     /** Restore links created before the podcast-side display was introduced. */
     refreshEpisodeLinks(): Promise<void> {
         const task = this.podcast.queue.then(async () => {
-            if (this.podcast.unloaded) return;
+            if (this.podcast.unloaded || !this.podcast.config.modules.media) return;
             const sources = new Map((await this.sources()).map(source => [source.blockId, source]));
             if (!sources.size) return;
             const assignments: { source: RecommendationSource; work: RecommendationWork }[] = [];
@@ -79,7 +79,7 @@ export class RecommendationService {
                     if (source) assignments.push({ source, work });
                 }
             }
-            if (this.podcast.unloaded) return;
+            if (this.podcast.unloaded || !this.podcast.config.modules.media) return;
             for (const path of this.podcast.catalogPaths) {
                 const file = this.podcast.app.vault.getAbstractFileByPath(path);
                 if (!isMarkdownFile(file)) continue;

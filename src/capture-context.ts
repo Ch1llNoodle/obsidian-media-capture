@@ -18,7 +18,9 @@ export async function writeDailyLink(service: CaptureService, item: CaptureItem,
     const target = path.replace(/\.md$/i, '') + (anchor ? '#^' + anchor : '');
     const label = Array.from(item.title).map(character => '\r\n|[]'.includes(character) ? ' ' : character).join('');
     const link = `[[${target}|${label}]]`;
+    service.requireMedia();
     await service.app.fileManager.processFrontMatter(files[0], (data: Record<string, unknown>) => {
+        service.requireMedia();
         const current: unknown = data[service.config.dailyProperty];
         const values: unknown[] = Array.isArray(current) ? current : current ? [current] : [];
         if (!values.some(value => typeof value === 'string' && (value.startsWith(`[[${target}|`) || value === `[[${target}]]` || anchor && value.includes(`#^${anchor}|`)))) data[service.config.dailyProperty] = [...values, link];
@@ -59,7 +61,7 @@ export async function captureCover(service: CaptureService, item: CaptureItem, i
                         && showKey(splitEpisodeTitle(identity.title).show) === show) showCandidates.add(cover);
                 }
             }
-            path = await cacheCover(service.app, source, service.config.imageFolder, item.provider === 'youtube' || item.provider === 'bilibili' ? (item.episodeTitle || item.title) : (item.show || splitEpisodeTitle(item.title).show || item.episodeTitle || item.title || id), [...candidates], [...showCandidates]);
+            path = await cacheCover(service.app, source, service.config.imageFolder, item.provider === 'youtube' || item.provider === 'bilibili' ? (item.episodeTitle || item.title) : (item.show || splitEpisodeTitle(item.title).show || item.episodeTitle || item.title || id), [...candidates], [...showCandidates], () => service.requireMedia());
         } catch (cause) { error = errorMessage(cause); }
     }
     return { path, source, error };

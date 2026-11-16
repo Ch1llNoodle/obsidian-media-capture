@@ -24,9 +24,9 @@ test('daily requests clear timers, time out hung responses and enforce a shared 
 });
 test('daily sources skip missing credentials and normalize malformed data without persisting it',async()=>{
     const seen=[];const clock=setup(async options=>{seen.push(options);return {status:200,json:{forecasts:[]},text:'<html>blocked</html>'};});
-    const missing=clock.createDailySources(()=>'',()=>{});
+    const missing=clock.createDailySources(()=>'',()=>{},()=>true);
     assert.equal(await missing.location(),null);assert.equal(await missing.weather('City'),null);assert.equal(await missing.greeting('Prompt'),null);assert.equal(await missing.poetry(),null);assert.equal(seen.length,0);
     assert.equal(await missing.moon('City'),null);assert.equal(seen.length,1);
-    const configured=clock.createDailySources(()=> 'key',()=>{});
+    const configured=clock.createDailySources(()=> 'key',()=>{},()=>true);
     assert.equal(await configured.weather('City'),null);assert.equal(clock.timers.size,0);
 });

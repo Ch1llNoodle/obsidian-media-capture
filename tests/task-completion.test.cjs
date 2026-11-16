@@ -9,7 +9,7 @@ function fixture() {
     const files = new Map();
     const content = new Map();
     const add = (name, text) => { const file = { path: name, basename: name.split('/').at(-1).replace(/\.md$/, ''), extension: 'md' }; files.set(name, file); content.set(name, text); return file; };
-    const config = { taskCompletionLog: true, taskLogHeading: '## Notes' };
+    const config = { modules: {tasks: true}, taskLogHeading: '## Notes' };
     let failWrite = '';
     const clock = () => ({ format: format => format === 'HH:mm' ? '14:30' : format === 'YYYY/MM/YYYY-MM-DD' ? '2026/11/2026-11-16' : '2026-11-16' });
     class Component { registerEvent() {} registerDomEvent() {} }
@@ -31,14 +31,14 @@ function fixture() {
 
 test('optional task logging defaults off, validates heading and has one removable session', () => {
     const { api, plugin, config } = fixture();
-    assert.equal(api.validateSettings({}).taskCompletionLog, false);
+    assert.equal(api.validateSettings({}).modules.tasks, false);
     assert.throws(() => api.validateSettings({ taskLogHeading: 'text' }), /Markdown/);
-    config.taskCompletionLog = false;
+    config.modules.tasks = false;
     const feature = new api.TaskCompletionLog(plugin, () => config);
     feature.configure(); assert.equal(plugin.children.length, 0);
-    config.taskCompletionLog = true;
+    config.modules.tasks = true;
     feature.configure(); feature.configure(); assert.equal(plugin.children.length, 1);
-    config.taskCompletionLog = false;
+    config.modules.tasks = false;
     feature.configure(); assert.equal(plugin.children.length, 0);
 });
 

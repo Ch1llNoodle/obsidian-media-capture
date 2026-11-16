@@ -2,22 +2,20 @@ import { t } from './i18n';
 import { renderCredentials } from './credential-settings';
 import { PluginSettingTab, Setting, Notice, type App } from 'obsidian';
 import type { CaptureService } from './service';
-import type { TextSettingKey, ToggleSettingKey } from './types';
+import { ModuleSettingsView } from './module-settings';
 import { errorMessage } from './validation';
-import { recommendationKinds, recommendationNames } from './recommendations';
-import { renderRuleSettings } from './rule-settings';
 import { NoteRefreshModal } from './note-refresh-ui';
 
-type Page = 'media' | 'records' | 'services' | 'maintenance';
+type Page = 'modules' | 'services' | 'maintenance';
 const pages: { id: Page; name: string }[] = [
-    { id: 'media', name: '媒体采集' }, { id: 'records', name: '记录与日记' },
+    { id: 'modules', name: '功能' },
     { id: 'services', name: '服务连接' }, { id: 'maintenance', name: '维护' },
 ];
 
 export class CaptureSettings extends PluginSettingTab {
-    private page: Page = 'media';
-    private readonly expandedRules = new Set<string>();
-    constructor(app: App, private readonly service: CaptureService) { super(app, service.plugin); }
+    private page: Page = 'modules';
+    private readonly modules: ModuleSettingsView;
+    constructor(app: App, private readonly service: CaptureService) { super(app, service.plugin); this.modules = new ModuleSettingsView(service, () => this.display()); }
     override display(): void {
         const container = this.containerEl;
         container.empty();
@@ -60,52 +58,20 @@ export class CaptureSettings extends PluginSettingTab {
         this.containerEl.querySelector<HTMLButtonElement>(`#media-settings-tab-${page}`)?.focus();
     }
     private heading(container: HTMLElement, name: string): void { new Setting(container).setName(t(name)).setHeading(); }
-    private text(container: HTMLElement, key: TextSettingKey, name: string, description: string, disabled = false): void {
-        const row = new Setting(container).setName(t(name)).setDesc(t(description));
-        row.setDisabled(disabled);
-        row.addText(component => {
-            component.setValue(this.service.config[key]).setDisabled(disabled);
-            component.inputEl.addEventListener('change', () => {
-                void this.service.saveSettings({ ...this.service.config, [key]: component.getValue() })
-                    .catch((error: unknown) => { component.setValue(this.service.config[key]); new Notice(errorMessage(error)); });
-            });
-        });
-    }
-    private toggle(container: HTMLElement, key: ToggleSettingKey, name: string, description: string, refresh = false, disabled = false): void {
-        new Setting(container).setName(t(name)).setDesc(t(description)).setDisabled(disabled)
-            .addToggle(component => component.setValue(this.service.config[key]).setDisabled(disabled).onChange(async value => {
-                try { await this.service.saveSettings({ ...this.service.config, [key]: value }); if (refresh) this.display(); }
-                catch (error) { component.setValue(this.service.config[key]); new Notice(errorMessage(error)); }
-            }));
-    }
     private renderPage(container: HTMLElement): void {
         const config = this.service.config;
-        if (this.page === 'services') { renderCredentials(container, this.service, () => this.display()); return; }
-        if (this.page === 'media') {
-            this.heading(container, '保存方式');
-            renderRuleSettings(container, this.service, () => this.display(), this.expandedRules);
-            this.heading(container, '视频与播放');
-            this.text(container, 'videoCatalogPath', '视频清单', '视频的一行记录单独写入此文件，复用集中清单的标题与模板。');
-            this.toggle(container, 'playbackIntegration', '在 Obsidian 中播放', '需要已配置的兼容播放器，平台链接始终保留。');
-            this.heading(container, '封面');
-            this.toggle(container, 'downloadCovers', '保存本地封面', '开启后保存封面到本地，重复采集时复用已有图片。', true);
-            this.text(container, 'imageFolder', '封面目录', '播客与视频采集共用的本地封面目录。', !config.downloadCovers);
-            return;
-        }
-        if (this.page === 'records') {
-            this.heading(container, '任务完成记录');
-            this.toggle(container, 'taskCompletionLog', '记录任务完成时间', '将已完成任务、来源链接和完成时刻写入当天日记。', true);
-            this.text(container, 'taskLogHeading', '任务记录标题', '写入完成记录的 Markdown 标题，例如 ## 📝 Notes。', !config.taskCompletionLog);
-            this.heading(container, '媒体与日记');
-            this.toggle(container, 'dailyIntegration', '写入日记属性', '将听过或看过的记录链接写入对应日期的现有日记。', true);
-            this.text(container, 'dailyFolder', '日记目录', '此目录及子目录中的日记文件名使用 YYYY-MM-DD。', !config.dailyIntegration);
-            this.text(container, 'dailyProperty', '日记属性', '保存媒体记录链接的列表属性名称。', !config.dailyIntegration);
-            this.heading(container, '作品关联');
-            for (const kind of recommendationKinds) this.text(container, `${kind}Path`, recommendationNames[kind], '用于从播客记录关联已有作品。');
+        if (this.page === 'modules') { this.modules.render(container); return; }
+        if (this.page === 'services') { renderCredentials(container, this.service); return; }
+        if (!config.modules.media) {
+            container.createEl('p', { cls: 'media-settings-note', text: t('已启用的功能没有维护操作。') });
             return;
         }
         this.heading(container, '封面维护');
-        this.toggle(container, 'repairOnStartup', '启动时补全封面', '在打开笔记库后检查并补全缺失封面。', false, !config.downloadCovers);
+        new Setting(container).setName(t('启动时补全封面')).setDesc(t('在打开笔记库后检查并补全缺失封面。')).setDisabled(!config.downloadCovers)
+            .addToggle(component => component.setValue(config.repairOnStartup).setDisabled(!config.downloadCovers).onChange(async value => {
+                try { await this.service.saveSettings({ ...this.service.config, repairOnStartup: value }); }
+                catch (error) { component.setValue(this.service.config.repairOnStartup); new Notice(errorMessage(error)); }
+            }));
         new Setting(container).setName(t('补全缺失封面')).setDesc(t('检查播客与视频清单，下载缺失的封面。')).addButton(button => {
             button.setButtonText(t('补全封面')).setDisabled(!config.downloadCovers).onClick(async () => {
                 button.setDisabled(true);

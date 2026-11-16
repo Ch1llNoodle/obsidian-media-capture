@@ -108,6 +108,7 @@ test('cross-platform podcast cover uses same-show log references without a URL c
     const log = { path: 'Podcasts.md', extension: 'md' };
     let writes = 0, reads = 0;
     const service = {
+        requireMedia() {},
         config: { downloadCovers: true, imageFolder: 'image/media' }, catalogPaths: ['Podcasts.md'],
         loadData: async () => ({}), updateData: async () => { throw new Error("Cover lookup must not persist a cache"); },
         app: { vault: {

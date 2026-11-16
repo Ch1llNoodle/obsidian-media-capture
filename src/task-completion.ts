@@ -10,10 +10,10 @@ export class TaskCompletionLog {
     private session: TaskCompletionSession | undefined;
     constructor(private readonly plugin: Plugin, private readonly config: () => Readonly<CaptureSettingsData>) {}
     configure(): void {
-        if (this.config().taskCompletionLog && !this.session) {
+        if (this.config().modules.tasks && !this.session) {
             this.session = new TaskCompletionSession(this.plugin, this.config);
             this.plugin.addChild(this.session);
-        } else if (!this.config().taskCompletionLog && this.session) {
+        } else if (!this.config().modules.tasks && this.session) {
             this.plugin.removeChild(this.session);
             this.session = undefined;
         }
