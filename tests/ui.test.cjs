@@ -55,6 +55,7 @@ for (const language of ['zh', 'en', 'fr']) test(`media settings and associations
         constructor() { this.app = app; this.manifest = {id: 'media-capture'}; }
         async loadData() { return { schemaVersion: 3, settings: { downloadCovers: false } }; }
         async saveData() {}
+        addRibbonIcon(icon,label,click) { this.ribbon={icon,label,click}; }
         addSettingTab(tab) { this.settingsTab = tab; }
         addCommand(command) { commands.push(command); }
         registerEvent() {}
@@ -101,7 +102,7 @@ for (const language of ['zh', 'en', 'fr']) test(`media settings and associations
         addExtraButton(callback) { return this.button(callback); }
         button(callback) {
             const node = this.row.createEl('button');
-            const component = { setButtonText: text => { node.text = text; return component; }, setIcon: () => component, setTooltip: () => component, setDisabled: value => {node.disabled=value;return component;}, onClick: fn => { node.click = fn; return component; } };
+            const component = { setCta: () => component, setButtonText: text => { node.text = text; return component; }, setIcon: () => component, setTooltip: () => component, setDisabled: value => {node.disabled=value;return component;}, onClick: fn => { node.click = fn; return component; } };
             callback(component); return this;
         }
     }
@@ -132,7 +133,26 @@ for (const language of ['zh', 'en', 'fr']) test(`media settings and associations
     assert.equal(plugin.searchTv, undefined);
     plugin.settingsTab.display();
     const tab = name => all(plugin.settingsTab.containerEl).find(node => node.role === 'tab' && node.text === label(name));
-    assert.equal(all(plugin.settingsTab.containerEl).filter(node=>node.role==='tab').length,3);
+    assert.equal(all(plugin.settingsTab.containerEl).filter(node=>node.role==='tab').length,4);
+    assert.equal(tab('开始使用')['aria-selected'],'true');
+    const beforeGuideFiles=files.size;
+    commands.find(command=>command.id==='getting-started').callback();
+    const guide=modals.pop();
+    assert(all(guide.contentEl).some(node=>node.text===label('打开 sample 示例文件夹')));
+    guide.close();
+    plugin.ribbon.click();const firstCapture=modals.pop();
+    assert(all(firstCapture.contentEl).some(node=>node.text===label('保存并打开')));
+    assert(all(firstCapture.contentEl).some(node=>node.text===label('支持哪些链接？')));
+    firstCapture.close();assert.equal(files.size,beforeGuideFiles,'opening guide or capture creates no notes');
+    assert(all(plugin.settingsTab.containerEl).some(node=>node.name===label('记录会保存在哪里')));
+    const countBeforeGuide=files.size;
+    commands.find(command=>command.id==='getting-started').callback();
+    assert(all(modals.at(-1).contentEl).some(node=>node.text===label('开始使用 Capture')));
+    modals.pop().close();
+    plugin.ribbon.click();
+    assert(all(modals.at(-1).contentEl).some(node=>node.text===label('保存并打开')));
+    modals.pop().close();
+    assert.equal(files.size,countBeforeGuide,'opening guidance or capture does not create files');
     tab('服务连接').click();
     assert.equal(all(plugin.settingsTab.containerEl).filter(node=>node.type==='password').length,0);
     tab('功能').click();
@@ -174,7 +194,7 @@ for (const language of ['zh', 'en', 'fr']) test(`media settings and associations
     assert.equal(commands.find(command=>command.id==='capture-media').checkCallback(true),false);
     tab('功能').click();await moduleToggle('媒体采集').change(true);
     assert.equal(commands.find(command=>command.id==='capture-media').checkCallback(true),true);
-    assert.equal(commands.length, 6);
+    assert.equal(commands.length, 7);
     assert.equal(plugin.supportsRecommendations, true);
     events.get('media-capture:recommend')({ path: 'Podcasts.md', blockId: 'douban-123' });
     await new Promise(resolve => setImmediate(resolve));

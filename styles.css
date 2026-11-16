@@ -76,6 +76,22 @@
     margin: 0;
 }
 .media-capture-settings .media-settings-rule > .setting-item { padding: 16px 0; }
+/* Module titles and subsection headings use the standard UI size and semibold weight. */
+.media-capture-settings .media-settings-module .setting-item-name {
+    font-size: var(--font-ui-medium);
+    font-weight: var(--font-normal);
+}
+.media-capture-settings .media-settings-module > .setting-item > .setting-item-info > .setting-item-name {
+    font-size: var(--font-ui-medium);
+    font-weight: var(--font-semibold);
+}
+.media-capture-settings .media-settings-module .setting-item-heading .setting-item-name {
+    font-size: var(--font-ui-medium);
+    font-weight: var(--font-semibold);
+}
+.media-capture-settings .media-settings-module .setting-item-description {
+    font-size: var(--font-ui-small);
+}
 .media-capture-settings .media-settings-rule > .media-rule-settings { padding: 0 0 12px; }
 .media-capture-settings .media-rule-settings { margin-bottom: 12px; }
 .media-capture-settings .media-rule-settings > summary { padding-block: 0 8px; font-size: var(--font-ui-small); }
@@ -96,3 +112,13 @@
     .media-capture-settings .media-settings-service .setting-item-control { flex-wrap: nowrap; }
     .media-capture-settings .media-settings-service input { flex: 1; min-width: 0; }
 }
+
+/* Guides remain compact and use the same type scale as settings. */
+.media-capture-settings .media-start-more > summary,
+.media-capture-settings .media-module-help > summary,
+.media-capture .media-capture-link-help > summary { cursor: pointer; color: var(--text-muted); font-size: var(--font-ui-small); }
+.media-capture-settings .media-module-help { margin-block: 0 12px; }
+.media-capture-settings .media-module-help p,
+.media-capture .media-capture-link-help p { color: var(--text-muted); font-size: var(--font-ui-small); line-height: var(--line-height-normal); }
+.media-capture-settings .media-start-more { margin-block: 16px; }
+.media-start-guide { max-width: 720px; }

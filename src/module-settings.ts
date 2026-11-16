@@ -1,3 +1,4 @@
+import { renderModuleHelp } from './module-help';
 import { Setting, Notice } from 'obsidian';
 import { t } from './i18n';
 import type { CaptureService } from './service';
@@ -10,7 +11,7 @@ import { errorMessage } from './validation';
 export class ModuleSettingsView {
     readonly expanded = new Set<ModuleId>(['media']);
     readonly expandedRules = new Set<string>();
-    constructor(private readonly service: CaptureService, private readonly refresh: () => void) {}
+    constructor(private readonly service: CaptureService, private readonly refresh: () => void, private readonly openServices: () => void) {}
     render(container: HTMLElement): void {
         for (const module of moduleDefinitions) {
             const card = container.createDiv({ cls: 'media-settings-module media-settings-rule' });
@@ -23,7 +24,9 @@ export class ModuleSettingsView {
                     } catch (error) { component.setValue(this.service.config.modules[module.id]); new Notice(errorMessage(error)); }
                 });
             });
+            renderModuleHelp(card, module.id);
             if (!this.service.config.modules[module.id]) continue;
+            if (module.services.length) new Setting(card).addButton(button => button.setButtonText(t('配置服务连接')).onClick(this.openServices));
             if (!['media', 'tasks', 'daily'].includes(module.id)) {
                 card.createEl('p', { cls: 'media-settings-note', text: module.services.length ? t('在服务连接中填写此功能使用的凭证。') : t('记录位置与显示方式由笔记库指定。') });
                 continue;

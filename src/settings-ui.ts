@@ -1,3 +1,4 @@
+import { renderGettingStarted } from './getting-started';
 import { t } from './i18n';
 import { renderCredentials } from './credential-settings';
 import { PluginSettingTab, Setting, Notice, type App } from 'obsidian';
@@ -6,16 +7,17 @@ import { ModuleSettingsView } from './module-settings';
 import { errorMessage } from './validation';
 import { NoteRefreshModal } from './note-refresh-ui';
 
-type Page = 'modules' | 'services' | 'maintenance';
+type Page = 'start' | 'modules' | 'services' | 'maintenance';
 const pages: { id: Page; name: string }[] = [
+    { id: 'start', name: '开始使用' },
     { id: 'modules', name: '功能' },
     { id: 'services', name: '服务连接' }, { id: 'maintenance', name: '维护' },
 ];
 
 export class CaptureSettings extends PluginSettingTab {
-    private page: Page = 'modules';
+    private page: Page = 'start';
     private readonly modules: ModuleSettingsView;
-    constructor(app: App, private readonly service: CaptureService) { super(app, service.plugin); this.modules = new ModuleSettingsView(service, () => this.display()); }
+    constructor(app: App, private readonly service: CaptureService) { super(app, service.plugin); this.modules = new ModuleSettingsView(service, () => this.display(), () => this.select('services')); }
     override display(): void {
         const container = this.containerEl;
         container.empty();
@@ -60,6 +62,7 @@ export class CaptureSettings extends PluginSettingTab {
     private heading(container: HTMLElement, name: string): void { new Setting(container).setName(t(name)).setHeading(); }
     private renderPage(container: HTMLElement): void {
         const config = this.service.config;
+        if (this.page === 'start') { renderGettingStarted(container, this.service, { modules: () => this.select('modules'), services: () => this.select('services'), refresh: () => this.display() }); return; }
         if (this.page === 'modules') { this.modules.render(container); return; }
         if (this.page === 'services') { renderCredentials(container, this.service); return; }
         if (!config.modules.media) {

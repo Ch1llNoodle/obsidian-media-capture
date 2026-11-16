@@ -12,32 +12,6 @@ Media Capture 将豆瓣、小宇宙、Apple Podcasts 的播客信息及 YouTube�
 | 服务访问、校验与记录保存、凭证 | 字段、路径、提示词与交互布局 |
 | 地点笔记及可选的日记链接 | 地图视图、统计和热力图 |
 
-#### 记录接口与职责
-
-Capture 负责把外部信息和用户操作变成可靠的记录，笔记库决定怎样组织和展示这些记录。笔记脚本直接调用 `app.plugins.plugins['media-capture'].records`。
-
-| 接口 | 职责 |
-| --- | --- |
-| `services` | TMDB 搜索与季度、分集资料，高德地点查询，墨墨学习数据；读取 `tmdbToken`、`amapKey`、`maimemoToken` |
-| `reading(path)` | 阅读页码、跨日书签、历史记录 |
-| `series(path)` | 共享分集、当前进度、逐日快照；`change(context, action)` 处理关联、更新、取消与勾选 |
-| `selections(path)` | 按稳定标识保存字符串选择列表，例如视频肌群 |
-| `metadata(path, change)`、`link`、`moveLink` | 在最新日记属性上合并修改、增删链接和调整顺序 |
-| `place(folder, place)` | 按高德编号创建或复用地点笔记，保留 WGS84 坐标及来源信息 |
-| `syncStudy(path, fields, options)` | 校验当天学习数据并按传入字段写入，跨日或重复请求停止 |
-| `syncDouban(options, render)` | 分页读取豆瓣收藏、识别影视类型、保存封面，再以最新正文调用仓库提供的渲染函数；登录 Cookie 由调用方从 Douban 插件提供，不另行持久化 |
-| `daily()` | 单篇日记共用 15 秒请求预算；定位、天气、月相、问候语及诗词的校验结果，失败或缺少凭证时返回空值 |
-
-所有路径、日记字段、时区、栏目、提示词和渲染规则由笔记库显式提供。阅读、分集和选择记录仍保存在指定的库内 JSON，未移入插件 data.json 或 records.json。每个应用内同路径写入串行执行，格式损坏或保存前发生外部修改时停止；这不是跨设备事务。保存后发出 `media-capture:record-updated`，载荷为 `{path}`；Dataview 刷新由笔记库适配层处理。插件卸载后，旧接口停止工作。
-
-`daily()` 使用 `tencentMapKey`、`amapKey`、`deepseekKey`、`jinrishiciToken`。DeepSeek 收到仓库提供的提示词，包括其中的位置和天气。此接口仅读取服务，实际写入和输出仍由模板完成。TMDB、高德、墨墨和豆瓣同步均由调用方操作触发，没有定时轮询。服务模拟测试随插件维护；笔记库的集成测试通过 `MEDIA_CAPTURE_SOURCE_PATH` 指向源码检出目录，默认使用笔记库的同级 `obsidian-media-capture`。
-
-#### 任务完成记录
-
-在 Capture 的“功能”页开启“任务完成记录”，将完成的 Markdown 任务写入当天日记。此功能默认关闭。“任务记录标题”指定写入章节，默认为 `## Notes`。日记路径、日期格式和模板沿用 Obsidian 的日记配置。
-
-每条记录包含任务内容、原任务链接和完成时刻。首次完成会给原任务添加稳定的块标识；从汇总清单勾选也链接到原任务。取消勾选保留记录，再次完成时更新时间并将记录移到当天日记。Tasks 继续管理截止日期和完成日期。启动时不会补记已有完成任务。日志保存在 Markdown 中，无须奖励文件。
-
 #### 安装
 
 在 iPhone 或电脑上测试时，从 Obsidian 社区插件安装并启用 [BRAT](https://github.com/TfTHacker/obsidian42-brat)，添加测试插件仓库 `Ch1llNoodle/obsidian-media-capture`，选择已发布版本或预发布版本，然后启用 Media Capture。BRAT 在 Obsidian 内完成文件安装和后续更新。
@@ -47,6 +21,20 @@ Capture 负责把外部信息和用户操作变成可靠的记录，笔记库决
 更新时替换这三个文件，重新加载插件。保留 `data.json`（设置）和 `records.json`（采集记录）。
 
 插件 ID 与安装目录名为 `media-capture`。安装只需要运行文件，源码与 `node_modules` 不放入插件安装目录。
+
+#### 第一次使用
+
+打开插件设置的“开始使用”，或从命令面板运行“打开使用指南”。点击侧栏采集图标，粘贴单集或完整视频分享链接，获取信息并确认窗口下方的保存位置，再选择“保存并打开”。默认播客写入 Podcasts.md，视频写入 Videos.md，无需 API Key；自定义规则以窗口显示的位置为准。
+
+完整的 [sample 示例](sample/README.md)包含可直接复制的 Capture Sample 文件夹。复制到笔记库根目录，打开其中的“开始使用”。各示例列明依赖、需要开启的模块、凭证、操作步骤和保存位置。追踪页使用 Dataview，日记来源使用 Templater；媒体采集本身不需要它们。示例控件目前使用中文。
+
+每个模块的“怎么使用”说明准备、操作与结果。剧集、阅读、地点、学习、运动、豆瓣同步和日记来源需要配套页面或模板，开关与凭证不会自动生成这些页面。示例提供最小的配套页面，追踪数据只保存在 Capture Sample 内；媒体采集和任务记录沿用已有设置。
+
+#### 任务完成记录
+
+在 Capture 的“功能”页开启“任务完成记录”，将完成的 Markdown 任务写入当天日记。此功能默认关闭。“任务记录标题”指定写入章节，默认为 `## Notes`。日记路径、日期格式和模板沿用 Obsidian 的日记配置。
+
+每条记录包含任务内容、原任务链接和完成时刻。首次完成会给原任务添加稳定的块标识；从汇总清单勾选也链接到原任务。取消勾选保留记录，再次完成时更新时间并将记录移到当天日记。Tasks 继续管理截止日期和完成日期。启动时不会补记已有完成任务。日志保存在 Markdown 中，无须奖励文件。
 
 #### 采集媒体
 
@@ -199,6 +187,26 @@ tags: [podcast]
 插件自动附加状态注释、已听过条目的日期注释和 Obsidian 块标识，用于去重、补全封面及日记链接。手动编辑时保留这些标记。单集行之外的笔记和摘抄保留原样。
 
 同平台按单集或视频编号去重；跨平台只有完整的“节目名 · 标题”经过大小写、空白和 Unicode 规范化后相同时，才复用原记录。完成记录保留首次日期。记录另一日重听或重看时，需要启用日记联动，并确保该日期已有唯一一篇日记；多个日期共用原清单行和封面。
+
+#### 记录接口与职责
+
+Capture 负责把外部信息和用户操作变成可靠的记录，笔记库决定怎样组织和展示这些记录。笔记脚本直接调用 `app.plugins.plugins['media-capture'].records`。
+
+| 接口 | 职责 |
+| --- | --- |
+| `services` | TMDB 搜索与季度、分集资料，高德地点查询，墨墨学习数据；读取 `tmdbToken`、`amapKey`、`maimemoToken` |
+| `reading(path)` | 阅读页码、跨日书签、历史记录 |
+| `series(path)` | 共享分集、当前进度、逐日快照；`change(context, action)` 处理关联、更新、取消与勾选 |
+| `selections(path)` | 按稳定标识保存字符串选择列表，例如视频肌群 |
+| `metadata(path, change)`、`link`、`moveLink` | 在最新日记属性上合并修改、增删链接和调整顺序 |
+| `place(folder, place)` | 按高德编号创建或复用地点笔记，保留 WGS84 坐标及来源信息 |
+| `syncStudy(path, fields, options)` | 校验当天学习数据并按传入字段写入，跨日或重复请求停止 |
+| `syncDouban(options, render)` | 分页读取豆瓣收藏、识别影视类型、保存封面，再以最新正文调用仓库提供的渲染函数；登录 Cookie 由调用方从 Douban 插件提供，不另行持久化 |
+| `daily()` | 单篇日记共用 15 秒请求预算；定位、天气、月相、问候语及诗词的校验结果，失败或缺少凭证时返回空值 |
+
+所有路径、日记字段、时区、栏目、提示词和渲染规则由笔记库显式提供。阅读、分集和选择记录仍保存在指定的库内 JSON，未移入插件 data.json 或 records.json。每个应用内同路径写入串行执行，格式损坏或保存前发生外部修改时停止；这不是跨设备事务。保存后发出 `media-capture:record-updated`，载荷为 `{path}`；Dataview 刷新由笔记库适配层处理。插件卸载后，旧接口停止工作。
+
+`daily()` 使用 `tencentMapKey`、`amapKey`、`deepseekKey`、`jinrishiciToken`。DeepSeek 收到仓库提供的提示词，包括其中的位置和天气。此接口仅读取服务，实际写入和输出仍由模板完成。TMDB、高德、墨墨和豆瓣同步均由调用方操作触发，没有定时轮询。服务模拟测试随插件维护；笔记库的集成测试通过 `MEDIA_CAPTURE_SOURCE_PATH` 指向源码检出目录，默认使用笔记库的同级 `obsidian-media-capture`。
 
 #### 数据格式与笔记库集成
 

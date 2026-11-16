@@ -119,7 +119,7 @@ export async function saveCapture(service: CaptureService, input: CaptureItem): 
         if (!primary) throw new Error(t("没有成功写入的目标。"));
         service.app.workspace.trigger('media-capture:updated', { path: primary.path, blockId: logged || previous ? id : '', state: item.state,
             date: item.date, ...(note ? { notePath: note.path, output: mode } : {}) } satisfies CaptureUpdatedEvent);
-        return { hasCover: !!cover.path, coverPath: cover.path, coverError: cover.error, coverSource: cover.source,
+        return { path: primary.path, hasCover: !!cover.path, coverPath: cover.path, coverError: cover.error, coverSource: cover.source,
             ...(note ? { notePath: note.path, noteCreated: note.created } : {}),
             message: (note ? saved.map(result => result.kind === 'catalog' ? t("清单已保存") : result.created ? t("已保存到{0}", result.name) : t("已找到已有{0}", result.name)).join(' · ')
                 : completed ? t("已保留原记录") : t("已添加到媒体记录")) + (item.state === "completed" ? ` · ${item.date}` : ` · ${mediaStateLabel(item.state, item.provider === "youtube" || item.provider === "bilibili")}`) + (cover.error ? t("（封面未获取到：{0}）", cover.error) : '') };

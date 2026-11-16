@@ -35,6 +35,11 @@ export class CaptureModal extends Modal {
             wrapper.createSpan({ text: label });
             return wrapper.createEl('input', { type });
         };
+        this.contentEl.createEl('p', { cls: 'setting-item-description', text: t('粘贴播客单集或完整视频链接，获取信息后确认并保存。保存位置显示在窗口下方。') });
+        const help = this.contentEl.createEl('details', { cls: 'media-capture-link-help' });
+        help.createEl('summary', { text: t('支持哪些链接？') });
+        help.createEl('p', { text: t('支持豆瓣播客、小宇宙、Apple Podcasts 单集，以及 YouTube 和 Bilibili 视频。Apple Podcasts 链接需要包含 i 参数；Bilibili 短链先在浏览器打开，再复制完整地址。') });
+        help.createEl('p', { text: t('获取信息失败时可以手动填写标题再保存；没有封面也能保存记录。') });
         this.urlInput = field(t("播客或视频分享链接"));
         this.urlInput.placeholder = t("粘贴播客或视频分享链接");
         this.contentEl.createEl('button', { text: t("获取媒体信息") }).addEventListener('click', () => { void this.fetchInfo(); });
@@ -66,7 +71,7 @@ export class CaptureModal extends Modal {
         this.message = this.contentEl.createEl('p', { cls: 'media-capture-message', attr: { role: 'status', 'aria-live': 'polite' } });
         const actions = this.contentEl.createDiv({ cls: 'media-capture-actions' });
         actions.createEl('button', { text: t("取消") }).addEventListener('click', () => this.close());
-        actions.createEl('button', { text: t("保存"), cls: 'mod-cta' }).addEventListener('click', () => { void this.save(); });
+        actions.createEl('button', { text: t("保存并打开"), cls: 'mod-cta' }).addEventListener('click', () => { void this.save(); });
         for (const control of [this.showInput, this.titleInput, this.dateInput, this.publishedInput]) control.addEventListener('input', () => this.updatePreview());
         this.stateInput.addEventListener('change', () => { this.dateInput.disabled = this.stateInput.value !== "completed"; this.updatePreview(); });
         this.outputInput.addEventListener('change', () => this.updatePreview());
@@ -144,8 +149,8 @@ export class CaptureModal extends Modal {
             if (!this.titleInput.value.trim()) throw new Error(t("请填写标题。"));
             const result = await this.plugin.capture(this.item());
             new Notice(result.message);
-            if (result.notePath) {
-                const file = this.app.vault.getAbstractFileByPath(result.notePath);
+            if (result.notePath || result.path) {
+                const file = this.app.vault.getAbstractFileByPath(result.notePath ?? result.path);
                 if (isMarkdownFile(file)) {
                     try { await this.app.workspace.getLeaf(false).openFile(file); }
                     catch (error) { throw new Error(t("内容已保存，但打开笔记失败：") + errorMessage(error)); }

@@ -1,7 +1,7 @@
-### Media Capture 0.18.0
+### Media Capture 0.19.0
 
-Organize settings into Features, Service connections and Maintenance. Enable media, tasks, series, reading, places, study, exercise, Douban sync and Daily note sources separately. Fresh installs enable media only. Service fields appear only when required, with shared credentials shown once.
+Add a Get started settings page, a command-palette guide and a sidebar capture shortcut. Show configured output locations, supported links and per-module instructions. Save and open now opens the saved log or note.
 
-Daily note sources independently select Off or a supported provider. Disabled modules block new operations and old storage handles; disabled sources return null without requests. Saved credentials and records remain available when features are re-enabled.
+Add a sample folder containing copyable companion pages for reading, series, places, study, exercise, Douban books, tasks and Daily sources. Trackers require Dataview JavaScript queries; Daily source templates require Templater. Samples use their own data folder, contain no credentials and do not request services just by opening a page. Sample controls are currently in Chinese.
 
-Configuration uses modules and dailySources. Task logging uses modules.tasks; no migration of the retired taskCompletionLog field is included. Requires Obsidian 1.8.7 or later. Desktop theme and mobile visual checks remain pending.
+Keep module headings at the standard UI size. Requires Obsidian 1.8.7 or later. Live services, desktop theme rendering and mobile interactions remain to be verified.

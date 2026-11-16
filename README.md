@@ -12,32 +12,6 @@ Daily-note links, work associations and playback are optional. Capture owns serv
 | Service access, validated records, credentials | Fields, paths, prompts and interaction layout |
 | Place notes and optional daily links | Maps, summaries and heatmaps |
 
-#### Record API and responsibilities
-
-Capture turns external information and user actions into reliable records. The vault defines their organization and presentation. Vault scripts call `app.plugins.plugins['media-capture'].records` directly.
-
-| API | Responsibility |
-| --- | --- |
-| `services` | TMDB search, seasons and episodes; Amap places; Maimemo study data using `tmdbToken`, `amapKey`, `maimemoToken` |
-| `reading(path)` | Page ranges, bookmarks and history |
-| `series(path)` | Shared episodes, current progress and daily snapshots; `change(context, action)` associates, refreshes, deactivates or toggles episodes |
-| `selections(path)` | String selections keyed by stable record identities, such as video muscle groups |
-| `metadata(path, change)`, `link`, `moveLink` | Merge daily properties, add/remove links and reorder against the latest metadata |
-| `place(folder, place)` | Create/reuse place notes by Amap ID, retaining WGS84 coordinates and source information |
-| `syncStudy(path, fields, options)` | Validate and save today's study values using supplied field names; reject date rollover and duplicate requests |
-| `syncDouban(options, render)` | Fetch collection pages, classify screen works and store covers; invoke the vault renderer against the latest text. The caller supplies the Douban plugin's login cookie; Capture does not persist it |
-| `daily()` | Validated location, weather, moon, greeting and poetry data under one 15-second budget per note; missing credentials or failures return null |
-
-The vault supplies paths, fields, time zones, headings, prompts and rendering rules. Reading, episode and selection records remain in their specified vault JSON files, separate from plugin data.json and records.json. Writes to the same path serialize within one app; malformed data and conflicting external edits stop writes. This is not a cross-device transaction. Saves emit `media-capture:record-updated` with `{path}`. The vault adapter handles Dataview refreshes. Old API handles stop working after plugin unload.
-
-`daily()` uses `tencentMapKey`, `amapKey`, `deepseekKey` and `jinrishiciToken`. DeepSeek receives the vault's prompt, including location/weather if supplied. The template performs output and persistence. Service requests run on caller actions, without polling. Provider tests belong to the plugin; vault integration tests use `MEDIA_CAPTURE_SOURCE_PATH`, defaulting to the sibling `obsidian-media-capture` checkout.
-
-#### Task completion log
-
-Enable **Task completion log** on the **Features** page to write completed Markdown tasks to today's Daily note. The feature is off by default. **Task log heading** selects the destination section; the default is `## Notes`. Note paths, date formats and templates follow Obsidian's Daily notes configuration.
-
-Each record contains the task text, a link to the original task and its completion time. The source task receives a stable block ID. Completing a task from a query view links to that source. Unchecking keeps the record; completing it again updates the time and moves the record to today's note. Tasks continues to manage deadlines and completion dates. Existing completed tasks are not replayed on startup. Logs are stored in Markdown; no reward file is required.
-
 #### Installation
 
 For iPhone and desktop testing, install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Obsidian's community plugins, then add `Ch1llNoodle/obsidian-media-capture` as a beta plugin. Choose a published release or prerelease and enable Media Capture. BRAT installs and updates the release files inside Obsidian.
@@ -47,6 +21,20 @@ Obsidian 1.8.7 or later is required. For manual installation, download `main.js`
 When updating, replace those three files and reload the plugin. Keep both `data.json` (settings) and `records.json` (capture records).
 
 The plugin ID and installation directory are `media-capture`. Only runtime files are needed for installation; source files and `node_modules` stay outside the installed plugin directory.
+
+#### First use
+
+Open Get started in plugin settings, or run Open getting started guide from the command palette. Use the sidebar capture icon, paste an episode or full video share link, fetch its information, review the destination shown below the form, and choose Save and open. Defaults are Podcasts.md and Videos.md, with no API key needed. Custom rules use the destinations shown in the form.
+
+The [sample folder](sample/README.md) contains a complete Capture Sample directory. Copy it to your vault root and open its 开始使用 page. Each example explains dependencies, modules, credentials, actions and output locations. Interactive trackers use Dataview; the Daily source template uses Templater. Media capture itself requires neither. Sample controls are currently in Chinese.
+
+Each module’s How to use explains preparation, actions and results. Trackers and Daily sources need companion pages or templates; enabling switches and filling credentials do not create these pages. Samples provide working minimal pages. Tracking data stays inside Capture Sample, while media and task logging follow existing settings.
+
+#### Task completion log
+
+Enable **Task completion log** on the **Features** page to write completed Markdown tasks to today's Daily note. The feature is off by default. **Task log heading** selects the destination section; the default is `## Notes`. Note paths, date formats and templates follow Obsidian's Daily notes configuration.
+
+Each record contains the task text, a link to the original task and its completion time. The source task receives a stable block ID. Completing a task from a query view links to that source. Unchecking keeps the record; completing it again updates the time and moves the record to today's note. Tasks continues to manage deadlines and completion dates. Existing completed tasks are not replayed on startup. Logs are stored in Markdown; no reward file is required.
 
 #### Capture media
 
@@ -199,6 +187,26 @@ When cover repair obtains an exact Apple episode match, it can replace a generic
 The plugin appends media-state and media-date comments and an Obsidian block identifier. These markers support deduplication, cover repair, and daily note links. Keep them when editing records manually. Notes and quotations outside the episode row are preserved.
 
 Records from the same platform are matched by episode or video ID. Across platforms, records are reused only when the full `show · title` matches after case, whitespace, and Unicode normalization. A completed record keeps its original date. Recording a repeat listen or viewing on another date requires daily integration and exactly one existing note for that date. Both dates link to the same log row and cover.
+
+#### Record API and responsibilities
+
+Capture turns external information and user actions into reliable records. The vault defines their organization and presentation. Vault scripts call `app.plugins.plugins['media-capture'].records` directly.
+
+| API | Responsibility |
+| --- | --- |
+| `services` | TMDB search, seasons and episodes; Amap places; Maimemo study data using `tmdbToken`, `amapKey`, `maimemoToken` |
+| `reading(path)` | Page ranges, bookmarks and history |
+| `series(path)` | Shared episodes, current progress and daily snapshots; `change(context, action)` associates, refreshes, deactivates or toggles episodes |
+| `selections(path)` | String selections keyed by stable record identities, such as video muscle groups |
+| `metadata(path, change)`, `link`, `moveLink` | Merge daily properties, add/remove links and reorder against the latest metadata |
+| `place(folder, place)` | Create/reuse place notes by Amap ID, retaining WGS84 coordinates and source information |
+| `syncStudy(path, fields, options)` | Validate and save today's study values using supplied field names; reject date rollover and duplicate requests |
+| `syncDouban(options, render)` | Fetch collection pages, classify screen works and store covers; invoke the vault renderer against the latest text. The caller supplies the Douban plugin's login cookie; Capture does not persist it |
+| `daily()` | Validated location, weather, moon, greeting and poetry data under one 15-second budget per note; missing credentials or failures return null |
+
+The vault supplies paths, fields, time zones, headings, prompts and rendering rules. Reading, episode and selection records remain in their specified vault JSON files, separate from plugin data.json and records.json. Writes to the same path serialize within one app; malformed data and conflicting external edits stop writes. This is not a cross-device transaction. Saves emit `media-capture:record-updated` with `{path}`. The vault adapter handles Dataview refreshes. Old API handles stop working after plugin unload.
+
+`daily()` uses `tencentMapKey`, `amapKey`, `deepseekKey` and `jinrishiciToken`. DeepSeek receives the vault's prompt, including location/weather if supplied. The template performs output and persistence. Service requests run on caller actions, without polling. Provider tests belong to the plugin; vault integration tests use `MEDIA_CAPTURE_SOURCE_PATH`, defaulting to the sibling `obsidian-media-capture` checkout.
 
 #### Data format and vault integration
 

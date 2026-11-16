@@ -46,6 +46,12 @@ export default defineConfig(
 	},
 	{
 		...tseslint.configs.disableTypeChecked,
+		files: ['sample/**/*.js'],
+		rules: { 'no-restricted-globals': 'off' },
+		languageOptions: { sourceType: 'module', globals: { ...globals.browser, app: 'readonly', dv: 'readonly', input: 'readonly' }, parserOptions: { projectService: false, project: false } },
+	},
+	{
+		...tseslint.configs.disableTypeChecked,
 		files: ['tests/**/*.cjs'],
 		languageOptions: { globals: globals.node, parserOptions: { projectService: false, project: false } },
 		rules: {

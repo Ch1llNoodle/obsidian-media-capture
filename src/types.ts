@@ -130,6 +130,7 @@ export interface CatalogUpdate {
 }
 
 export interface CaptureResult {
+    path: string;
     hasCover: boolean;
     coverError: string;
     coverSource: string;

@@ -1,3 +1,4 @@
+import { CaptureGuideModal } from './getting-started';
 import { t } from './i18n';
 import { Notice, Plugin, type Command } from 'obsidian';
 import { CaptureService } from './service';
@@ -33,6 +34,11 @@ export default class MediaCapture extends Plugin {
         this.service.notes.register(this);
         this.service.appends.register(this);
         this.addSettingTab(new CaptureSettings(this.app, this.service));
+        this.addCommand({ id: 'getting-started', name: t('打开使用指南'), callback: () => new CaptureGuideModal(this.service).open() });
+        this.addRibbonIcon('plus', t('采集媒体'), () => {
+            if (this.service.config.modules.media) new CaptureModal(this.service).open();
+            else new CaptureGuideModal(this.service).open();
+        });
         registerRecommendationUI(this, this.service);
         this.addMediaCommand({
             id: 'capture-media', name: t("采集媒体"),

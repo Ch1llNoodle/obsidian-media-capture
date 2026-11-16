@@ -12,32 +12,6 @@ Les liens quotidiens, associations et lecture sont facultatifs. Capture gère le
 | Services, validation, sauvegarde et identifiants | Champs, chemins, prompts et interfaces |
 | Notes de lieux et liens quotidiens facultatifs | Cartes, synthèses et calendriers |
 
-#### API des enregistrements et responsabilités
-
-Capture transforme les informations externes et les actions en enregistrements fiables. Le coffre définit leur organisation et leur présentation. Les scripts utilisent directement `app.plugins.plugins['media-capture'].records`.
-
-| API | Responsabilité |
-| --- | --- |
-| `services` | Recherche TMDB, saisons et épisodes ; lieux Amap ; données Maimemo avec `tmdbToken`, `amapKey`, `maimemoToken` |
-| `reading(path)` | Pages, signets et historique |
-| `series(path)` | Épisodes partagés, progression et instantanés quotidiens ; `change(context, action)` gère associations, actualisations et cases cochées |
-| `selections(path)` | Listes de chaînes par identifiant stable, notamment les groupes musculaires |
-| `metadata(path, change)`, `link`, `moveLink` | Fusion des propriétés, ajout/suppression et ordre des liens |
-| `place(folder, place)` | Création ou réutilisation des lieux par identifiant Amap, coordonnées WGS84 et source |
-| `syncStudy(path, fields, options)` | Validation et sauvegarde des données du jour ; refus des doublons et changements de date |
-| `syncDouban(options, render)` | Pages de collection, classification et couvertures ; rendu du coffre appliqué au texte actuel. Le cookie fourni par le plugin Douban n’est pas conservé |
-| `daily()` | Localisation, météo, lune, salutation et poésie validées ; budget commun de 15 secondes par note ; null en cas d’échec ou d’identifiant absent |
-
-Le coffre fournit chemins, champs, fuseaux horaires, titres, prompts et rendu. Les pages, épisodes et sélections restent dans les fichiers JSON indiqués, séparés de data.json et records.json. Les écritures sur un même chemin sont sérialisées dans l’application ; données invalides et conflits externes arrêtent l’écriture. Il ne s’agit pas d’une transaction entre appareils. L’événement `media-capture:record-updated` contient `{path}` ; l’adaptateur du coffre actualise Dataview. Les anciennes interfaces s’arrêtent au déchargement du plugin.
-
-`daily()` utilise `tencentMapKey`, `amapKey`, `deepseekKey` et `jinrishiciToken`. DeepSeek reçoit le prompt du coffre, y compris lieu et météo si fournis. Le modèle gère la sortie et la sauvegarde. Les appels sont déclenchés par l’utilisateur, sans interrogation périodique. Les tests des services sont dans le plugin ; les tests du coffre utilisent `MEDIA_CAPTURE_SOURCE_PATH`, par défaut le dépôt voisin `obsidian-media-capture`.
-
-#### Journal des tâches terminées
-
-Activez **Journal des tâches terminées** dans **Fonctions** dans les paramètres de Capture pour inscrire les tâches Markdown terminées dans la note quotidienne du jour. Cette fonction est désactivée par défaut. **Titre de la section des tâches** définit la section de destination, `## Notes` par défaut. Le chemin, le format de date et le modèle suivent la configuration des notes quotidiennes d’Obsidian.
-
-Chaque entrée contient le texte de la tâche, un lien vers la tâche d’origine et son heure de fin. Un identifiant de bloc stable est ajouté à la tâche source. Une tâche cochée depuis une vue de synthèse conserve ce lien source. Décocher conserve l’entrée ; terminer à nouveau la tâche actualise l’heure et déplace l’entrée dans la note du jour. Tasks continue de gérer les échéances et les dates de fin. Les tâches déjà terminées ne sont pas rejouées au démarrage. Les entrées sont enregistrées en Markdown, sans fichier de récompenses.
-
 #### Installation
 
 Sur iPhone ou ordinateur, installez [BRAT](https://github.com/TfTHacker/obsidian42-brat) depuis les plugins communautaires d’Obsidian, puis ajoutez le dépôt `Ch1llNoodle/obsidian-media-capture`. Choisissez une version publiée ou une préversion et activez Media Capture. BRAT installe et met à jour les fichiers dans Obsidian.
@@ -45,6 +19,20 @@ Sur iPhone ou ordinateur, installez [BRAT](https://github.com/TfTHacker/obsidian
 Obsidian 1.8.7 ou ultérieur est requis. Pour une installation manuelle, téléchargez `main.js`, `manifest.json` et `styles.css` depuis les [versions GitHub](https://github.com/Ch1llNoodle/obsidian-media-capture/releases), placez-les dans `<Coffre>/.obsidian/plugins/media-capture/`, puis activez Media Capture dans les paramètres des plugins communautaires. Une compilation du code source produit ces fichiers dans `release/media-capture/`.
 
 Lors d’une mise à jour, remplacez les trois fichiers d’exécution et rechargez le plugin. Conservez `data.json`, qui contient les paramètres, et `records.json`, qui contient les enregistrements. L’identifiant et le dossier d’installation du plugin sont `media-capture`. Le code source et `node_modules` restent hors de ce dossier.
+
+#### Première utilisation
+
+Ouvrez Bien démarrer dans les paramètres ou le guide depuis la palette de commandes. Utilisez l’icône latérale, collez un lien d’épisode ou de vidéo complète, récupérez les informations, vérifiez la destination sous le formulaire puis choisissez Enregistrer et ouvrir. Par défaut, les fichiers sont Podcasts.md et Videos.md, sans clé API. Les règles personnalisées utilisent les destinations indiquées dans le formulaire.
+
+Le [dossier sample](sample/README.md) contient un dossier Capture Sample complet. Copiez-le à la racine du coffre et ouvrez sa page 开始使用. Chaque exemple indique dépendances, modules, identifiants, actions et emplacements. Les suivis interactifs utilisent Dataview et le modèle quotidien utilise Templater. La capture de médias ne nécessite aucun des deux. Les contrôles des exemples sont actuellement en chinois.
+
+Le Mode d’emploi de chaque module indique les prérequis, les actions et les résultats. Les suivis et les sources quotidiennes nécessitent des pages ou modèles associés ; les activer ou saisir les identifiants ne crée pas ces pages. Les exemples fournissent des pages minimales utilisables. Leurs données restent dans Capture Sample ; les médias et tâches suivent les réglages existants.
+
+#### Journal des tâches terminées
+
+Activez **Journal des tâches terminées** dans **Fonctions** dans les paramètres de Capture pour inscrire les tâches Markdown terminées dans la note quotidienne du jour. Cette fonction est désactivée par défaut. **Titre de la section des tâches** définit la section de destination, `## Notes` par défaut. Le chemin, le format de date et le modèle suivent la configuration des notes quotidiennes d’Obsidian.
+
+Chaque entrée contient le texte de la tâche, un lien vers la tâche d’origine et son heure de fin. Un identifiant de bloc stable est ajouté à la tâche source. Une tâche cochée depuis une vue de synthèse conserve ce lien source. Décocher conserve l’entrée ; terminer à nouveau la tâche actualise l’heure et déplace l’entrée dans la note du jour. Tasks continue de gérer les échéances et les dates de fin. Les tâches déjà terminées ne sont pas rejouées au démarrage. Les entrées sont enregistrées en Markdown, sans fichier de récompenses.
 
 #### Capturer un média
 
@@ -193,6 +181,26 @@ Les couvertures portent le nom de l’émission, ou le titre du média si celui-
 Un titre générique de lecteur Apple peut être corrigé lors d’une réparation si l’épisode exact est retrouvé. Les titres personnels, dates d’origine, identifiants de bloc et citations sont conservés. Les commentaires media-state, media-date et les identifiants de bloc servent à la déduplication, aux couvertures et aux liens quotidiens : conservez-les lors des modifications manuelles.
 
 Sur une même plateforme, l’identifiant de l’épisode ou de la vidéo sert à retrouver l’enregistrement. Entre plateformes, le texte complet « émission · titre » doit correspondre après normalisation Unicode, des espaces et de la casse. Un média terminé conserve sa première date. Enregistrer une nouvelle écoute ou un nouveau visionnage à une autre date nécessite l’intégration au journal et une seule note existante pour cette date ; les deux dates partagent la ligne et la couverture.
+
+#### API des enregistrements et responsabilités
+
+Capture transforme les informations externes et les actions en enregistrements fiables. Le coffre définit leur organisation et leur présentation. Les scripts utilisent directement `app.plugins.plugins['media-capture'].records`.
+
+| API | Responsabilité |
+| --- | --- |
+| `services` | Recherche TMDB, saisons et épisodes ; lieux Amap ; données Maimemo avec `tmdbToken`, `amapKey`, `maimemoToken` |
+| `reading(path)` | Pages, signets et historique |
+| `series(path)` | Épisodes partagés, progression et instantanés quotidiens ; `change(context, action)` gère associations, actualisations et cases cochées |
+| `selections(path)` | Listes de chaînes par identifiant stable, notamment les groupes musculaires |
+| `metadata(path, change)`, `link`, `moveLink` | Fusion des propriétés, ajout/suppression et ordre des liens |
+| `place(folder, place)` | Création ou réutilisation des lieux par identifiant Amap, coordonnées WGS84 et source |
+| `syncStudy(path, fields, options)` | Validation et sauvegarde des données du jour ; refus des doublons et changements de date |
+| `syncDouban(options, render)` | Pages de collection, classification et couvertures ; rendu du coffre appliqué au texte actuel. Le cookie fourni par le plugin Douban n’est pas conservé |
+| `daily()` | Localisation, météo, lune, salutation et poésie validées ; budget commun de 15 secondes par note ; null en cas d’échec ou d’identifiant absent |
+
+Le coffre fournit chemins, champs, fuseaux horaires, titres, prompts et rendu. Les pages, épisodes et sélections restent dans les fichiers JSON indiqués, séparés de data.json et records.json. Les écritures sur un même chemin sont sérialisées dans l’application ; données invalides et conflits externes arrêtent l’écriture. Il ne s’agit pas d’une transaction entre appareils. L’événement `media-capture:record-updated` contient `{path}` ; l’adaptateur du coffre actualise Dataview. Les anciennes interfaces s’arrêtent au déchargement du plugin.
+
+`daily()` utilise `tencentMapKey`, `amapKey`, `deepseekKey` et `jinrishiciToken`. DeepSeek reçoit le prompt du coffre, y compris lieu et météo si fournis. Le modèle gère la sortie et la sauvegarde. Les appels sont déclenchés par l’utilisateur, sans interrogation périodique. Les tests des services sont dans le plugin ; les tests du coffre utilisent `MEDIA_CAPTURE_SOURCE_PATH`, par défaut le dépôt voisin `obsidian-media-capture`.
 
 #### Données et intégration au coffre
 

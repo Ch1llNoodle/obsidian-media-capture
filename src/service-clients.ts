@@ -10,7 +10,7 @@ const study = (() => {
       return isRecord(value) ? value : {};
     }
     async function requestMaimemo(token: string, operation: string, body: Record<string, unknown>) {
-      if (!token) throw new Error("请在 Capture 的自定义凭证中填写 maimemoToken。");
+      if (!token) throw new Error("请在 Capture 的服务连接中填写墨墨 Token。");
       const request = () => requestUrl({
         url: `https://open.maimemo.com/open/api/v1/memo/study/${operation}`,
         method: "POST",
@@ -151,7 +151,7 @@ const places = (() => {
       return [Number(y.toFixed(6)), Number(x.toFixed(6))];
     }
     async function query(key: string, keyword: string, city: string, tips: boolean) {
-      if (!key) throw new Error("请在 Capture 的自定义凭证中填写 amapKey。");
+      if (!key) throw new Error("请在 Capture 的服务连接中填写高德地图 Key。");
       const keywords = keyword.trim();
       if (!keywords || keywords.length > 80) throw new Error("地点名称需要 1–80 个字符。");
       const params = new URLSearchParams({ key, keywords, output: "JSON" });
