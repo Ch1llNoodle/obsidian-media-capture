@@ -6,10 +6,14 @@ import { CaptureSettings } from './settings-ui';
 import { registerRecommendationUI } from './recommendation-ui';
 import { NoteRefreshModal } from './note-refresh-ui';
 import type { CaptureSettingsData } from './types';
+import { TaskCompletionLog } from './task-completion';
+import { CaptureRecords } from './record-api';
 
 export default class MediaCapture extends Plugin {
     service!: CaptureService;
+    private taskLog: TaskCompletionLog | undefined;
     readonly supportsRecommendations = true;
+    records!: CaptureRecords;
 
     private get activeSettings(): CaptureSettingsData {
         if (!this.service || this.service.unloaded) throw new Error(t("请重新启用 Media Capture。"));
@@ -21,8 +25,11 @@ export default class MediaCapture extends Plugin {
     }
 
     override async onload(): Promise<void> {
-        this.service = new CaptureService(this);
+        this.service = new CaptureService(this, () => this.taskLog?.configure());
         await this.service.initialize();
+        this.records = new CaptureRecords(this.app, name => this.getCredential(name), () => { void this.activeSettings; });
+        this.taskLog = new TaskCompletionLog(this, () => this.service.config);
+        this.taskLog.configure();
         this.service.notes.register(this);
         this.service.appends.register(this);
         this.addSettingTab(new CaptureSettings(this.app, this.service));

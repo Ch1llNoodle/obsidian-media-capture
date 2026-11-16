@@ -4,13 +4,39 @@
 
 Media Capture saves podcast and video information from Douban, Xiaoyuzhou, Apple Podcasts, YouTube, and Bilibili as Markdown. Write rules support one-line logs, separate notes, and files grouped by show or channel. The default is one line per record, with separate podcast and video logs. The interface supports Simplified Chinese, English, and French, following the Obsidian language.
 
-Daily-note links, work associations, and in-app playback are optional. Custom credentials give vault scripts a single place to store field/value pairs. API integrations, diary buttons, episode grids, maps, and heatmaps belong to the vault configuration.
+Daily-note links, work associations and playback are optional. Capture owns service access and record persistence; vault scripts provide interaction layouts and presentation.
 
 | Managed by Capture | Managed by the vault |
 | --- | --- |
 | Media capture, write rules, covers, work associations | Diary layout, activity sections and classification |
-| Custom credential storage and lookup | API requests, study snapshots, episode progress and travel records |
-| Optional links to existing daily notes | Place notes, map views, summaries and heatmaps |
+| Service access, validated records, credentials | Fields, paths, prompts and interaction layout |
+| Place notes and optional daily links | Maps, summaries and heatmaps |
+
+#### Record API and responsibilities
+
+Capture turns external information and user actions into reliable records. The vault defines their organization and presentation. Vault scripts call `app.plugins.plugins['media-capture'].records` directly.
+
+| API | Responsibility |
+| --- | --- |
+| `services` | TMDB search, seasons and episodes; Amap places; Maimemo study data using `tmdbToken`, `amapKey`, `maimemoToken` |
+| `reading(path)` | Page ranges, bookmarks and history |
+| `series(path)` | Shared episodes, current progress and daily snapshots; `change(context, action)` associates, refreshes, deactivates or toggles episodes |
+| `selections(path)` | String selections keyed by stable record identities, such as video muscle groups |
+| `metadata(path, change)`, `link`, `moveLink` | Merge daily properties, add/remove links and reorder against the latest metadata |
+| `place(folder, place)` | Create/reuse place notes by Amap ID, retaining WGS84 coordinates and source information |
+| `syncStudy(path, fields, options)` | Validate and save today's study values using supplied field names; reject date rollover and duplicate requests |
+| `syncDouban(options, render)` | Fetch collection pages, classify screen works and store covers; invoke the vault renderer against the latest text. The caller supplies the Douban plugin's login cookie; Capture does not persist it |
+| `daily()` | Validated location, weather, moon, greeting and poetry data under one 15-second budget per note; missing credentials or failures return null |
+
+The vault supplies paths, fields, time zones, headings, prompts and rendering rules. Reading, episode and selection records remain in their specified vault JSON files, separate from plugin data.json and records.json. Writes to the same path serialize within one app; malformed data and conflicting external edits stop writes. This is not a cross-device transaction. Saves emit `media-capture:record-updated` with `{path}`. The vault adapter handles Dataview refreshes. Old API handles stop working after plugin unload.
+
+`daily()` uses `tencentMapKey`, `amapKey`, `deepseekKey` and `jinrishiciToken`. DeepSeek receives the vault's prompt, including location/weather if supplied. The template performs output and persistence. Service requests run on caller actions, without polling. Provider tests belong to the plugin; vault integration tests use `MEDIA_CAPTURE_SOURCE_PATH`, defaulting to the sibling `obsidian-media-capture` checkout.
+
+#### Task completion log
+
+Enable **Record task completion times** in Capture settings to write completed Markdown tasks to today's Daily note. The feature is off by default. **Task log heading** selects the destination section; the default is `## Notes`. Note paths, date formats and templates follow Obsidian's Daily notes configuration.
+
+Each record contains the task text, a link to the original task and its completion time. The source task receives a stable block ID. Completing a task from a query view links to that source. Unchecking keeps the record; completing it again updates the time and moves the record to today's note. Tasks continues to manage deadlines and completion dates. Existing completed tasks are not replayed on startup. Logs are stored in Markdown; no reward file is required.
 
 #### Installation
 
@@ -141,6 +167,8 @@ Settings, dialogs, buttons, notices, and plugin-generated errors are translated.
 
 #### Settings
 
+Settings are grouped into Media capture, Records and journal, Services, and Maintenance. Media capture contains write rules, video, playback and covers. Records contains tasks, daily links and work collections. Services presents six named credential fields and Other credentials. Maintenance provides cover repair and template updates. Dependent inputs are disabled when their feature is off, retaining saved values. Credentials are masked and can be revealed temporarily. Saving retains the active page; rule expansion stays within the current settings session.
+
 | Setting | Default | Behavior |
 | --- | --- | --- |
 | Write rules | Concentrated log enabled | Presets or independently configured append/create rules |
@@ -158,7 +186,7 @@ Daily integration writes links to existing notes whose filenames match `YYYY-MM-
 
 #### Custom credentials
 
-Use **Custom credentials** in settings to add, rename, edit, or delete field/value entries. Values are masked on screen. Field names are case-sensitive, unique, and limited to 80 characters; up to 100 entries are allowed. Values are stored exactly as entered. Authentication headers, token normalization, and service-specific validation belong to the calling script.
+Use **Custom credentials** in settings to add, rename, edit, or delete field/value entries. Values are masked on screen. Field names are case-sensitive, unique, and limited to 80 characters; up to 100 entries are allowed. Values are stored exactly as entered. Built-in clients normalize authentication and validate responses; custom integrations manage their own protocols.
 
 Vault scripts can read a configured value with:
 
@@ -167,7 +195,7 @@ const capture = app.plugins.plugins['media-capture'];
 const token = capture.getCredential('serviceToken');
 ```
 
-`getCredential(name)` returns an empty string when the field is absent and throws when the plugin is unavailable or unloaded. It reads settings without making a network request. The plugin does not define service names, URLs, request methods, or response formats. API clients, request access, error handling, records, and presentation belong to the vault's scripts and configuration.
+`getCredential(name)` returns an empty string when the field is absent and throws when the plugin is unavailable or unloaded. It reads settings without a network request. Built-in service clients and record operations are exposed through records; custom vault integrations may still read credentials directly.
 
 Values are saved as plain text in `data.json`; masking the input does not encrypt that file. Synchronize it only with private vault data. Renaming or deleting a field requires updating any scripts that use that field name. The current settings format uses a `credentials` array of `{name, value}` entries; fixed service-specific settings and methods are no longer supported.
 
@@ -206,7 +234,7 @@ Share write rules, their Markdown template files, and the vault-relative paths t
 
 #### Code organization
 
-`settings.ts` owns defaults, derived log targets, and configuration validation. `CapturePreferences` describes shareable configuration; `CaptureSettingsData` adds local credentials and derived fields. Credential and rule editors depend on `SettingsAccess` rather than the capture service. `core.ts` handles media identities and catalog rows, `fetch-metadata.ts` requests platform information, and `data-store.ts` persists local settings and records. Vault-specific views, service clients, and diary layouts are maintained with the vault.
+`settings.ts` owns defaults, derived log targets, and configuration validation. `CapturePreferences` describes shareable configuration; `CaptureSettingsData` adds local credentials and derived fields. Credential and rule editors depend on `SettingsAccess` rather than the capture service. `core.ts` handles media identities and catalog rows, `fetch-metadata.ts` requests platform information, and `data-store.ts` persists local settings and records. record-api.ts exposes the record API; record-store.ts serializes JSON writes and detects conflicts. Service, episode, reading, daily-source and Douban modules are independent. Vault-specific views and diary layouts stay with the vault.
 
 #### Development and validation
 
@@ -245,6 +273,11 @@ Network requests use Obsidian's request API. The following table covers the buil
 | Podcast metadata | Douban and Xiaoyuzhou episode pages; `itunes.apple.com` lookup and Apple episode pages | Episode or show identifiers and storefront; no platform login |
 | Video metadata | `www.youtube.com/oembed`; Bilibili public video pages | Canonical video URL or identifier; no platform login |
 | Covers | HTTPS under `doubanio.com`, `xyzcdn.net`, `mzstatic.com`, `ytimg.com`, `hdslb.com` | Cover URL from media metadata |
+| TMDB | `api.tmdb.org/3` | Query, series and season IDs; Bearer `tmdbToken` |
+| Maimemo | `open.maimemo.com` | Study progress and completed word lists; Bearer `maimemoToken` |
+| Amap places/weather | `restapi.amap.com` | Keyword, city and `amapKey` |
+| Daily sources | `apis.map.qq.com`, `wttr.in`, `api.deepseek.com`, `v2.jinrishici.com` | IP lookup key; city; prompt and DeepSeek key; poetry token |
+| Douban collections | `book.douban.com`, `movie.douban.com`, `music.douban.com`, `doubanio.com` | User ID and login cookie for collection/detail requests; public covers |
 
 Apple lookup returns up to 200 episodes per show; older episodes may require the webpage fallback or a manually entered title. Saving may fetch a missing cover even with a manually entered title. Disabling cover downloads stops image requests; manual repair and optional startup repair may still fetch media pages. Associations read local collections without network requests. Custom credential lookup makes no requests; vault scripts own any requests that use those values.
 

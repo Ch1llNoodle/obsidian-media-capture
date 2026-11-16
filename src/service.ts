@@ -23,7 +23,7 @@ export class CaptureService {
     unloaded = false;
     queue: Promise<unknown> = Promise.resolve();
     dataQueue: Promise<void> = Promise.resolve();
-    constructor(plugin: Plugin) { this.plugin = plugin; this.app = plugin.app; }
+    constructor(plugin: Plugin, private readonly settingsChanged: () => void = () => {}) { this.plugin = plugin; this.app = plugin.app; }
     get config(): Readonly<CaptureSettingsData> { return ruleTargets(this.settings); }
     async initialize(): Promise<void> {
         this.unloaded = false;
@@ -56,6 +56,7 @@ export class CaptureService {
         const settings = validateSettings(value);
         await this.updateData({ settings, schemaVersion: 3 });
         this.settings = settings;
+        this.settingsChanged();
     }
     fetchMetadata(url: string): Promise<EpisodeMetadata> {
         return fetchMediaMetadata(url);

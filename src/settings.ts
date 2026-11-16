@@ -12,6 +12,8 @@ export function ruleTargets(settings: Omit<CaptureSettingsData, 'catalogPath' | 
 }
 
 export const DEFAULT_SETTINGS: Readonly<CaptureSettingsData> = Object.freeze(ruleTargets({
+    taskCompletionLog: false,
+    taskLogHeading: '## Notes',
     writeRules: defaultRules(),
     videoCatalogPath: 'Videos.md',
     playbackIntegration: false,
@@ -41,19 +43,21 @@ export function validateSettings(settings: unknown): CaptureSettingsData {
     const supplied = record(settings);
     const result = ruleTargets({ ...DEFAULT_SETTINGS, writeRules: defaultRules(), credentials: [] });
     for (const key of Object.keys(supplied)) if (!Object.prototype.hasOwnProperty.call(DEFAULT_SETTINGS, key) || ['catalogPath', 'entryHeading'].includes(key)) throw new Error(t("Unknown settings field: {0}.", key));
-    for (const key of ['videoCatalogPath', 'imageFolder', 'dailyFolder', 'dailyProperty', 'bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const) {
+    for (const key of ['taskLogHeading', 'videoCatalogPath', 'imageFolder', 'dailyFolder', 'dailyProperty', 'bookPath', 'moviePath', 'teleplayPath', 'musicPath', 'gamePath', 'theaterPath'] as const) {
         if (supplied[key] !== undefined) {
             if (typeof supplied[key] !== 'string') throw new Error(t("Setting {0} must be text.", key));
             result[key] = supplied[key];
         }
     }
-    for (const key of ['downloadCovers', 'repairOnStartup', 'dailyIntegration', 'playbackIntegration'] as const) {
+    for (const key of ['taskCompletionLog', 'downloadCovers', 'repairOnStartup', 'dailyIntegration', 'playbackIntegration'] as const) {
         if (supplied[key] !== undefined) {
             if (typeof supplied[key] !== 'boolean') throw new Error(t("Setting {0} must be boolean.", key));
             result[key] = supplied[key];
         }
     }
     if (supplied.credentials !== undefined) result.credentials = validateCredentials(supplied.credentials);
+    result.taskLogHeading = result.taskLogHeading.trim();
+    if (!/^#{1,6}\s+\S[^\r\n]*$/.test(result.taskLogHeading)) throw new Error(t('请填写任务完成记录的 Markdown 标题。'));
     if (supplied.writeRules !== undefined) result.writeRules = validateRules(supplied.writeRules);
     result.videoCatalogPath = vaultPath(result.videoCatalogPath, '.md');
     result.imageFolder = vaultPath(result.imageFolder);

@@ -49,6 +49,8 @@ export interface Credential {
 
 /** Configuration that can be shared after reviewing vault-relative paths and templates. */
 export interface CapturePreferences {
+    taskCompletionLog: boolean;
+    taskLogHeading: string;
     writeRules: WriteRule[];
     videoCatalogPath: string;
     playbackIntegration: boolean;

@@ -4,13 +4,39 @@
 
 Media Capture enregistre en Markdown les informations des podcasts Douban, Xiaoyuzhou et Apple Podcasts, ainsi que des vidéos YouTube et Bilibili. Les règles d’écriture permettent de créer un journal avec une ligne par média, des notes séparées ou un fichier par émission ou chaîne. Par défaut, les podcasts et les vidéos utilisent deux journaux distincts. L’interface existe en chinois simplifié, en anglais et en français et suit la langue de l’application.
 
-Les liens vers le journal quotidien, les associations d’œuvres et la lecture dans Obsidian sont facultatifs. Les identifiants personnalisés offrent aux scripts du coffre un emplacement commun pour leurs champs et valeurs. Les intégrations d’API, boutons du journal, grilles d’épisodes, cartes et calendriers d’activité sont gérés par la configuration du coffre.
+Les liens quotidiens, associations et lecture sont facultatifs. Capture gère les services et les enregistrements ; le coffre gère les interfaces et la présentation.
 
 | Géré par Capture | Géré par le coffre |
 | --- | --- |
 | Capture de médias, règles d’écriture, couvertures et associations | Présentation du journal et classement des activités |
-| Stockage et lecture des identifiants personnalisés | Requêtes d’API, données d’apprentissage, progression des épisodes et voyages |
-| Liens facultatifs vers les notes quotidiennes existantes | Notes de lieux, cartes, synthèses et calendriers d’activité |
+| Services, validation, sauvegarde et identifiants | Champs, chemins, prompts et interfaces |
+| Notes de lieux et liens quotidiens facultatifs | Cartes, synthèses et calendriers |
+
+#### API des enregistrements et responsabilités
+
+Capture transforme les informations externes et les actions en enregistrements fiables. Le coffre définit leur organisation et leur présentation. Les scripts utilisent directement `app.plugins.plugins['media-capture'].records`.
+
+| API | Responsabilité |
+| --- | --- |
+| `services` | Recherche TMDB, saisons et épisodes ; lieux Amap ; données Maimemo avec `tmdbToken`, `amapKey`, `maimemoToken` |
+| `reading(path)` | Pages, signets et historique |
+| `series(path)` | Épisodes partagés, progression et instantanés quotidiens ; `change(context, action)` gère associations, actualisations et cases cochées |
+| `selections(path)` | Listes de chaînes par identifiant stable, notamment les groupes musculaires |
+| `metadata(path, change)`, `link`, `moveLink` | Fusion des propriétés, ajout/suppression et ordre des liens |
+| `place(folder, place)` | Création ou réutilisation des lieux par identifiant Amap, coordonnées WGS84 et source |
+| `syncStudy(path, fields, options)` | Validation et sauvegarde des données du jour ; refus des doublons et changements de date |
+| `syncDouban(options, render)` | Pages de collection, classification et couvertures ; rendu du coffre appliqué au texte actuel. Le cookie fourni par le plugin Douban n’est pas conservé |
+| `daily()` | Localisation, météo, lune, salutation et poésie validées ; budget commun de 15 secondes par note ; null en cas d’échec ou d’identifiant absent |
+
+Le coffre fournit chemins, champs, fuseaux horaires, titres, prompts et rendu. Les pages, épisodes et sélections restent dans les fichiers JSON indiqués, séparés de data.json et records.json. Les écritures sur un même chemin sont sérialisées dans l’application ; données invalides et conflits externes arrêtent l’écriture. Il ne s’agit pas d’une transaction entre appareils. L’événement `media-capture:record-updated` contient `{path}` ; l’adaptateur du coffre actualise Dataview. Les anciennes interfaces s’arrêtent au déchargement du plugin.
+
+`daily()` utilise `tencentMapKey`, `amapKey`, `deepseekKey` et `jinrishiciToken`. DeepSeek reçoit le prompt du coffre, y compris lieu et météo si fournis. Le modèle gère la sortie et la sauvegarde. Les appels sont déclenchés par l’utilisateur, sans interrogation périodique. Les tests des services sont dans le plugin ; les tests du coffre utilisent `MEDIA_CAPTURE_SOURCE_PATH`, par défaut le dépôt voisin `obsidian-media-capture`.
+
+#### Journal des tâches terminées
+
+Activez **Enregistrer l’heure de fin des tâches** dans les paramètres de Capture pour inscrire les tâches Markdown terminées dans la note quotidienne du jour. Cette fonction est désactivée par défaut. **Titre de la section des tâches** définit la section de destination, `## Notes` par défaut. Le chemin, le format de date et le modèle suivent la configuration des notes quotidiennes d’Obsidian.
+
+Chaque entrée contient le texte de la tâche, un lien vers la tâche d’origine et son heure de fin. Un identifiant de bloc stable est ajouté à la tâche source. Une tâche cochée depuis une vue de synthèse conserve ce lien source. Décocher conserve l’entrée ; terminer à nouveau la tâche actualise l’heure et déplace l’entrée dans la note du jour. Tasks continue de gérer les échéances et les dates de fin. Les tâches déjà terminées ne sont pas rejouées au démarrage. Les entrées sont enregistrées en Markdown, sans fichier de récompenses.
 
 #### Installation
 
@@ -137,6 +163,8 @@ Les paramètres, fenêtres, boutons, notifications et erreurs générées par le
 
 #### Paramètres
 
+Les paramètres sont regroupés en Capture de médias, Enregistrements et journal, Services et Maintenance. La capture contient règles, vidéo, lecture et couvertures. Les enregistrements regroupent tâches, liens quotidiens et collections. Services présente six champs nommés et les autres identifiants. Maintenance propose la réparation des couvertures et les mises à jour des modèles. Les champs dépendants sont désactivés avec leur fonction, en conservant leurs valeurs. Les identifiants sont masqués et peuvent être révélés temporairement. La page active reste sélectionnée après sauvegarde ; les règles ouvertes sont mémorisées pendant la session.
+
 | Paramètre | Valeur par défaut | Fonction |
 | --- | --- | --- |
 | Règles d’écriture | Journal activé | Préréglages ou règles d’ajout et de création |
@@ -161,7 +189,7 @@ const capture = app.plugins.plugins['media-capture'];
 const token = capture.getCredential('serviceToken');
 ```
 
-`getCredential(name)` renvoie une chaîne vide si le champ est absent et lève une erreur si le plugin n’est pas prêt ou a été désactivé. La lecture ne fait aucune requête réseau. Les noms de services, adresses, méthodes, formats de réponse, clients d’API et vues appartiennent aux scripts du coffre.
+`getCredential(name)` renvoie une valeur ou une chaîne vide ; le plugin indisponible produit une erreur. La lecture reste locale. Les services intégrés utilisent records ; les intégrations personnalisées peuvent lire les identifiants directement.
 
 Les valeurs sont enregistrées en clair dans `data.json` ; le masquage à l’écran ne chiffre pas ce fichier. Synchronisez-le uniquement avec les données privées du coffre. Renommer ou supprimer un champ nécessite d’adapter ses scripts. Le format actuel utilise une liste `credentials` de `{name, value}` et ne prend pas en charge les anciens paramètres fixes par service.
 
@@ -196,7 +224,7 @@ Partagez les règles, les modèles Markdown correspondants et les chemins relati
 
 #### Organisation du code
 
-`settings.ts` définit les valeurs par défaut, chemins dérivés et validations. `CapturePreferences` représente les préférences partageables ; `CaptureSettingsData` ajoute les identifiants locaux et champs dérivés. Les éditeurs utilisent `SettingsAccess`, indépendamment du service de capture. `core.ts` gère les identités et lignes, `fetch-metadata.ts` les requêtes de métadonnées et `data-store.ts` la persistance. Les vues et clients propres au coffre sont maintenus avec celui-ci.
+`settings.ts` définit les valeurs par défaut, chemins dérivés et validations. `CapturePreferences` représente les préférences partageables ; `CaptureSettingsData` ajoute les identifiants locaux et champs dérivés. Les éditeurs utilisent `SettingsAccess`, indépendamment du service de capture. `core.ts` gère les identités et lignes, `fetch-metadata.ts` les requêtes de métadonnées et `data-store.ts` la persistance. record-api.ts expose les interfaces des enregistrements ; record-store.ts gère les écritures JSON et les conflits. Les modules de services, épisodes, lecture, sources quotidiennes et Douban sont séparés. Les vues et la présentation restent dans le coffre.
 
 #### Développement et vérification
 
@@ -233,8 +261,13 @@ Les requêtes utilisent l’API Obsidian. Les scripts personnalisés du coffre p
 | Informations des podcasts | Pages Douban et Xiaoyuzhou ; `itunes.apple.com` et pages Apple | Identifiants d’épisode ou d’émission et région, sans session de plateforme |
 | Informations des vidéos | `www.youtube.com/oembed` et pages publiques Bilibili | Adresse canonique ou identifiant, sans session de plateforme |
 | Couvertures | HTTPS sur `doubanio.com`, `xyzcdn.net`, `mzstatic.com`, `ytimg.com`, `hdslb.com` et leurs sous-domaines | Adresse de couverture fournie par les métadonnées |
+| TMDB | `api.tmdb.org/3` | Query, series and season IDs; Bearer `tmdbToken` |
+| Maimemo | `open.maimemo.com` | Study progress and completed word lists; Bearer `maimemoToken` |
+| Amap places/weather | `restapi.amap.com` | Keyword, city and `amapKey` |
+| Daily sources | `apis.map.qq.com`, `wttr.in`, `api.deepseek.com`, `v2.jinrishici.com` | IP lookup key; city; prompt and DeepSeek key; poetry token |
+| Douban collections | `book.douban.com`, `movie.douban.com`, `music.douban.com`, `doubanio.com` | User ID and login cookie for collection/detail requests; public covers |
 
-Apple renvoie jusqu’à 200 épisodes par émission ; les épisodes plus anciens peuvent nécessiter la page Web ou un titre manuel. Enregistrer un titre manuel peut encore déclencher la recherche d’une couverture manquante. Désactiver le téléchargement arrête les requêtes d’image ; les réparations manuelles ou au démarrage peuvent encore lire des pages de médias. Les associations et la lecture d’identifiants restent locales ; les scripts du coffre gèrent les requêtes utilisant ces identifiants.
+Apple renvoie jusqu’à 200 épisodes par émission ; les épisodes plus anciens peuvent nécessiter la page Web ou un titre manuel. Enregistrer un titre manuel peut encore déclencher la recherche d’une couverture manquante. Désactiver le téléchargement arrête les requêtes d’image ; les réparations manuelles ou au démarrage peuvent encore lire des pages de médias. Les associations et la lecture d’identifiants restent locales ; les services intégrés sont accessibles par records.
 
 Le code utilise les API Obsidian et Web, sans dépendance d’exécution Node.js ou Electron. Le manifest autorise Android et iOS ; la compatibilité réelle sur appareils reste à vérifier. Seuls les identifiants saisis explicitement dans les paramètres sont exposés aux scripts. Le plugin ne lit ni les sessions de navigateur ni l’historique de lecture et n’intègre aucune télémétrie. Les erreurs apparaissent dans la vue, la fenêtre de capture ou le rapport concerné.
 

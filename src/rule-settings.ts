@@ -6,7 +6,7 @@ import { presetRules } from './write-rules';
 import { NoteTemplatePicker } from './note-ui';
 import { errorMessage } from './validation';
 
-export function renderRuleSettings(container: HTMLElement, podcast: SettingsAccess & { readonly app: App }, refresh: () => void): void {
+export function renderRuleSettings(container: HTMLElement, podcast: SettingsAccess & { readonly app: App }, refresh: () => void, expanded = new Set<string>()): void {
     const rules = podcast.config.writeRules;
     const save = async (updated: WriteRule[]): Promise<void> => { await podcast.saveSettings({ ...podcast.config, writeRules: updated }); };
     let queue: Promise<void> = Promise.resolve();
@@ -25,10 +25,13 @@ export function renderRuleSettings(container: HTMLElement, podcast: SettingsAcce
             if (value === 'log' || value === 'note' || value === 'both' || value === 'show') preset = value;
         })).addButton(button => button.setButtonText(t("应用预设")).onClick(() => run(mutate(() => presetRules(podcast.config, preset)), true)));
     for (const rule of rules) {
-        new Setting(container).setName(rule.name).setDesc(rule.mode === 'append' ? t("将模板内容追加到目标文件") : t("按路径模板新建文件"))
+        const card = container.createDiv({ cls: 'media-settings-rule' });
+        new Setting(card).setName(rule.name).setDesc(rule.mode === 'append' ? t("将模板内容追加到目标文件") : t("按路径模板新建文件"))
             .addToggle(toggle => toggle.setValue(rule.enabled).onChange(value => run(change(rule.id, { enabled: value }))));
-        const details = container.createEl('details', { cls: 'media-rule-settings' });
+        const details = card.createEl('details', { cls: 'media-rule-settings' });
         details.setAttribute('data-rule-id', rule.id);
+        details.open = expanded.has(rule.id);
+        details.addEventListener('toggle', () => { if (details.open) expanded.add(rule.id); else expanded.delete(rule.id); });
         details.createEl('summary', { text: t("编辑规则") });
         const field = (key: 'name' | 'folder' | 'pathTemplate' | 'heading' | 'templateFile', label: string, description: string): Setting =>
             new Setting(details).setName(label).setDesc(description).addText(component => {

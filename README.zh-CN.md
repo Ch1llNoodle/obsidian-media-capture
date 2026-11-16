@@ -4,13 +4,39 @@
 
 Media Capture 将豆瓣、小宇宙、Apple Podcasts 的播客信息及 YouTube、Bilibili 的视频信息保存为 Markdown。写入规则支持一行清单、独立笔记和按节目／频道集中记录。默认每条一行，播客与视频分别保存到各自清单。界面支持简体中文、英文和法语，自动跟随应用语言。
 
-日记链接、作品关联和库内播放均可选。自定义凭证为笔记脚本提供统一的字段和值存储入口；API 联动、日记按钮、集数格子、地图和热力图由笔记库配置维护。
+日记链接、作品关联和库内播放均可选。Capture 提供服务访问和记录能力，笔记库维护交互布局与展示规则。
 
 | 插件负责 | 笔记库负责 |
 | --- | --- |
 | 媒体采集、写入规则、封面、作品关联 | 日记布局、活动分区与归类 |
-| 自定义凭证保存与读取 | API 请求、学习快照、观看进度和旅行记录 |
-| 可选的已有日记链接 | 地点笔记、地图视图、统计和热力图 |
+| 服务访问、校验与记录保存、凭证 | 字段、路径、提示词与交互布局 |
+| 地点笔记及可选的日记链接 | 地图视图、统计和热力图 |
+
+#### 记录接口与职责
+
+Capture 负责把外部信息和用户操作变成可靠的记录，笔记库决定怎样组织和展示这些记录。笔记脚本直接调用 `app.plugins.plugins['media-capture'].records`。
+
+| 接口 | 职责 |
+| --- | --- |
+| `services` | TMDB 搜索与季度、分集资料，高德地点查询，墨墨学习数据；读取 `tmdbToken`、`amapKey`、`maimemoToken` |
+| `reading(path)` | 阅读页码、跨日书签、历史记录 |
+| `series(path)` | 共享分集、当前进度、逐日快照；`change(context, action)` 处理关联、更新、取消与勾选 |
+| `selections(path)` | 按稳定标识保存字符串选择列表，例如视频肌群 |
+| `metadata(path, change)`、`link`、`moveLink` | 在最新日记属性上合并修改、增删链接和调整顺序 |
+| `place(folder, place)` | 按高德编号创建或复用地点笔记，保留 WGS84 坐标及来源信息 |
+| `syncStudy(path, fields, options)` | 校验当天学习数据并按传入字段写入，跨日或重复请求停止 |
+| `syncDouban(options, render)` | 分页读取豆瓣收藏、识别影视类型、保存封面，再以最新正文调用仓库提供的渲染函数；登录 Cookie 由调用方从 Douban 插件提供，不另行持久化 |
+| `daily()` | 单篇日记共用 15 秒请求预算；定位、天气、月相、问候语及诗词的校验结果，失败或缺少凭证时返回空值 |
+
+所有路径、日记字段、时区、栏目、提示词和渲染规则由笔记库显式提供。阅读、分集和选择记录仍保存在指定的库内 JSON，未移入插件 data.json 或 records.json。每个应用内同路径写入串行执行，格式损坏或保存前发生外部修改时停止；这不是跨设备事务。保存后发出 `media-capture:record-updated`，载荷为 `{path}`；Dataview 刷新由笔记库适配层处理。插件卸载后，旧接口停止工作。
+
+`daily()` 使用 `tencentMapKey`、`amapKey`、`deepseekKey`、`jinrishiciToken`。DeepSeek 收到仓库提供的提示词，包括其中的位置和天气。此接口仅读取服务，实际写入和输出仍由模板完成。TMDB、高德、墨墨和豆瓣同步均由调用方操作触发，没有定时轮询。服务模拟测试随插件维护；笔记库的集成测试通过 `MEDIA_CAPTURE_SOURCE_PATH` 指向源码检出目录，默认使用笔记库的同级 `obsidian-media-capture`。
+
+#### 任务完成记录
+
+在 Capture 设置中开启“记录任务完成时间”，将完成的 Markdown 任务写入当天日记。此功能默认关闭。“任务记录标题”指定写入章节，默认为 `## Notes`。日记路径、日期格式和模板沿用 Obsidian 的日记配置。
+
+每条记录包含任务内容、原任务链接和完成时刻。首次完成会给原任务添加稳定的块标识；从汇总清单勾选也链接到原任务。取消勾选保留记录，再次完成时更新时间并将记录移到当天日记。Tasks 继续管理截止日期和完成日期。启动时不会补记已有完成任务。日志保存在 Markdown 中，无须奖励文件。
 
 #### 安装
 
@@ -141,6 +167,8 @@ tags: [podcast]
 
 #### 设置
 
+设置页分为“媒体采集”“记录与日记”“服务连接”“维护”。媒体页编辑写入规则、视频、播放与封面；记录页配置任务、日记联动和作品清单；服务页按名称填写六项常用凭证，额外字段收在“其他凭证”；维护页提供补全封面和模板更新。关闭功能后，相关输入项置灰，原值保留。凭证默认隐藏，可临时显示。保存保留当前分区，规则展开状态在本次设置会话中保留。
+
 | 设置 | 默认值 | 行为 |
 | --- | --- | --- |
 | 写入规则 | 启用集中清单 | 使用预设，或分别配置追加与新建规则 |
@@ -158,7 +186,7 @@ tags: [podcast]
 
 #### 自定义凭证
 
-在设置的“自定义凭证”中添加、重命名、编辑或删除字段和值，值按密码显示。字段名区分大小写、不可重复，最多 80 个字符；凭证最多 100 项。值按原样保存，认证头、令牌规范化和服务字段校验由调用方脚本处理。
+在设置的“自定义凭证”中添加、重命名、编辑或删除字段和值，值按密码显示。字段名区分大小写、不可重复，最多 80 个字符；凭证最多 100 项。值按原样保存，内置客户端负责认证与响应校验，自定义集成自行处理服务协议。
 
 笔记脚本通过字段名读取已保存的值：
 
@@ -167,7 +195,7 @@ const capture = app.plugins.plugins['media-capture'];
 const token = capture.getCredential('serviceToken');
 ```
 
-`getCredential(name)` 在字段不存在时返回空字符串，插件未就绪或已卸载时抛出错误。读取不发起网络请求。插件不规定服务名称、地址、请求方法或响应格式；API 客户端、请求接口、错误处理、记录和展示由笔记库脚本与配置管理。
+`getCredential(name)` 返回已配置值或空字符串；插件未就绪或已卸载时抛出错误。读取不联网。内置服务和记录操作由 records 提供；自定义集成仍可直接读取凭证。
 
 值以明文保存在 `data.json`，密码输入框不对文件加密，应仅随私人笔记库同步。修改或删除字段名后，需要相应更新使用该字段的脚本。当前设置使用 `{name, value}` 组成的 `credentials` 列表，不支持旧的固定服务设置或方法。
 
@@ -206,7 +234,7 @@ const token = capture.getCredential('serviceToken');
 
 #### 代码职责
 
-`settings.ts` 集中维护默认值、派生清单路径与配置校验。`CapturePreferences` 表达可分享配置，`CaptureSettingsData` 在其上增加本地凭证和派生字段。凭证与规则编辑界面通过 `SettingsAccess` 读写配置，独立于采集服务。`core.ts` 处理媒体标识与清单行，`fetch-metadata.ts` 请求平台信息，`data-store.ts` 持久化本地设置和记录。笔记库专用视图、服务客户端和日记布局随笔记库维护。
+`settings.ts` 集中维护默认值、派生清单路径与配置校验。`CapturePreferences` 表达可分享配置，`CaptureSettingsData` 在其上增加本地凭证和派生字段。凭证与规则编辑界面通过 `SettingsAccess` 读写配置，独立于采集服务。`core.ts` 处理媒体标识与清单行，`fetch-metadata.ts` 请求平台信息，`data-store.ts` 持久化本地设置和记录。`record-api.ts` 提供记录接口，`record-store.ts` 处理 JSON 保存与冲突校验；服务、分集、阅读、日记来源与豆瓣捕获各自独立。笔记库维护专用视图与日记布局。
 
 #### 开发与检查
 
@@ -245,8 +273,13 @@ npm run lint
 | 播客元信息 | 豆瓣、小宇宙单集页；`itunes.apple.com` 查询及 Apple 单集页 | 单集或节目编号、地区；不使用平台登录态 |
 | 视频元信息 | `www.youtube.com/oembed`；Bilibili 公开视频页 | 规范化视频链接或编号；不使用平台登录态 |
 | 封面 | HTTPS 下的 `doubanio.com`、`xyzcdn.net`、`mzstatic.com`、`ytimg.com`、`hdslb.com` 及其子域 | 元信息中的封面地址 |
+| TMDB | `api.tmdb.org/3` | Query, series and season IDs; Bearer `tmdbToken` |
+| Maimemo | `open.maimemo.com` | Study progress and completed word lists; Bearer `maimemoToken` |
+| Amap places/weather | `restapi.amap.com` | Keyword, city and `amapKey` |
+| Daily sources | `apis.map.qq.com`, `wttr.in`, `api.deepseek.com`, `v2.jinrishici.com` | IP lookup key; city; prompt and DeepSeek key; poetry token |
+| Douban collections | `book.douban.com`, `movie.douban.com`, `music.douban.com`, `doubanio.com` | User ID and login cookie for collection/detail requests; public covers |
 
-Apple 目录每次最多查询 200 集，较早单集可能需要网页回退或手动填写名称。即使手动填写标题，保存时也可能获取缺失封面。关闭封面下载后不请求图片；手动补图和可选的启动补图仍可能获取媒体页面。作品关联仅读取本地清单，不联网。读取自定义凭证不联网，使用凭证的请求由笔记库脚本负责。
+Apple 目录每次最多查询 200 集，较早单集可能需要网页回退或手动填写名称。即使手动填写标题，保存时也可能获取缺失封面。关闭封面下载后不请求图片；手动补图和可选的启动补图仍可能获取媒体页面。作品关联仅读取本地清单，不联网。读取自定义凭证不联网，内置服务通过 records 接口按需请求。
 
 运行代码使用 Obsidian API 和标准 Web API，不依赖 Node.js 或 Electron。manifest 允许 Android、iOS 加载，尚未完成真机兼容性验证。笔记脚本只能取得设置中主动填写的凭证；插件不读取浏览器登录态或播放历史，不包含遥测。平台或网络错误会显示在调用方视图、添加窗口或补图报告中。
 

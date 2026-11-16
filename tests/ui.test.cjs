@@ -19,6 +19,7 @@ for (const language of ['zh', 'en', 'fr']) test(`media settings and associations
             }, createSpan(options) { return this.createEl('span', options); },
             createDiv(options) { return this.createEl('div', options); },
             addEventListener(name, fn) { this[name] = fn; },
+            querySelector(selector) { return all(this).find(node => selector.startsWith('#') && node.id === selector.slice(1)) ?? null; },
             querySelectorAll() { return all(this).filter(n => ['input', 'select', 'textarea', 'button'].includes(n.tag)); },
             remove() { this.removed = true; },
         };
@@ -58,6 +59,8 @@ for (const language of ['zh', 'en', 'fr']) test(`media settings and associations
         addCommand(command) { commands.push(command); }
         registerEvent() {}
         register() {}
+        addChild() {}
+        removeChild() {}
         registerEditorExtension(extension) { this.editorExtension = extension; }
         registerMarkdownPostProcessor(callback) { this.processor = callback; }
     }
@@ -77,11 +80,12 @@ for (const language of ['zh', 'en', 'fr']) test(`media settings and associations
         setName(name) { this.row.name = name; return this; }
         setDesc() { return this; }
         setHeading() { return this; }
+        setDisabled(disabled) { this.row.disabled=disabled; return this; }
         addText(callback) { return this.input(callback, 'input'); }
         addTextArea(callback) { return this.input(callback, 'textarea'); }
         input(callback, tag) {
             const node = this.row.createEl(tag);
-            const component = { inputEl: node, setPlaceholder: () => component, setValue: value => { node.value = value; return component; }, getValue: () => node.value };
+            const component = { inputEl: node, setPlaceholder: () => component, setValue: value => { node.value = value; return component; }, getValue: () => node.value, setDisabled: value => { node.disabled=value; return component; } };
             callback(component); return this;
         }
         addDropdown(callback) {
@@ -90,13 +94,14 @@ for (const language of ['zh', 'en', 'fr']) test(`media settings and associations
             callback(component); return this;
         }
         addToggle(callback) {
-            const component = { setValue: () => component, onChange: () => component }; callback(component); return this;
+            const node=this.row.createEl('input',{type:'checkbox'});
+            const component = { setValue: value => {node.value=value;return component;}, setDisabled: value => {node.disabled=value;return component;}, onChange: fn => {node.change=fn;return component;} }; callback(component); return this;
         }
         addButton(callback) { return this.button(callback); }
         addExtraButton(callback) { return this.button(callback); }
         button(callback) {
             const node = this.row.createEl('button');
-            const component = { setButtonText: text => { node.text = text; return component; }, setIcon: () => component, setTooltip: () => component, onClick: fn => { node.click = fn; return component; } };
+            const component = { setButtonText: text => { node.text = text; return component; }, setIcon: () => component, setTooltip: () => component, setDisabled: value => {node.disabled=value;return component;}, onClick: fn => { node.click = fn; return component; } };
             callback(component); return this;
         }
     }
@@ -108,7 +113,7 @@ for (const language of ['zh', 'en', 'fr']) test(`media settings and associations
             };
             if (name === '@codemirror/state') return {};
             assert.equal(name, 'obsidian');
-            return { getLanguage: () => language, editorInfoField: editorInfo, editorLivePreviewField: livePreviewInfo, Plugin, Modal,
+            return { Component: class {}, getLanguage: () => language, editorInfoField: editorInfo, editorLivePreviewField: livePreviewInfo, Plugin, Modal,
                 FuzzySuggestModal: class extends Modal { setPlaceholder() {} onOpen() {} }, MarkdownRenderChild, Notice: class {},
                 PluginSettingTab: class { constructor() { this.containerEl = element(); } },
                 parseYaml: yaml.load, stringifyYaml: yaml.dump,
@@ -126,22 +131,41 @@ for (const language of ['zh', 'en', 'fr']) test(`media settings and associations
     assert.equal(plugin.searchPlaces, undefined);
     assert.equal(plugin.searchTv, undefined);
     plugin.settingsTab.display();
+    const tab = name => all(plugin.settingsTab.containerEl).find(node => node.role === 'tab' && node.text === label(name));
+    assert.equal(all(plugin.settingsTab.containerEl).filter(node=>node.role==='tab').length,4);
+    tab('服务连接').click();
     const credentialInputs = all(plugin.settingsTab.containerEl).filter(node => node.tag === 'input' && node.type === 'password');
-    assert.equal(credentialInputs.length, 1);
+    assert.equal(credentialInputs.length, 7);
     assert(credentialInputs.every(node => node.autocomplete === 'off' && typeof node.change === 'function'));
     const credentialNameInput = all(plugin.settingsTab.containerEl).find(node => node['aria-label'] === label('凭证字段名'));
     credentialNameInput.value = 'renamed'; credentialNameInput.change();
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(plugin.getCredential('example'), '');
     assert.equal(plugin.getCredential('renamed'), 'test-secret');
-    const valueInput = all(plugin.settingsTab.containerEl).find(node => node.type === 'password');
+    const valueInput = all(plugin.settingsTab.containerEl).find(node => node['aria-label'] === label('凭证值'));
     valueInput.value = 'updated-secret'; valueInput.change();
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(plugin.getCredential('renamed'), 'updated-secret');
-    const credentialRow = plugin.settingsTab.containerEl.children.find(row => all(row).some(node => node['aria-label'] === label('凭证字段名')));
+    const credentialRow = all(plugin.settingsTab.containerEl).find(row => row.children.some(node => node['aria-label'] === label('凭证字段名')));
     all(credentialRow).find(node => node.tag === 'button').click();
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(plugin.getCredential('renamed'), '');
+    // Named service fields save to existing credential storage without exposing field names.
+    const tmdb = all(plugin.settingsTab.containerEl).find(node => node['aria-label'] === 'TMDB · ' + label('凭证值'));
+    tmdb.value='tv-token';tmdb.change();await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(plugin.getCredential('tmdbToken'),'tv-token');
+    assert.equal(tab('服务连接')['aria-selected'],'true');
+    tab('记录与日记').click();
+    const taskHeading = all(plugin.settingsTab.containerEl).find(node => node.name === label('任务记录标题'));
+    assert.equal(taskHeading.disabled,true);
+    const taskToggle = all(plugin.settingsTab.containerEl).find(node => node.name === label('记录任务完成时间')).children.find(node=>node.type==='checkbox');
+    await taskToggle.change(true);
+    assert.equal(all(plugin.settingsTab.containerEl).find(node=>node.name===label('任务记录标题')).disabled,false);
+    // Arrow navigation selects the next page and updates its accessibility state.
+    tab('记录与日记').keydown({key:'ArrowRight',preventDefault(){}});
+    assert.equal(tab('服务连接')['aria-selected'],'true');
+    tab('维护').click();
+    assert(all(plugin.settingsTab.containerEl).some(node=>node.text===label('补全封面')&&node.disabled));
     assert.equal(commands.length, 6);
     assert.equal(plugin.supportsRecommendations, true);
     events.get('media-capture:recommend')({ path: 'Podcasts.md', blockId: 'douban-123' });
@@ -234,7 +258,11 @@ for (const language of ['zh', 'en', 'fr']) test(`media settings and associations
     await noteDialog.save();
     assert(files.has('Media/另一个节目/单集.md'));
     plugin.settingsTab.display();
+    tab('媒体采集').click();
     const noteSettings = all(plugin.settingsTab.containerEl).find(node => node['data-rule-id'] === 'notes');
+    noteSettings.open = true; noteSettings.toggle();
+    tab('服务连接').click(); tab('媒体采集').click();
+    assert.equal(all(plugin.settingsTab.containerEl).find(node => node['data-rule-id'] === 'notes').open, true);
     const nameInput = all(noteSettings).find(node => node.name === label('名称')).children.find(node => node.tag === 'input');
     const folderInput = all(noteSettings).find(node => node.name === label('目录')).children.find(node => node.tag === 'input');
     nameInput.value = 'Episode notes'; nameInput.change();

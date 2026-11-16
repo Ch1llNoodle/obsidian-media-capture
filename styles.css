@@ -46,3 +46,34 @@
 .media-capture-credential .setting-item-info { display: none; }
 .media-capture-credential .setting-item-control { flex: 1; flex-wrap: wrap; gap: 8px; }
 .media-capture-credential input { flex: 1; min-width: 100px; width: auto; }
+
+/* Settings use the active Obsidian theme and remain stacked on narrow panes. */
+.media-capture-settings .media-settings-header > .setting-item { padding: 0; border: 0; }
+.media-capture-settings .media-settings-header .setting-item-name { font-size: 24px; }
+.media-capture-settings .media-settings-navigation { display: flex; flex-wrap: wrap; gap: 4px; padding-block: 18px 12px; margin-bottom: 8px; border-bottom: 1px solid var(--background-modifier-border); }
+.media-capture-settings .media-settings-tab { box-shadow: none; border: 0; background: transparent; color: var(--text-muted); padding: 7px 12px; height: auto; border-radius: var(--radius-s); }
+.media-capture-settings .media-settings-tab:hover { background: var(--background-modifier-hover); color: var(--text-normal); }
+.media-capture-settings .media-settings-tab[aria-selected="true"] { background: var(--background-modifier-hover); color: var(--text-accent); font-weight: var(--font-semibold); }
+.media-capture-settings .media-settings-tab:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }
+.media-capture-settings .media-settings-panel[hidden] { display: none; }
+.media-capture-settings .media-settings-rule { border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); padding: 0 14px; margin-block: 12px; }
+.media-capture-settings .media-settings-rule > .setting-item { border: 0; }
+.media-capture-settings .media-rule-settings { margin-bottom: 12px; }
+.media-capture-settings .media-rule-settings > summary { padding-block: 0 8px; font-size: var(--font-ui-small); }
+.media-capture-settings .media-rule-settings[open] > summary { padding-bottom: 14px; }
+.media-capture-settings .media-rule-settings .setting-item { align-items: flex-start; }
+.media-capture-settings .media-rule-settings textarea { width: 100%; min-height: 160px; resize: vertical; font-family: var(--font-monospace); font-size: var(--font-smaller); }
+.media-capture-settings .media-rule-settings .setting-item:has(textarea) { flex-direction: column; gap: 10px; }
+.media-capture-settings .media-rule-settings .setting-item:has(textarea) .setting-item-control { width: 100%; }
+.media-capture-settings .media-settings-panel input[type="text"], .media-capture-settings .media-settings-panel input[type="password"] { width: 240px; max-width: 100%; }
+.media-capture-settings .media-settings-note { color: var(--text-faint); font-size: var(--font-ui-smaller); margin-block: 16px 24px; }
+.media-capture-settings .media-settings-custom-credentials { border-top: 1px solid var(--background-modifier-border); padding-top: 16px; }
+.media-capture-settings .media-settings-custom-credentials > summary { cursor: pointer; color: var(--text-muted); }
+@media (max-width: 600px) {
+    .media-capture-settings .media-settings-tab { flex: 1 1 40%; text-align: center; }
+    .media-capture-settings .setting-item:has(input[type="text"], input[type="password"], textarea, select) { flex-direction: column; align-items: stretch; gap: 10px; }
+    .media-capture-settings .setting-item-control { justify-content: flex-start; flex-wrap: wrap; }
+    .media-capture-settings .media-settings-panel input[type="text"], .media-capture-settings .media-settings-panel input[type="password"] { width: 100%; }
+    .media-capture-settings .media-settings-service .setting-item-control { flex-wrap: nowrap; }
+    .media-capture-settings .media-settings-service input { flex: 1; min-width: 0; }
+}
