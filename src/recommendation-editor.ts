@@ -60,6 +60,12 @@ export function recommendationEditor(service: RecommendationService): ViewPlugin
                 if (!seen.has(line.from)) {
                     seen.add(line.from);
                     const source = catalog ? episodeSource(line.text, path) : null;
+                    if (livePreview && catalog && /^-\s/.test(line.text)) {
+                        // Hide the start marker even when the row cannot be resolved to an episode.
+                        for (const match of line.text.matchAll(/\s*<!--\s*media-start:\s*\d{4}-\d{2}-\d{2}\s*-->/g)) {
+                            ranges.push(Decoration.replace({}).range(line.from + match.index, line.from + match.index + match[0].length));
+                        }
+                    }
                     if (livePreview && (!catalog || source || /^ {2}- .*<!-- media-work -->\s*$/.test(line.text))) {
                         const metadata = catalog ? /\s*<!--\s*(?:(?:media-state|media-date):[^>]*|media-work|media-note)\s*-->|\s+\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?)\s*$/g
                             : /<!-- media-entry:[a-z][a-z0-9-]*:(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?):(?:start|end) -->|^\^(?:douban-\d+|xiaoyuzhou-[a-f0-9]{24}|apple-\d+|youtube-[A-Za-z0-9_-]{11}|bilibili-(?:BV[A-Za-z0-9]{10}|av\d+)(?:-p\d+)?)-[a-z][a-z0-9-]*\s*$/g;

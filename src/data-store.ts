@@ -91,7 +91,17 @@ export class CaptureDataStore {
             try {
                 await adapter.write(temporary, text);
                 if (await adapter.read(temporary) !== text) throw new Error(t("Capture records verification failed; records.json was not replaced."));
-                await adapter.rename(temporary, this.path);
+                if (Object.keys(previousRecords).length) {
+                    await adapter.process(this.path, current => {
+                        if (JSON.stringify(parseJson(current)) !== JSON.stringify(previousRecords)) {
+                            throw new Error(t("Capture records verification failed; records.json was not replaced."));
+                        }
+                        return text;
+                    });
+                    await adapter.remove(temporary);
+                } else {
+                    await adapter.rename(temporary, this.path);
+                }
             } catch (error) {
                 try { if (await adapter.exists(temporary)) await adapter.remove(temporary); } catch { /* Keep the original storage error. */ }
                 throw error;

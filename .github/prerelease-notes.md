@@ -1,7 +1,8 @@
-### Media Capture 0.19.2
+### Media Capture 0.19.3
 
-Settings use compact, separate groups with less padding and theme-aware dividers. Module details and the service action share one card, removing the joined rounded-corner artifact.
+- Choose Save to stay on the current page or Save and open to open the output.
+- Update existing capture records through Obsidian’s file adapter.
+- Add HTTPS GitHub links to media associations.
+- Show podcast start dates in catalog rows and hide start markers in Live Preview.
 
-The Chinese, English and French READMEs now focus on installation, first capture, examples, data and development. Detailed usage remains in the Wiki.
-
-Requires Obsidian 1.8.7 or later. Mobile and native theme rendering remain pending device verification.
+Requires Obsidian 1.8.7 or later.

@@ -16,7 +16,8 @@ function fixture() {
     const adapter = {
         exists: async p => files.has(p), read: async p => files.get(p),
         write: async (p, text) => { writes.push(p); files.set(p, text); },
-        rename: async (from, to) => { files.set(to, files.get(from)); files.delete(from); },
+        rename: async (from, to) => { if (files.has(to)) throw new Error("Destination file already exists!"); files.set(to, files.get(from)); files.delete(from); },
+        process: async (p, change) => { files.set(p, change(files.get(p))); },
         remove: async p => { files.delete(p); },
     };
     const plugin = {manifest: {id: 'media-capture'}, app: {vault: {configDir: '.obsidian', adapter}},
@@ -95,7 +96,7 @@ test('failed record replacement preserves the prior record and settings files', 
     const f = fixture();
     await f.store.save({settings: {}, noteMetadata: {'douban-123': sample}});
     const original = f.files.get(recordPath);
-    f.adapter.rename = async () => { throw new Error('disk failure'); };
+    f.adapter.process = async () => { throw new Error('disk failure'); };
     const next = await f.store.load(); next.noteMetadata['douban-123'].description = 'Changed';
     await assert.rejects(f.store.save(next), /disk failure/);
     assert.equal(f.files.get(recordPath), original); assert.equal(f.settingsWrites(), 1);

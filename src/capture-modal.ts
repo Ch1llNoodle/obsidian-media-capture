@@ -71,7 +71,8 @@ export class CaptureModal extends Modal {
         this.message = this.contentEl.createEl('p', { cls: 'media-capture-message', attr: { role: 'status', 'aria-live': 'polite' } });
         const actions = this.contentEl.createDiv({ cls: 'media-capture-actions' });
         actions.createEl('button', { text: t("取消") }).addEventListener('click', () => this.close());
-        actions.createEl('button', { text: t("保存并打开"), cls: 'mod-cta' }).addEventListener('click', () => { void this.save(); });
+        actions.createEl('button', { text: t("保存") }).addEventListener('click', () => { void this.save(false); });
+        actions.createEl('button', { text: t("保存并打开"), cls: 'mod-cta' }).addEventListener('click', () => { void this.save(true); });
         for (const control of [this.showInput, this.titleInput, this.dateInput, this.publishedInput]) control.addEventListener('input', () => this.updatePreview());
         this.stateInput.addEventListener('change', () => { this.dateInput.disabled = this.stateInput.value !== "completed"; this.updatePreview(); });
         this.outputInput.addEventListener('change', () => this.updatePreview());
@@ -95,7 +96,7 @@ export class CaptureModal extends Modal {
         }
         this.dateInput.disabled = this.stateInput.value !== "completed";
         this.updatePreview();
-        this.urlInput.focus();
+        this.urlInput.focus({ preventScroll: true });
     }
 
     private item(): CaptureItem {
@@ -140,7 +141,7 @@ export class CaptureModal extends Modal {
         finally { this.setBusy(false); }
     }
 
-    async save(): Promise<void> {
+    async save(openResult = true): Promise<void> {
         if (this.busy) return;
         if (!this.titleInput.value.trim()) await this.fetchInfo();
         this.setBusy(true);
@@ -149,9 +150,10 @@ export class CaptureModal extends Modal {
             if (!this.titleInput.value.trim()) throw new Error(t("请填写标题。"));
             const result = await this.plugin.capture(this.item());
             new Notice(result.message);
-            if (result.notePath || result.path) {
+            if (openResult && (result.notePath || result.path)) {
                 const file = this.app.vault.getAbstractFileByPath(result.notePath ?? result.path);
-                if (isMarkdownFile(file)) {
+                if (!isMarkdownFile(file)) throw new Error(t("内容已保存，但打开笔记失败：") + (result.notePath ?? result.path));
+                if (this.app.workspace.getActiveFile()?.path !== file.path) {
                     try { await this.app.workspace.getLeaf(false).openFile(file); }
                     catch (error) { throw new Error(t("内容已保存，但打开笔记失败：") + errorMessage(error)); }
                 }

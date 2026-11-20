@@ -11,6 +11,7 @@ export class RecommendationModal extends Modal {
     private busy = false;
     private closed = false;
     private workInput!: HTMLSelectElement;
+    private githubInput!: HTMLInputElement;
     private reasonInput!: HTMLInputElement;
     private message!: HTMLParagraphElement;
 
@@ -31,6 +32,7 @@ export class RecommendationModal extends Modal {
         };
         this.workInput = field(t("选择作品")).createEl('select');
         this.workInput.createEl('option', { value: '', text: t("选择作品") });
+        this.githubInput = field(t("外部链接")).createEl('input', { type: 'url' });
         this.reasonInput = field(t("摘记（可留空）")).createEl('input', { type: 'text' });
         this.message = this.contentEl.createEl('p', { attr: { role: 'status', 'aria-live': 'polite' } });
         const footer = this.contentEl.createDiv({ cls: 'media-capture-actions' });
@@ -53,9 +55,12 @@ export class RecommendationModal extends Modal {
 
     private async save(): Promise<void> {
         const item = this.workInput.value === '' ? undefined : this.works[Number(this.workInput.value)];
-        if (!item) throw new Error(t("请选择作品。"));
+        const github = this.githubInput.value.trim();
+        if (item && github) throw new Error(t("请选择作品或填写 GitHub 链接，每次保存一项。"));
+        if (!item && !github) throw new Error(t("请选择作品或填写 GitHub 链接。"));
         if (!this.source) throw new Error(t("来源播客已变化，请从媒体条目重新打开。"));
-        await this.service.link(item, this.source, this.reasonInput.value);
+        if (item) await this.service.link(item, this.source, this.reasonInput.value);
+        else await this.service.linkGitHub(github, this.source, this.reasonInput.value);
         if (this.closed) return;
         new Notice(t("已保存关联"));
         this.close();

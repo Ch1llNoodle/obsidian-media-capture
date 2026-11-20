@@ -39,6 +39,31 @@ export function linkEpisodeWork(text: string, source: RecommendationSource, work
     if (['[', ']', '|', '#'].some(character => path.includes(character))) throw new Error(t("作品清单路径不支持块链接。"));
     const key = '[[' + path + '#^douban-' + recommendationUrl(work.url, work.kind).id + '|';
     const link = key + work.title.replaceAll('[', ' ').replaceAll(']', ' ').replace(/[|\r\n]/g, ' ').replaceAll('<', '&lt;').replaceAll('>', '&gt;').trim() + ']]';
+    return appendEpisodeAssociation(text, source, link, key, reason);
+}
+
+function parseGitHubUrl(value: string): URL | null {
+    try { return new URL(value); }
+    catch { return null; }
+}
+
+export function githubAssociationUrl(input: string): URL {
+    const value = input.trim();
+    const url = /[\s<>]/.test(value) ? null : parseGitHubUrl(value);
+    if (!url || url.protocol !== 'https:' || url.hostname !== 'github.com' || url.username || url.password || url.port) {
+        throw new Error(t("请输入有效的 HTTPS GitHub 链接。"));
+    }
+    return url;
+}
+
+export function linkEpisodeGitHub(text: string, source: RecommendationSource, input: string, reason = ''): string {
+    const url = githubAssociationUrl(input);
+    const key = '](<' + url.href + '>)';
+    const title = markdownText('GitHub' + (url.pathname === '/' ? '' : ' · ' + url.pathname.slice(1)));
+    return appendEpisodeAssociation(text, source, '[' + title + key, key, reason);
+}
+
+function appendEpisodeAssociation(text: string, source: RecommendationSource, link: string, key: string, reason: string): string {
     const lines = text.split(/\r?\n/);
     const index = lines.findIndex(line => episodeSource(line, source.path)?.blockId === source.blockId);
     if (index < 0) throw new Error(t("来源播客已变化，请重新选择。"));

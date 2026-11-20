@@ -245,3 +245,20 @@ test('retired inline association blocks are rejected without migration', () => {
     const text = '- [Episode](<https://www.douban.com/podcast_episode/123>) <!-- media-works:start -->old<!-- media-works:end --> ^douban-123';
     assert.throws(() => api.linkEpisodeWork(text, source, {...film, path: 'Recommendations/Movies.md', state: 'wish'}), /Unsupported association format/);
 });
+
+test('GitHub links are saved once beneath the episode and preserve work associations', async () => {
+    const f = fixture(load());
+    const [work] = await f.service.works();
+    await f.service.link(work, source);
+    const target = 'https://github.com/owner/repo/issues/42#issuecomment-1';
+    await f.service.linkGitHub(target, source, 'Discussion');
+    const saved = f.content.get(source.path);
+    assert(saved.includes('[[Recommendations/Movies#^douban-100|'));
+    assert(saved.includes('](<' + target + '>)'));
+    assert(saved.includes('Discussion'));
+    await f.service.linkGitHub(target, source);
+    for (const invalid of ['https://github.com.example.org/owner/repo', 'http://github.com/owner/repo', 'https://user@github.com/owner/repo']) {
+        await assert.rejects(f.service.linkGitHub(invalid, source));
+    }
+    assert.equal(f.content.get(source.path), saved);
+});

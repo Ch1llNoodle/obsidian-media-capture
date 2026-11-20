@@ -2,7 +2,7 @@ import { t } from './i18n';
 import type { CaptureService } from './service';
 import type { RecommendationSource, RecommendationWork } from './types';
 import { isMarkdownFile } from './storage';
-import { catalogWorks, isWanted, episodeSource, recommendationKinds, recommendationIndex, recommendationSources, linkEpisodeWork, linkWorkSource } from './recommendations';
+import { catalogWorks, isWanted, episodeSource, recommendationKinds, recommendationIndex, recommendationSources, linkEpisodeWork, linkEpisodeGitHub, githubAssociationUrl, linkWorkSource } from './recommendations';
 import { errorMessage } from './validation';
 
 export class RecommendationService {
@@ -50,6 +50,21 @@ export class RecommendationService {
         });
         this.podcast.queue = work.catch(() => {});
         return work;
+    }
+
+    async linkGitHub(input: string, source: RecommendationSource, reason = ''): Promise<void> {
+        const url = githubAssociationUrl(input).href;
+        const work = this.podcast.queue.then(async () => {
+            this.podcast.requireMedia();
+            const catalog = this.podcast.app.vault.getAbstractFileByPath(source.path);
+            if (!this.podcast.isCatalog(source.path) || !isMarkdownFile(catalog)) throw new Error(t("媒体记录文件不存在。"));
+            await this.podcast.app.vault.process(catalog, text => {
+                this.podcast.requireMedia();
+                return linkEpisodeGitHub(text, source, url, reason);
+            });
+        });
+        this.podcast.queue = work.catch(() => {});
+        await work;
     }
 
     /** Restore links created before the podcast-side display was introduced. */

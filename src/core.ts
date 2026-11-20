@@ -100,9 +100,11 @@ function entryLine(item: CaptureItem, cover: string, settings: Readonly<CaptureS
     const rule = settings.writeRules.find(rule => rule.id === 'catalog');
     if (!rule) throw new Error(t("集中清单写入规则缺失。"));
     const values = withCoverWidth(noteValues(item, blockId(item), cover, createdDate, settings.playbackIntegration), rule.coverWidth);
-    const row = renderTemplateBody(rule.template, values).trimEnd();
+    const start = item.state === "in-progress" && values.kind === "podcast" && validDate(createdDate) ? createdDate : '';
+    // The catalog can display the start date in the same position as a completion date.
+    const row = renderTemplateBody(rule.template, start ? { ...values, listened: start } : values).trimEnd();
     const date = values.listened ? ` <!-- media-date: ${values.listened} -->` : "";
-    return `${row} <!-- media-state: ${item.state} -->${date} ^${blockId(item)}`;
+    return `${row} <!-- media-state: ${item.state} -->${date}${start ? ` <!-- media-start: ${start} -->` : ""} ^${blockId(item)}`;
 }
 
 function updateCatalog(source: string, item: CaptureItem, cover: string, settings: Readonly<CaptureSettingsData> = DEFAULT_SETTINGS, createdDate = localDate()): CatalogUpdate {
@@ -116,7 +118,7 @@ function updateCatalog(source: string, item: CaptureItem, cover: string, setting
         }
         return { text: source.replace(existing, () => updated), existing, preserved: true };
     }
-    let row = entryLine({ ...item, ...(existing ? entryIdentity(existing) : {}), state: item.state, date: item.date, title: item.title }, cover, settings, createdDate);
+    let row = entryLine({ ...item, ...(existing ? entryIdentity(existing) : {}), state: item.state, date: item.date, title: item.title }, cover, settings, existing?.match(/<!-- media-start: (\d{4}-\d{2}-\d{2}) -->/)?.[1] ?? createdDate);
     const note = existing?.match(/<!-- media-note -->\s*\[\[[^\]]+\]\]/)?.[0];
     if (note) row = row.replace(/\s+(\^\S+)$/, (_match: string, block: string) => ` ${note} ${block}`);
     if (existing) return { text: source.replace(existing, () => row), existing, preserved: false };

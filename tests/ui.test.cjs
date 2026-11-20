@@ -36,7 +36,7 @@ for (const language of ['zh', 'en', 'fr']) test(`media settings and associations
     const stored = new Map();
     const app = { vault: {
         configDir: '.obsidian',
-        adapter: { exists: async p => stored.has(p), read: async p => stored.get(p), write: async (p, s) => stored.set(p,s), rename: async (a,b) => { stored.set(b,stored.get(a)); stored.delete(a); } },
+        adapter: { exists: async p => stored.has(p), read: async p => stored.get(p), write: async (p, s) => stored.set(p,s), remove: async p => { stored.delete(p); }, process: async (p, change) => { const value = change(stored.get(p)); stored.set(p, value); return value; }, rename: async (a,b) => { stored.set(b,stored.get(a)); stored.delete(a); } },
         on: () => ({}),
         getMarkdownFiles: () => [...files.values()].filter(file => file.extension === 'md'),
         getAbstractFileByPath: p => files.get(p) ?? null,
