@@ -84,14 +84,28 @@ export async function collectDouban(app: App, options: DoubanSyncOptions, active
             }
         }
         if (new Set(entries.map(row => row.id)).size !== entries.length) throw new Error("豆瓣列表存在重复记录，原记录已保留。");
+        const unclassifiedIds: string[] = [];
         if (isScreen) {
             for (const [index, row] of entries.entries()) {
                 if (typeCache.has(row.id)) continue;
                 options.onProgress?.(`识别电影/电视剧 ${index + 1}/${entries.length}…`);
                 const subject = await request({ url: row.url, headers: { Cookie: cookie, "User-Agent": "Mozilla/5.0" }, throw: false });
-                const type = subject.status === 200 ? screenType(subject.text) : null;
-                if (!type) throw new Error(`无法确认影视类型 ${row.id}，原记录已保留。`);
-                typeCache.set(row.id, type);
+                let type = subject.status === 200 ? screenType(subject.text) : null;
+                if (!type) {
+                    const mobile = await request({
+                        url: `https://m.douban.com/movie/subject/${row.id}/?from=subject-page`,
+                        headers: { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile Safari/604.1" },
+                        throw: false
+                    }).catch(() => null);
+                    active();
+                    if (mobile?.status === 200) {
+                        const title = /<title[^>]*>([^<]*)<\/title>/i.exec(mobile.text)?.[1] ?? "";
+                        const category = /-\s*(电视剧|电影)\s*-\s*豆瓣\s*$/.exec(title)?.[1];
+                        if (category) type = category === "电视剧" ? "teleplay" : "movie";
+                    }
+                }
+                if (type) typeCache.set(row.id, type);
+                else unclassifiedIds.push(row.id);
                 await new Promise(resolve => window.setTimeout(resolve, 900));
             }
             entries = entries.filter(row => typeCache.get(row.id) === kind);
@@ -132,5 +146,5 @@ export async function collectDouban(app: App, options: DoubanSyncOptions, active
         }
 
 
-    return { entries, oldRows, remoteCovers };
+    return { entries, oldRows, remoteCovers, unclassifiedIds };
 }

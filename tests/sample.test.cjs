@@ -7,6 +7,13 @@ const sample = path.join(__dirname, '../sample/Capture Sample');
 const source = fs.readFileSync(path.join(sample, 'scripts/demo.js'), 'utf8');
 const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 const run = new AsyncFunction('app','dv','input',source);
+function readDailyTemplate(...segments) {
+    const file = path.join(sample, ...segments);
+    const source = fs.readFileSync(file, 'utf8');
+    const match = /^<%\*\r?\n([\s\S]*?)\r?\n%>[ \t]*(?:\r?\n)?$/.exec(source);
+    assert(match, 'Expected a Templater script block in ' + file);
+    return match[1];
+}
 const documentStub = {createElementNS:(_ns,tag)=>element(tag)};
 function element(tag='div',options={}) {
     return {tag,children:[],value:'',checked:false,disabled:false,style:{},ownerDocument:documentStub,...options,
@@ -109,7 +116,7 @@ test('sample links, view paths and Daily template work without private configura
         for(const match of text.matchAll(/dv\.view\("([^"]+)"/g)) assert(fs.existsSync(path.join(sample,'..',match[1]+'.js')));
     }
     const f=fixture();Object.keys(f.config.dailySources).forEach(key=>{f.config.dailySources[key]='none';});
-    const template=fs.readFileSync(path.join(sample,'templates/Daily.md'),'utf8').slice(4,-3);
+    const template=readDailyTemplate('templates/Daily.md');
     const render=new AsyncFunction('app','tp','let tR="";'+template+';return tR;');
     const result=await render(f.app,{file:{title:'2026-11-16'}});
     assert(result.includes('### 2026-11-16'));assert(result.includes('## Notes'));assert.equal(f.requests(),0);
@@ -145,7 +152,7 @@ test('sample translations preserve placeholders and translated Daily templates r
     }
     const f=fixture();Object.keys(f.config.dailySources).forEach(key=>{f.config.dailySources[key]='none';});
     for(const lang of ['en','fr']) {
-        const template=fs.readFileSync(path.join(sample,lang==='en'?'':lang,'templates/Daily.md'),'utf8').slice(4,-3);
+        const template=readDailyTemplate(lang==='en'?'':lang,'templates/Daily.md');
         const render=new AsyncFunction('app','tp','let tR="";'+template+';return tR;');
         const result=await render(f.app,{file:{title:'2026-11-16'}});
         assert(result.includes('## Notes'));
