@@ -1,22 +1,40 @@
-### Saving layouts
+> **English** · [简体中文](Save-layouts-zh-CN.md) · [Français](Save-layouts-fr.md)
 
-[English](Save-layouts.md) · [简体中文](Save-layouts-zh-CN.md) · [Français](Save-layouts-fr.md)
+Open **Settings → Media Capture → Features → Media capture → Feature settings**, choose a preset, and select **Apply preset**.
 
-Open **Features → Media capture → Feature settings**. Choose a preset and press **Apply preset**. Applying a preset replaces rule configuration; it does not move or delete existing notes.
+> [!NOTE]
+> Applying a preset replaces your rule configuration only — it never moves or deletes existing notes.
 
-| Layout | Default destination | Result |
+## Built-in presets
+
+| Preset | Default destination | Output |
 | --- | --- | --- |
-| Concentrated log | Podcasts.md / Videos.md | One row per item |
-| One note per item | Media/{{show}}/{{title}}.md | An individual episode note |
-| Log and individual note | Both destinations above | A log entry plus a note |
-| Append by show or channel | Media/{{show}}.md | Episodes grouped in a show file |
+| **Concentrated log** | `Podcasts.md` / `Videos.md` | One entry per item in a shared list |
+| **One note per item** | `Media/{{show}}/{{title}}.md` | An individual note for each episode or video |
+| **Log and individual note** | Both destinations above | A shared log entry plus an individual note |
+| **Append by show or channel** | `Media/{{show}}.md` | Episodes grouped inside one file per show or channel |
 
-The capture form normally uses your enabled rules. Choosing another preset in that form changes only that capture. The destination preview is the authoritative location for the item being saved.
+The capture form uses your enabled rules by default. Switching to another preset inside the capture form applies **only to that single capture**. Always check the destination preview at the bottom of the form for the exact output path.
 
-Open a rule’s editor to change its folder, path, heading or template. A blank folder means the vault root. A blank template file uses the rule’s built-in template. File templates are plain Markdown; scripts inside them are not executed. Missing show names use Unsorted.
+## Customizing write rules
 
-Paths are relative to your vault. Existing files targeted by append rules must contain the configured heading, unless the heading is blank. Changing a rule path affects new outputs; existing records stay in place. Two enabled rules cannot write to the same file in one operation.
+Open any rule’s editor to adjust its folder, path pattern, target heading, or template file:
 
-Daily integration is optional and links completed items to an existing dated Daily note. It does not create a full tracker or diary layout. For sample trackers, use [Sample vault](Sample-vault.md).
+- **Folder:** Leave blank to target the vault root.
+- **Template file:** Leave blank to use the rule’s built-in template. File templates are rendered as plain Markdown — scripts inside them are not executed.
+- **Missing show name:** Defaults to `Unsorted`.
+- **Relative paths:** All paths are relative to your vault root.
 
-[Media Capture](Home.md) · [Source](https://github.com/Ch1llNoodle/obsidian-media-capture) · [sample](https://github.com/Ch1llNoodle/obsidian-media-capture/tree/master/sample)
+## Important constraints
+
+- **Append headings:** When appending to an existing file, that file must already contain the configured heading unless the heading field is left blank (which appends to the end of the file).
+- **Path changes:** Updating a rule’s path affects future captures only; existing records stay where they are.
+- **No duplicate targets:** Two enabled rules cannot write to the same file during a single capture operation.
+
+## Daily note integration
+
+Daily integration is optional and links completed media items to an existing dated Daily note. It does not build a full tracker or diary layout — for ready-made interactive trackers, see [Sample vault](Sample-vault.md).
+
+---
+
+[← First record](Getting-started.md) · [Feature modules →](Modules.md)

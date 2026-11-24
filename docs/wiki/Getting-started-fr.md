@@ -1,23 +1,45 @@
-### Premier enregistrement
+> [English](Getting-started.md) · [简体中文](Getting-started-zh-CN.md) · **Français**
 
-[English](Getting-started.md) · [简体中文](Getting-started-zh-CN.md) · [Français](Getting-started-fr.md)
+Nécessite **Obsidian 1.8.7** ou ultérieur.
 
-#### Installation
+## Installation
 
-Installez BRAT depuis les plugins communautaires, ajoutez Ch1llNoodle/obsidian-media-capture, choisissez une version disponible puis activez Media Capture. Pour une installation manuelle, téléchargez main.js, manifest.json et styles.css depuis les [versions](https://github.com/Ch1llNoodle/obsidian-media-capture/releases), placez-les dans .obsidian/plugins/media-capture puis activez le plugin. Obsidian 1.8.7 ou ultérieur est requis. Conservez data.json et records.json lors des mises à jour.
+### Option 1 : BRAT (recommandé)
 
-#### Premier média
+1. Installez et activez **BRAT** depuis les **Plugins communautaires** d’Obsidian.
+2. Ajoutez le dépôt `Ch1llNoodle/obsidian-media-capture` et choisissez une version publiée.
+3. Activez **Media Capture** dans **Paramètres → Plugins communautaires**.
 
-1. Copiez un lien d’épisode Xiaoyuzhou, Apple Podcasts ou Douban Podcasts, ou un lien complet YouTube/Bilibili.
-2. Cliquez sur l’icône de capture latérale, ou cherchez Media Capture dans la palette de commandes.
-3. Collez le lien, récupérez les informations, vérifiez titre, état et date. Si la récupération échoue, saisissez le titre.
-4. Vérifiez les destinations sous le formulaire. Pour commencer, conservez le journal par défaut. Choisissez Enregistrer et ouvrir.
-5. Le journal ou la note s’ouvre. Vérifiez son emplacement dans l’explorateur de fichiers. Une couverture manquante n’empêche pas l’enregistrement.
+### Option 2 : Installation manuelle
 
-Les liens Apple Podcasts doivent identifier un épisode avec le paramètre i. Ouvrez les liens courts Bilibili dans un navigateur puis copiez l’adresse complète.
+1. Téléchargez `main.js`, `manifest.json` et `styles.css` depuis les [versions publiées](https://github.com/Ch1llNoodle/obsidian-media-capture/releases).
+2. Placez ces trois fichiers dans `<Coffre>/.obsidian/plugins/media-capture/`.
+3. Rechargez Obsidian puis activez **Media Capture** dans **Paramètres → Plugins communautaires**.
 
-Pour changer de sortie, consultez [Modes d’enregistrement](Save-layouts-fr.md). Pour les tâches, configurez les notes quotidiennes principales, activez le journal des tâches puis terminez une tâche Markdown ordinaire et ouvrez la note du jour.
+> [!IMPORTANT]
+> Lors d’une mise à jour manuelle, remplacez uniquement `main.js`, `manifest.json` et `styles.css`. Conservez `data.json` et `records.json` pour préserver vos paramètres et enregistrements.
 
-Le guide reste accessible dans les paramètres et la palette de commandes. La capture mobile et la lecture externe restent à vérifier sur appareil.
+## Premier enregistrement
 
-[Guide Media Capture](Home-fr.md) · [Source](https://github.com/Ch1llNoodle/obsidian-media-capture) · [sample](https://github.com/Ch1llNoodle/obsidian-media-capture/tree/master/sample)
+1. Copiez un lien d’épisode **Xiaoyuzhou**, **Apple Podcasts** ou **Douban Podcasts**, ou un lien complet **YouTube** / **Bilibili**.
+2. Cliquez sur l’icône de capture dans le ruban latéral, ou ouvrez la palette de commandes et lancez **Media Capture: Capturer un média**.
+3. Collez le lien, récupérez les informations puis vérifiez titre, état et date (en cas d’échec, saisissez le titre manuellement).
+4. Vérifiez la prévisualisation des destinations sous le formulaire. Pour commencer, conservez le journal par défaut et choisissez **Enregistrer et ouvrir**.
+5. Le journal ou la note cible s’ouvre automatiquement. Une couverture manquante n’empêche pas l’enregistrement ; vérifiez l’emplacement dans l’explorateur de fichiers.
+
+> [!NOTE]
+> - **Apple Podcasts :** utilisez un lien d’épisode contenant le paramètre `i`.
+> - **Bilibili :** ouvrez d’abord les liens courts dans un navigateur et copiez l’URL complète.
+
+## Étapes suivantes
+
+- **Personnaliser la sortie :** consultez [Modes d’enregistrement](Save-layouts-fr.md) pour passer en notes individuelles ou par émission.
+- **Journaliser les tâches :** configurez d’abord les **Notes quotidiennes** principales, activez **Journal des tâches**, puis terminez une tâche Markdown ordinaire et ouvrez la note du jour.
+- **Aide intégrée :** les paramètres s’ouvrent sur **Fonctions**. L’icône d’aide près du titre et la commande d’ouverture du guide restent toujours accessibles.
+
+> [!NOTE]
+> La capture mobile et la lecture externe restent à vérifier sur votre appareil.
+
+---
+
+[← Accueil](Home-fr.md) · [Modes d’enregistrement →](Save-layouts-fr.md)

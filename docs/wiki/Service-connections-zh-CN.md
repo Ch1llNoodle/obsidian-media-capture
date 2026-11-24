@@ -1,25 +1,45 @@
-### 服务凭证
+> [English](Service-connections.md) · **简体中文** · [Français](Service-connections-fr.md)
 
-[English](Service-connections.md) · [简体中文](Service-connections-zh-CN.md) · [Français](Service-connections-fr.md)
+开启对应模块或选择日记来源后，进入 **设置 → Media Capture → 服务连接**。页面仅展示当前已启用功能实际需要的凭证项（地点搜索与天气共用高德凭证）。
 
-开启模块或选择日记来源后，进入“服务连接”。只显示这些功能实际需要的凭证；地点与天气共用高德凭证。输入默认隐藏，可用眼睛按钮临时查看。已填值只表示保存完成，不代表连接测试通过。
+> [!NOTE]
+> 输入框默认隐藏内容，点击眼睛图标可临时查看。已填入值仅代表已保存，**不会**自动测试连接是否可用。
 
-| 用途 | 服务 | 填写内容 |
+## 凭证对照表
+
+| 用途 | 服务商 | 填写内容 |
 | --- | --- | --- |
-| 剧集资料 | TMDB | API Read Access Token，不能用 v3 API Key 代替 |
-| 学习同步 | 墨墨 | 开放接口 Token |
-| 地点与天气 | 高德 | Web 服务 Key |
-| 定位 | 腾讯地图 | 定位服务 Key |
-| 问候语 | DeepSeek | API Key |
-| 诗词 | 今日诗词 | User Token |
-| 月相 | wttr.in | 无需凭证 |
+| **剧集资料** | TMDB | `API Read Access Token`（不可用 v3 API Key 代替） |
+| **学习同步** | 墨墨 | 开放接口 Token |
+| **地点与天气** | 高德 | Web 服务 Key |
+| **定位** | 腾讯地图 | 定位服务 Key |
+| **问候语** | DeepSeek | API Key |
+| **诗词** | 今日诗词 | User Token |
+| **月相** | `wttr.in` | 无需凭证 |
 
-在自己的服务商账号的开发者／API 设置中申请凭证，只粘贴到插件设置，不放入示例笔记或公开仓库。关闭功能会隐藏输入项，已填值保留。
+### 无需填写服务凭证的功能
 
-媒体采集、阅读、肌群选择和任务记录不需要这些 Key。豆瓣批量同步读取 Douban 插件保存的登录状态，不要求再次填写密码。
+- **媒体采集**、**阅读记录**、**运动记录**和**任务完成记录**均不需要上述 Key。
+- **豆瓣同步**直接复用 Douban 插件保存的登录状态，无需重复输入密码。
 
-采集、搜索、同步或插入日记模板时才会发起对应请求。DeepSeek 接收模板提供的提示词；腾讯 IP 定位、高德天气、wttr.in 接收相应位置查询。服务返回的标题、天气及错误保留来源语言。
+## 安全与存储
 
-失败时检查凭证类型、网络与服务账号权限，操作排查见[常见问题](Troubleshooting-zh-CN.md)。
+> [!WARNING]
+> 请在各服务商的开发者／API 后台自行申请凭证，并**只粘贴到插件设置中**，切勿写入示例笔记或公开仓库。
 
-[Media Capture 使用手册](Home-zh-CN.md) · [Source](https://github.com/Ch1llNoodle/obsidian-media-capture) · [sample](https://github.com/Ch1llNoodle/obsidian-media-capture/tree/master/sample)
+- 关闭某项功能会隐藏其凭证输入框，但不会删除已保存的值。
+- 公开或分享配置前，请先从 `data.json` 中移除凭证。
+
+## 网络请求与隐私
+
+仅在主动执行采集、搜索、同步或插入日记模板时才会发起网络请求：
+
+- **DeepSeek** 接收模板中提供的提示词。
+- **腾讯 IP 定位**、**高德天气**与 **`wttr.in`** 接收对应的位置查询参数。
+- 服务商返回的标题、天气描述及后端错误信息会保留其原始语言。
+
+若请求失败，请检查凭证类型、网络连通性与服务账号权限，具体排查见 [常见问题](Troubleshooting-zh-CN.md)。
+
+---
+
+[← 功能模块](Modules-zh-CN.md) · [示例笔记库 →](Sample-vault-zh-CN.md)

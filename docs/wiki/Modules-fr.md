@@ -1,29 +1,45 @@
-### Modules
+> [English](Modules.md) · [简体中文](Modules-zh-CN.md) · **Français**
 
-[English](Modules.md) · [简体中文](Modules-zh-CN.md) · [Français](Modules-fr.md)
+Dans **Paramètres → Media Capture → Fonctions**, activez uniquement les modules dont vous avez besoin. Le guide d’aide intégré détaille préparation, actions et résultats, tandis que les paramètres restent centrés sur les interrupteurs et réglages.
 
-Dans Fonctions, activez seulement les modules utiles. Le guide d’aide indique préparation, action et résultat pour chaque fonction ; les paramètres se concentrent sur la configuration. Désactiver un module conserve paramètres et données mais bloque ses opérations d’enregistrement.
+> [!NOTE]
+> Désactiver un module conserve ses paramètres et données existantes tout en bloquant de nouvelles opérations d’enregistrement.
 
-| Module | Entrée | Préparation |
+## Vue d’ensemble des modules
+
+| Module | Point d’entrée | Prérequis |
 | --- | --- | --- |
-| Capture de médias | Icône ou commande | Lien de partage, sans clé |
-| Tâches terminées | Cocher une tâche Markdown | Notes quotidiennes et titre de section |
-| Séries | Page associée | Jeton TMDB Read Access Token |
-| Lecture | Page associée | Livre et pages, sans clé |
-| Lieux | Page associée | Clé Amap Web Service |
-| Études | Bouton associé | Jeton Maimemo |
-| Sport | Page associée | Identifiant vidéo et groupes, sans clé |
-| Douban | Bouton associé | Plugin Douban connecté |
-| Sources quotidiennes | Nouvelle note avec modèle | Sources choisies et identifiants nécessaires |
+| **Capture de médias** | Icône du ruban ou commande **Capturer un média** | Lien de partage (sans clé) |
+| **Journal des tâches** | Cocher une tâche Markdown ordinaire | **Notes quotidiennes** principales + titre de section |
+| **Séries** | Page associée | Jeton `TMDB API Read Access Token` |
+| **Lecture** | Page associée | Livre et pages (sans clé) |
+| **Lieux** | Page associée | Clé Amap Web Service |
+| **Études** | Bouton associé | Jeton Open API Maimemo |
+| **Sport** | Page associée | Identifiant vidéo et groupes musculaires (sans clé) |
+| **Douban** | Bouton de synchronisation associé | Plugin Douban installé et connecté |
+| **Sources quotidiennes** | Nouvelle note créée depuis un modèle compatible | Sources choisies + identifiants requis |
 
-#### Pages associées
+## Pages associées
 
-Capture fournit les opérations ; le coffre fournit les pages et l’affichage. Un interrupteur ou jeton ne crée pas une bibliothèque, une carte ou un modèle. Les [Coffre exemple](Sample-vault-fr.md) sont des pages minimales copiables sans écrire de code.
+Media Capture fournit les opérations d’enregistrement ; votre coffre fournit les pages interactives et l’affichage.
 
-Cocher un épisode inclut les épisodes précédents non vus ; décocher ne touche que cet épisode. La lecture garde les pages de chaque jour. Les études concernent le jour du fuseau choisi par la page ; les exemples utilisent Asia/Shanghai.
+> [!IMPORTANT]
+> Activer un interrupteur ou renseigner un jeton ne crée **pas** automatiquement une bibliothèque, une carte ou un modèle quotidien. Copiez les pages minimales du [Coffre exemple](Sample-vault-fr.md) pour essayer les modules sans écrire de code.
 
-#### Sources quotidiennes
+### Comportements spécifiques
 
-Localisation, météo, phase lunaire, message et poésie sont indépendants et désactivés par défaut. La lune ne nécessite pas d’identifiant. Une source désactivée ou en échec laisse le modèle utiliser sa valeur par défaut. Activer une source ne réécrit pas les anciennes notes.
+- **Séries :** cocher un épisode marque automatiquement les épisodes précédents non vus ; décocher n’affecte que cet épisode.
+- **Lecture :** conserve indépendamment la plage de pages de chaque journée.
+- **Études :** cible toujours la date du jour selon le fuseau horaire de la page (`Asia/Shanghai` dans les exemples).
 
-[Guide Media Capture](Home-fr.md) · [Source](https://github.com/Ch1llNoodle/obsidian-media-capture) · [sample](https://github.com/Ch1llNoodle/obsidian-media-capture/tree/master/sample)
+## Sources quotidiennes
+
+Localisation, météo, phase lunaire, message et poésie sont activables indépendamment et désactivés par défaut :
+
+- **Phase lunaire sans clé :** utilise `wttr.in` sans identifiant.
+- **Repli propre :** une source désactivée ou en échec ne renvoie aucun contenu afin que le modèle utilise sa valeur par défaut.
+- **Non destructif :** activer une source ne réécrit jamais les anciennes notes quotidiennes.
+
+---
+
+[← Modes d’enregistrement](Save-layouts-fr.md) · [Identifiants des services →](Service-connections-fr.md)

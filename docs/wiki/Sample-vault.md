@@ -1,30 +1,60 @@
-### Sample vault
+> **English** · [简体中文](Sample-vault-zh-CN.md) · [Français](Sample-vault-fr.md)
 
-[English](Sample-vault.md) · [简体中文](Sample-vault-zh-CN.md) · [Français](Sample-vault-fr.md)
+The sample vault provides ready-to-use interactive pages and templates so you can try every module without writing code.
 
-#### Copy the examples
+## Setup
 
-1. Open the [source repository](https://github.com/Ch1llNoodle/obsidian-media-capture), choose **Code → Download ZIP**, extract it and open sample.
-2. Copy the entire **Capture Sample** folder into your Obsidian vault root. Keep its name, scripts/demo.js and scripts/strings.json.
-3. Open **Capture Sample/Start.md** and choose English, 简体中文 or Français. Each language includes instructions, interactive controls, status messages and Daily templates.
-4. Enable the modules named by the pages you want to try. Enter only the required credentials.
+1. Open the [source repository](https://github.com/Ch1llNoodle/obsidian-media-capture), select **Code → Download ZIP**, extract the archive, and open the `sample` folder.
+2. Copy the entire `Capture Sample` folder to your Obsidian vault root. Keep its folder name, `scripts/demo.js`, and `scripts/strings.json` intact.
+3. Open `Capture Sample/Start.md` and choose **English**, **简体中文**, or **Français**. Each language includes instructions, interactive controls, status messages, and Daily templates.
+4. Enable the modules listed on the pages you want to try and fill in only their required credentials.
 
-#### Dependencies
+## Plugin dependencies
 
-Media capture needs only Media Capture. Task logging additionally needs core Daily notes. Interactive reading, series, places, study, exercise and Douban pages require Dataview with **Enable JavaScript Queries** enabled; open pages in Reading view. Daily source templates require Templater instead.
+| Feature | Required plugins & settings |
+| --- | --- |
+| **Media capture** | Media Capture only |
+| **Task completion log** | Media Capture + core **Daily notes** |
+| **Interactive trackers** (reading, series, places, study, exercise, Douban) | Media Capture + **Dataview** with **Enable JavaScript Queries** turned on (open in **Reading view**) |
+| **Daily source templates** | Media Capture + **Templater** |
 
-#### Try an offline example
+## Try an offline example first
 
-Open the Reading example, enter a book and date, load progress, enter page numbers and save. Reload the same book to verify. Exercise works similarly: enter a video identifier, select muscles, save and reload. Neither needs a service key.
+- **Reading:** Open the Reading example, enter a book name and date, load progress, enter page numbers, and save. Reload the same book to verify.
+- **Exercise:** Enter a video identifier, select muscles on the body map, save, and reload.
 
-The series example supports search, season selection and checkboxes. Places searches and writes visit links. Study saves today’s word counts. Douban demonstrates book collections only. Daily source examples explain exactly how to insert their Templater template into an empty dated note.
+> [!TIP]
+> Neither **Reading** nor **Exercise** requires any external service key.
 
-#### Data and language
+### Other sample pages
 
-Tracker JSON stays under Capture Sample/data. Generated Daily notes are under daily, place notes under places and covers under image. Media and task logging follow existing plugin/core Daily settings. Dates use Asia/Shanghai.
+- **Series:** Search shows, pick a season, and check off episodes.
+- **Places:** Search places and write visit links.
+- **Study:** Save today’s word counts.
+- **Douban:** Demonstrates book collection sync only.
+- **Daily sources:** Guides you through inserting the Templater template into an empty dated note.
 
-Changing example language changes controls, help and template text. Stable book, video and muscle identifiers remain the same, so saved choices can be loaded in another language. Service-returned titles and weather are not automatically translated. Your own names and record contents are never translated.
+## Folder layout & data
 
-Opening examples reads local data only. It does not import settings, create data or contact services. Clicking a save/search/sync button or inserting a source template is the explicit action that writes or requests data.
+```text
+Capture Sample/
+├── Start.md       # Language picker and entry point
+├── data/          # Tracker JSON files
+├── daily/         # Generated Daily notes
+├── places/        # Place notes
+├── image/         # Downloaded covers
+└── scripts/       # Required demo.js & strings.json
+```
 
-[Media Capture](Home.md) · [Source](https://github.com/Ch1llNoodle/obsidian-media-capture) · [sample](https://github.com/Ch1llNoodle/obsidian-media-capture/tree/master/sample)
+- Media capture and task logging continue using your existing plugin and core **Daily notes** settings.
+- Sample dates use the `Asia/Shanghai` timezone.
+
+## Language & privacy
+
+- **Cross-language continuity:** Switching sample language updates UI controls, help text, and template copy while keeping stable book, video, and muscle identifiers intact — saved choices load seamlessly across languages.
+- **No automatic translation:** Service-returned titles/weather and your own names or record contents are never automatically translated.
+- **Explicit actions only:** Opening a sample page reads local files only — it never imports settings, creates data, or contacts external services until you explicitly click save/search/sync or insert a source template.
+
+---
+
+[← Service credentials](Service-connections.md) · [Troubleshooting →](Troubleshooting.md)

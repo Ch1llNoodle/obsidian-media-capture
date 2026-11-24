@@ -1,25 +1,45 @@
-### Identifiants des services
+> [English](Service-connections.md) · [简体中文](Service-connections-zh-CN.md) · **Français**
 
-[English](Service-connections.md) · [简体中文](Service-connections-zh-CN.md) · [Français](Service-connections-fr.md)
+Après avoir activé un module ou sélectionné une source quotidienne, ouvrez **Paramètres → Media Capture → Services**. Seuls les identifiants requis par vos fonctions actives s’affichent (Amap est partagé entre recherche de lieux et météo).
 
-Après avoir activé un module ou une source quotidienne, ouvrez les connexions aux services. Seuls les identifiants requis apparaissent ; Amap est partagé par lieux et météo. Les champs sont masqués et le bouton œil les révèle temporairement. Une valeur remplie est sauvegardée, pas testée.
+> [!NOTE]
+> Les champs sont masqués par défaut ; le bouton œil les révèle temporairement. Une valeur renseignée indique un enregistrement sauvegardé, **pas** un test de connexion réussi.
 
-| Usage | Service | Valeur |
+## Référence des identifiants
+
+| Usage | Fournisseur | Valeur à renseigner |
 | --- | --- | --- |
-| Séries | TMDB | API Read Access Token, pas une clé API v3 |
-| Études | Maimemo | Jeton Open API |
-| Lieux et météo | Amap | Clé Web Service |
-| Localisation | Tencent Maps | Clé de localisation |
-| Message | DeepSeek | Clé API |
-| Poésie | Jinrishici | User Token |
-| Phase lunaire | wttr.in | Aucun |
+| **Séries** | TMDB | `API Read Access Token` (pas une clé API v3) |
+| **Études** | Maimemo | Jeton Open API |
+| **Lieux et météo** | Amap | Clé Web Service |
+| **Localisation** | Tencent Maps | Clé de localisation |
+| **Message** | DeepSeek | Clé API |
+| **Poésie** | Jinrishici | User Token |
+| **Phase lunaire** | `wttr.in` | Aucun |
 
-Créez les identifiants dans les réglages API/développeur de votre compte de service. Collez-les uniquement dans les paramètres du plugin, jamais dans un exemple ou dépôt public. Désactiver une fonction masque ses champs sans effacer les valeurs.
+### Fonctions sans clé de service
 
-Capture, lecture, muscles et tâches ne nécessitent pas ces clés. Douban utilise la connexion enregistrée par le plugin Douban, sans second mot de passe.
+- **Capture de médias**, **Lecture**, **Sport** et **Journal des tâches** ne nécessitent aucune de ces clés.
+- **Douban** réutilise la session enregistrée par le plugin Douban sans demander de second mot de passe.
 
-Les requêtes ont lieu lors d’une capture, recherche, synchronisation ou insertion de modèle. DeepSeek reçoit la consigne fournie par le modèle. Tencent IP, la météo Amap et wttr.in reçoivent la requête de localisation correspondante. Titres, météo et erreurs des services gardent leur langue d’origine.
+## Sécurité et stockage
 
-En cas d’échec, vérifiez le type d’identifiant, le réseau et les droits du compte. Voir [Dépannage](Troubleshooting-fr.md).
+> [!WARNING]
+> Créez vos identifiants depuis l’espace API/développeur de votre propre compte et collez-les **uniquement** dans les paramètres du plugin — jamais dans une page exemple, une note Markdown ou un dépôt public.
 
-[Guide Media Capture](Home-fr.md) · [Source](https://github.com/Ch1llNoodle/obsidian-media-capture) · [sample](https://github.com/Ch1llNoodle/obsidian-media-capture/tree/master/sample)
+- Désactiver une fonction masque ses champs sans supprimer les valeurs enregistrées.
+- Retirez vos identifiants de `data.json` avant de partager une configuration.
+
+## Requêtes réseau et confidentialité
+
+Les requêtes ne sont envoyées que lorsque vous lancez explicitement une capture, recherche, synchronisation ou insertion de modèle :
+
+- **DeepSeek** reçoit la consigne définie par votre modèle.
+- **Tencent IP**, la météo **Amap** et **`wttr.in`** reçoivent la requête de localisation correspondante.
+- Les titres, prévisions météo et erreurs renvoyés par les services conservent leur langue d’origine.
+
+En cas d’échec, vérifiez le type d’identifiant, l’accès réseau et les droits du compte. Voir [Dépannage](Troubleshooting-fr.md).
+
+---
+
+[← Modules](Modules-fr.md) · [Coffre exemple →](Sample-vault-fr.md)

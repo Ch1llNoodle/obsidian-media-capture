@@ -1,29 +1,45 @@
-### Feature modules
+> **English** · [简体中文](Modules-zh-CN.md) · [Français](Modules-fr.md)
 
-[English](Modules.md) · [简体中文](Modules-zh-CN.md) · [Français](Modules-fr.md)
+Enable only the modules you need under **Settings → Media Capture → Features**. The in-app help guide explains preparation, actions, and expected results for each feature, while settings stay focused on switches and configuration.
 
-Enable only what you use under **Features**. The help guide contains feature instructions covering preparation, actions and results; settings focus on switches and configuration. Disabling a module retains settings and records but blocks its recording operations.
+> [!NOTE]
+> Disabling a module preserves its settings and existing records while blocking new recording operations.
 
-| Module | Entry point | Preparation |
+## Modules overview
+
+| Module | Entry point | Requirements |
 | --- | --- | --- |
-| Media capture | Sidebar icon or Capture media command | Share link; no service key |
-| Task completion log | Complete a Markdown task | Configure core Daily notes and the log heading |
-| Series tracking | Companion series page | TMDB Read Access Token |
-| Reading tracking | Companion reading page | Book title and page range; no key |
-| Place tracking | Companion places page | Amap Web Service Key |
-| Study sync | Companion study button | Maimemo Token |
-| Exercise tracking | Companion exercise page | Video identifier and muscle choices; no key |
-| Douban sync | Companion collection sync button | Douban plugin installed and signed in |
-| Daily note sources | A new note made from a compatible template | Select sources and fill only their required credentials |
+| **Media capture** | Ribbon icon or **Capture media** command | Share link (no service key) |
+| **Task completion log** | Complete an ordinary Markdown task | Core **Daily notes** + configured log heading |
+| **Series tracking** | Companion series page | TMDB API Read Access Token |
+| **Reading tracking** | Companion reading page | Book title & page range (no service key) |
+| **Place tracking** | Companion places page | Amap Web Service Key |
+| **Study sync** | Companion study sync button | Maimemo Open API Token |
+| **Exercise tracking** | Companion exercise page | Video ID & muscle choices (no service key) |
+| **Douban sync** | Companion collection sync button | Douban plugin installed & signed in |
+| **Daily note sources** | New note created from a compatible template | Enabled sources + their required credentials |
 
-#### Companion pages
+## Companion pages
 
-The plugin supplies recording operations; your vault supplies tracker pages and presentation. A switch or a filled token does not generate a bookshelf, map or Daily template. Copy the [Sample vault](Sample-vault.md) examples to try the modules without writing scripts.
+Media Capture provides the recording operations; your vault provides the interactive pages and visual layout.
 
-Series checkboxes mark progress cumulatively up to the selected episode; unchecking affects only that episode. Reading records keep each day’s page range. Study sync targets the current day using the page’s timezone. Sample dates use Asia/Shanghai.
+> [!IMPORTANT]
+> Turning on a module or entering a token does **not** automatically generate a bookshelf, map, or Daily template. Copy the ready-made examples from the [Sample vault](Sample-vault.md) to try any module without writing scripts.
 
-#### Daily sources
+### Module-specific behavior
 
-Location, weather, moon phase, greeting and poetry are independently selectable. All default to Off. The moon source needs no credential. A disabled or failed source returns no content, allowing the template to use its default. Existing Daily notes are not rewritten when a source is enabled.
+- **Series tracking:** Checking an episode marks progress cumulatively up to that episode; unchecking affects only that single episode.
+- **Reading tracking:** Stores each day’s page range independently.
+- **Study sync:** Always targets the current day according to the page’s timezone (`Asia/Shanghai` in the sample vault).
 
-[Media Capture](Home.md) · [Source](https://github.com/Ch1llNoodle/obsidian-media-capture) · [sample](https://github.com/Ch1llNoodle/obsidian-media-capture/tree/master/sample)
+## Daily note sources
+
+Location, weather, moon phase, greeting, and poetry can be enabled independently and all default to **Off**:
+
+- **No key needed for moon phase:** Uses `wttr.in` without credentials.
+- **Graceful fallback:** A disabled or failed source returns empty content so your template can fall back to its default value.
+- **Non-destructive:** Enabling a source never rewrites existing Daily notes.
+
+---
+
+[← Saving layouts](Save-layouts.md) · [Service credentials →](Service-connections.md)

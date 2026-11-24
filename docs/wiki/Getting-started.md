@@ -1,25 +1,45 @@
-### First record
+> **English** · [简体中文](Getting-started-zh-CN.md) · [Français](Getting-started-fr.md)
 
-[English](Getting-started.md) · [简体中文](Getting-started-zh-CN.md) · [Français](Getting-started-fr.md)
+Requires **Obsidian 1.8.7** or later.
 
-#### Install
+## Installation
 
-For BRAT, install BRAT from Obsidian’s Community plugins browser, add Ch1llNoodle/obsidian-media-capture, choose an available release, then enable Media Capture. For a manual installation, download main.js, manifest.json and styles.css from the [release page](https://github.com/Ch1llNoodle/obsidian-media-capture/releases), put them in .obsidian/plugins/media-capture, and enable the plugin. Obsidian 1.8.7 or later is required. Keep data.json and records.json when updating.
+### Option 1: BRAT (recommended)
 
-#### Save one item
+1. Install and enable **BRAT** from Obsidian’s **Community plugins** browser.
+2. Add the repository `Ch1llNoodle/obsidian-media-capture` and select an available release.
+3. Enable **Media Capture** in **Settings → Community plugins**.
 
-1. Copy a podcast episode share link from Xiaoyuzhou, Apple Podcasts or Douban Podcasts, or a full YouTube/Bilibili video link.
-2. Click the capture icon in Obsidian’s sidebar. Alternatively, open the command palette and search **Media Capture: Capture media**.
-3. Paste the link and choose **Fetch media information**. Confirm the title, state and date. If fetching fails, enter the title manually.
-4. Check the destinations below the form. With defaults, keep the configured log layout. Choose **Save and open**.
-5. The saved log or note opens. A missing cover does not prevent saving. Reopening a file in Obsidian’s file explorer confirms where the record lives.
+### Option 2: Manual installation
 
-Apple Podcasts links must identify an episode with the i parameter. For Bilibili short links, open the short link in a browser and copy the full URL.
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [Releases page](https://github.com/Ch1llNoodle/obsidian-media-capture/releases).
+2. Place all three files into `<Vault>/.obsidian/plugins/media-capture/`.
+3. Reload Obsidian and enable **Media Capture** in **Settings → Community plugins**.
 
-#### Next steps
+> [!IMPORTANT]
+> When updating manually, replace only `main.js`, `manifest.json`, and `styles.css`. Keep `data.json` and `records.json` to preserve your settings and capture records.
 
-Use [Saving layouts](Save-layouts.md) to change the output. To record task completion times, configure Obsidian’s core Daily notes plugin first, enable Task completion log, then complete an ordinary Markdown task and open today’s Daily note.
+## Save your first item
 
-Settings open on Features. The title’s help icon and **Open getting started guide** command remain available at any time. Mobile capture and external playback still require testing on the actual device.
+1. Copy a podcast episode share link from **Xiaoyuzhou**, **Apple Podcasts**, or **Douban Podcasts**, or a full **YouTube** / **Bilibili** video link.
+2. Click the capture icon in Obsidian’s left ribbon, or open the Command Palette and run **Media Capture: Capture media**.
+3. Paste the link and select **Fetch media information**. Confirm the title, status, and date (if fetching fails, enter the title manually).
+4. Review the destination preview below the form. For your first run, keep the default log layout and select **Save and open**.
+5. The target log or note opens automatically. A missing cover does not block saving, and you can check Obsidian’s file explorer to confirm where the file lives.
 
-[Media Capture](Home.md) · [Source](https://github.com/Ch1llNoodle/obsidian-media-capture) · [sample](https://github.com/Ch1llNoodle/obsidian-media-capture/tree/master/sample)
+> [!NOTE]
+> - **Apple Podcasts:** Links must point to a specific episode (containing the `i` query parameter).
+> - **Bilibili:** Open short links in a browser first and copy the expanded full URL.
+
+## Next steps
+
+- **Customize output:** See [Saving layouts](Save-layouts.md) to switch from a shared log to individual notes or per-show files.
+- **Log completed tasks:** Configure Obsidian’s core **Daily notes** plugin first, enable **Task completion log**, then complete an ordinary Markdown task and open today’s Daily note.
+- **In-app help:** Settings open on **Features** by default. The help icon beside the title and the **Open getting started guide** command are always available.
+
+> [!NOTE]
+> Mobile capture and external playback still require testing on your actual device.
+
+---
+
+[← Home](Home.md) · [Saving layouts →](Save-layouts.md)
