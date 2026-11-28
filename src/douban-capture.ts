@@ -9,16 +9,44 @@ function decode(value: string): string {
         : ({ amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " " } as Record<string, string>)[name.toLowerCase()] ?? "");
 }
 
-function parse(html: string): DoubanEntry[] {
-    return html.split(/<(?:div|li)\s+class="(?:item(?:\s[^"]*)?|subject-item)"[^>]*>/).slice(1).flatMap(block => {
+const ITEM_SHOW_SPLIT = /<div\b[^>]*\bclass=["'](?:[^"']*\s)?item-show(?:\s[^"']*)?["'][^>]*>/i;
+const GRID_ITEM_SPLIT = /<(?:div|li)\b[^>]*\bclass=["'](?:[^"']*\s)?(?:item|subject-item)(?:\s[^"']*)?["'][^>]*>/i;
+
+function parse(html: string, mode: 'grid' | 'list' = 'grid'): { rows: DoubanEntry[]; missing: string[] } {
+    const splitter = mode === 'list' && ITEM_SHOW_SPLIT.test(html) ? ITEM_SHOW_SPLIT : GRID_ITEM_SPLIT;
+    const missing: string[] = [];
+    const rows = html.split(splitter).slice(1).flatMap(block => {
         const url = block.match(/https:\/\/(?:movie|book|music)\.douban\.com\/subject\/\d+\//)?.[0];
-        const title = block.match(/<em>([\s\S]*?)<\/em>/)?.[1] ?? block.match(/<a[^>]+title="([^"]+)"/)?.[1];
-        const date = block.match(/class="date"[^>]*>\s*(\d{4}-\d{2}-\d{2})/)?.[1];
+        const title = block.match(/<em>([\s\S]*?)<\/em>/)?.[1]
+            ?? block.match(/<a[^>]+title="([^"]+)"/)?.[1]
+            ?? block.match(/<a\b[^>]*href="https:\/\/(?:book|movie|music)\.douban\.com\/subject\/\d+\/(?:\?[^"]*)?"[^>]*>\s*([^<]+?)\s*<\/a>/)?.[1];
+        const date = block.match(/class="[^"]*\bdate\b[^"]*"[^>]*>\s*(?:(?:读过|在读|想读|看过|在看|想看|听过|在听|想听)\s*[:：]?\s*)?(\d{4}-\d{2}-\d{2})/)?.[1];
         const image = block.match(/<img[^>]+src="([^"]+)"/)?.[1];
-        if (!url || !title || !date) return [];
+        if (!url || !title || !date) {
+            const fields = [!url && '作品链接', !title && '标题', !date && '标记日期'].filter(Boolean);
+            missing.push(`${url?.match(/subject\/(\d+)/)?.[1] ?? '无编号条目'} 缺${fields.join('、')}`);
+            return [];
+        }
         return [{ id: url.match(/subject\/(\d+)/)?.[1] ?? "", url, title: decode(title.replace(/<[^>]*>/g, "").trim()),
             date, image: image ? decode(image) : "" }];
     });
+    return { rows, missing };
+}
+
+function isLoggedOutDoubanPage(html: string): boolean {
+    return /class=["'][^"']*\bnav-login\b[^"']*["']/i.test(html) && !/class=["'][^"']*\bnav-user-account\b[^"']*["']/i.test(html);
+}
+
+function unparsedSubjectIds(html: string, sourceDomain: string, parsedIds: Set<string>): string[] {
+    const listRegion = html.match(/<ul\b[^>]*\bclass=["'][^"']*\binterest-list\b[^"']*["'][^>]*>([\s\S]*?)<\/ul>/i)?.[1]
+        ?? html.match(/<div\b[^>]*\bclass=["'][^"']*\bgrid-view\b[^"']*["'][^>]*>([\s\S]*?)<div\b[^>]*\bclass=["'][^"']*\bpaginator\b/i)?.[1]
+        ?? '';
+    if (!listRegion) return [];
+    const found = new Set<string>();
+    for (const match of listRegion.matchAll(new RegExp(`https://${sourceDomain}\\.douban\\.com/subject/(\\d+)/`, 'g'))) {
+        if (match[1] && !parsedIds.has(match[1])) found.add(match[1]);
+    }
+    return [...found];
 }
 
 function screenType(html: string) {
@@ -27,7 +55,6 @@ function screenType(html: string) {
     if (/片长[:：]/.test(info) || /"@type"\s*:\s*"Movie"/.test(html) || /我(?:最近)?(?:看过|想看)这部电影/.test(html)) return "movie";
     return null;
 }
-
 
 export async function collectDouban(app: App, options: DoubanSyncOptions, active: () => void) {
     active();
@@ -73,12 +100,42 @@ export async function collectDouban(app: App, options: DoubanSyncOptions, active
                 const response = await request({ url: `https://${sourceDomain}.douban.com/people/${userId}/${state}?start=${start}&sort=time&rating=all&filter=all&mode=grid`,
                     headers: { Cookie: cookie, "User-Agent": "Mozilla/5.0" }, throw: false });
                 if (response.status !== 200) throw new Error(`豆瓣返回 ${response.status}，原记录已保留。`);
+                if (isLoggedOutDoubanPage(response.text)) throw new Error("豆瓣登录已失效，请在 Douban 插件中重新登录后再同步，原记录已保留。");
                 const title = /<title>([\s\S]*?)<\/title>/.exec(response.text)?.[1] ?? "";
                 const count = title.match(/\((\d+)\)/)?.[1];
                 if (count == null) throw new Error("豆瓣登录失效或列表结构变化，原记录已保留。");
                 total = Number(count);
-                const rows = parse(response.text);
-                if (total > start && rows.length !== Math.min(15, total - start)) throw new Error("豆瓣分页记录不完整，原记录已保留。");
+                const expected = Math.min(15, total - start);
+                const grid = parse(response.text, 'grid');
+                let rows = grid.rows;
+                let extraGridIds: string[] = [];
+                let pageAccepted = rows.length === expected;
+                if (total > start && rows.length < expected) {
+                    extraGridIds = unparsedSubjectIds(response.text, sourceDomain, new Set(rows.map(row => row.id)));
+                    const fallback = await request({
+                        url: `https://${sourceDomain}.douban.com/people/${userId}/${state}?start=${start}&sort=time&rating=all&filter=all&mode=list`,
+                        headers: { Cookie: cookie, "User-Agent": "Mozilla/5.0" },
+                        throw: false
+                    }).catch(() => null);
+                    active();
+                    if (fallback?.status === 200 && !isLoggedOutDoubanPage(fallback.text)) {
+                        const list = parse(fallback.text, 'list');
+                        const altIds = new Set(list.rows.map(row => row.id));
+                        const coversGrid = altIds.size === list.rows.length && rows.every(row => altIds.has(row.id));
+                        if (coversGrid && list.rows.length === expected) {
+                            const gridById = new Map(rows.map(row => [row.id, row]));
+                            rows = list.rows.map(row => ({ ...row, image: row.image || gridById.get(row.id)?.image || "" }));
+                            pageAccepted = true;
+                        } else if (coversGrid && rows.length > 0 && list.rows.length === rows.length && !grid.missing.length && !list.missing.length && !extraGridIds.length) {
+                            pageAccepted = true;
+                        }
+                    }
+                }
+                if (total > start && !pageAccepted) {
+                    const unparsedDetail = extraGridIds.length ? `，页面中另有未解析条目 ${extraGridIds.join('、')}` : '';
+                    const detail = ` 网格条目 ${rows.length + grid.missing.length} 个${grid.missing.length ? `，${grid.missing.join('；')}` : '，其余条目未出现在可识别的网格结构中'}${unparsedDetail}。`;
+                    throw new Error(`豆瓣分页记录不完整（${state}，第 ${Math.floor(start / 15) + 1} 页，应有 ${expected} 条，识别到 ${rows.length} 条）。${detail}原记录已保留。`);
+                }
                 entries.push(...rows.map(row => ({ ...row, state })));
                 await new Promise(resolve => window.setTimeout(resolve, 900));
             }

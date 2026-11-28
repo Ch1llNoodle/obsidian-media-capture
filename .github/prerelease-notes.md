@@ -1,6 +1,6 @@
-### Media Capture 0.19.5
+### Media Capture 0.19.6
 
-- Recover Douban film and TV classification from public mobile details when desktop responses lack a usable type, without sending login cookies.
-- Redesign the trilingual GitHub Wiki (English, Simplified Chinese, French) and READMEs with clearer hierarchy, callouts, inline code formatting, and linear navigation.
+- Fall back to Douban’s list view when a grid page returns fewer items than expected, preserving grid covers and handling hidden/removed entries consistently across both views.
+- Reject logged-out Douban responses explicitly instead of silently syncing a partial public list, and support flexible attributes/classes on Douban item elements.
 
 Requires Obsidian 1.8.7 or later.
